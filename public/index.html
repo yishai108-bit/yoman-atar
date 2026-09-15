@@ -499,14 +499,14 @@ const remoteDB = (()=>{
     refresh,
     collection: c => ({
       doc: id => ({
-        set: async data => { await api("/api/db", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({c, id, data})}); refresh(c); },
+        set: async data => { await api("/api/db?c="+c, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({c, id, data})}); refresh(c); },
         delete: async () => { await api("/api/db?c="+c+"&id="+encodeURIComponent(id), {method:"DELETE"}); refresh(c); },
       }),
       onSnapshot: (cb) => { (subs[c]=subs[c]||[]).push(cb); refresh(c);
         if(!timers[c]) timers[c]=setInterval(()=>{ if(document.visibilityState==="visible") refresh(c); }, 30000);
         return ()=>{ subs[c]=(subs[c]||[]).filter(x=>x!==cb); }; },
     }),
-    bulk: async (c, docs) => { for(let i=0;i<docs.length;i+=25){ await api("/api/db", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({c, docs: docs.slice(i,i+25).map(d=>({id:d.id,data:d}))})}); } refresh(c); },
+    bulk: async (c, docs) => { for(let i=0;i<docs.length;i+=25){ await api("/api/db?c="+c, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({c, docs: docs.slice(i,i+25).map(d=>({id:d.id,data:d}))})}); } refresh(c); },
   };
 })();
 const remoteAssets = { upload: async blob => api("/api/upload", {method:"POST", headers:{"Content-Type": blob.type||"image/jpeg"}, body: blob}) };
