@@ -3,11 +3,15 @@
   "private": true,
   "description": "יומן אתר. הקוד ב-src/, נבנה ל-artifact/yoman.html (npm run build).",
   "scripts": {
+    "dev": "vite",
     "build": "node tools/build.js",
     "build:sites": "node tools/build.js --sites",
     "test": "node tools/build.js --check && node --test tests/*.test.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
   }
 }
