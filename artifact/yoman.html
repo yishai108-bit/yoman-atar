@@ -5425,7 +5425,10 @@ function wrData(endIso){
     let cum=0, doneDate=""; daily.forEach(d=>{ cum+=Number(d.actual); if(!doneDate&&total&&cum>=total) doneDate=d.date; });
     const done=Math.min(total||cum,cum), week=daily.filter(d=>d.date>=startIso).reduce((s,d)=>s+Number(d.actual),0);
     const first=a.start||(daily[0]||{}).date||"", last=(daily[daily.length-1]||{}).date||"";
-    const r={id:a.id,name:a.name,total,done,week,pct:total?done/total:0,first,last,doneDate,complete:!!total&&done>=total,started:done>0,planEnd:a.planEnd||""};
+    // רישום שמשלים תקופה ארוכה משבוע (אין רישום בשבוע שלפניו): מציגים «מאז» הרישום הקודם ולא «השבוע»
+    const wk=daily.filter(d=>d.date>=startIso), prev=(daily.filter(d=>d.date<startIso).pop()||{}).date||"";
+    const weekLabel=wk.length&&prev&&prev<isoOf(new Date(wk[0].date+"T12:00:00").getTime()-7*864e5)?"מאז "+isoText(prev):"השבוע";
+    const r={id:a.id,name:a.name,total,done,week,weekLabel,pct:total?done/total:0,first,last,doneDate,complete:!!total&&done>=total,started:done>0,planEnd:a.planEnd||""};
     if(r.planEnd&&first&&!r.complete){ const all=workdaysBetween(first,r.planEnd,hol), gone=workdaysBetween(first,endIso,hol);
       r.planPct=all?Math.min(1,gone/all):1; r.planLeft=Math.max(0,workdaysBetween(isoOf(endT+864e5),r.planEnd,hol)); r.planNeed=r.planLeft?Math.ceil((total-done)/r.planLeft):null;
       r.planGap=r.pct-r.planPct; }
@@ -5493,12 +5496,12 @@ function wrHtml(mode,D,o){
     +'<div class="tag'+(C?' c':'')+'">'+(C?'עדכון ליזם':'למנהלים · פנימי')+'</div></div>';
   if(pan) h+='<div class="hero"><div class="ring" style="background:conic-gradient(#9AC339 '+wrPct(panPct)*3.6+'deg,#ECEDED 0)"><i class="n">'+wrPct(panPct)+'%</i></div><div><h2>'+(C?'מהפאנלים כבר מותקנים':'פאנלים מותקנים')+'</h2>'
     +'<p>'+(C?'נכון ל-'+e(pan.date):N(pan.installed)+' מתוך '+N(pan.required)+' פאנלים בתכנון · מאזן '+e(pan.date))+'</p>'
-    +(!C&&D.panA&&D.panA.week?'<p>השבוע: <b>'+NP(D.panA.week)+'</b> פאנלים בסטטוס</p>':'')+'</div></div>';
+    +(!C&&D.panA&&D.panA.week?'<p>'+e(D.panA.weekLabel)+': <b>'+NP(D.panA.week)+'</b> פאנלים בסטטוס</p>':'')+'</div></div>';
   if(o.lead) h+='<div class="lead">'+e(o.lead)+'</div>';
   const tile=(v,k)=>'<div class="tile"><b>'+v+'</b><span>'+e(k)+'</span></div>';
   const act3=D.acts.filter(a=>!a.complete&&a.started).slice(0,4);
   if(C){ if(act3.length) h+='<div class="tiles">'+act3.map(a=>tile(P(a.pct),a.name)).join("")+'</div>'; }
-  else h+='<div class="tiles">'+tile(D.panA?NP(D.panA.week):'—','פאנלים השבוע')+tile(N(D.con.wn)+' <small style="font-size:.8rem">תעודות</small>','בטון השבוע · '+fmtN(D.con.wm3)+' מ״ק')
+  else h+='<div class="tiles">'+tile(D.panA?NP(D.panA.week):'—','פאנלים '+(D.panA?D.panA.weekLabel:'השבוע'))+tile(N(D.con.wn)+' <small style="font-size:.8rem">תעודות</small>','בטון השבוע · '+fmtN(D.con.wm3)+' מ״ק')
     +tile(N(D.iss.wt),'שולחנות נופקו השבוע')+tile(N(D.notes.length),'תעודות משלוח השבוע')+'</div>';
   const fig=(src,cap)=>'<figure class="ph"><img src="'+e(src)+'" alt="תמונת רחפן של האתר"><figcaption>'+cap+'</figcaption></figure>', dt=x=>'<span class="n">'+e(isoText(x))+'</span>';
   if(o.img||!C) h+='<h3>האתר מהאוויר</h3>'+(!o.img?'<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>'
@@ -5508,8 +5511,8 @@ function wrHtml(mode,D,o){
   if(!D.acts.length) h+='<div class="empty">אין עדיין סטטוס התקדמות באפליקציה.</div>';
   D.acts.forEach(a=>{ h+='<div class="act"><div class="t"><span>'+e(a.name)+'</span><span>'+P(a.pct)+'</span></div>'
     +'<div class="bar"><i style="width:'+wrPct(a.pct)+'%;background:'+col(a)+'"></i>'+(a.planPct!=null?'<u style="right:'+wrPct(a.planPct)+'%" title="לפי התוכנית"></u>':'')+'</div><small>'
-    +(C?(a.complete?'הושלם'+(a.doneDate?' · '+e(wrMonth(a.doneDate)):''):a.started?(a.week&&a.total?P1(a.week/a.total,1)+' השבוע':'בביצוע'):'טרם החל')
-      :(a.complete?'הושלם'+(a.doneDate?' ב-'+e(isoText(a.doneDate)):'')+' · '+N(a.total):N(a.done)+' / '+N(a.total)+(a.week?' · <b>'+NP(a.week)+'</b> השבוע':' · אין התקדמות השבוע')+(a.last?' · עדכון אחרון '+e(isoText(a.last)):'')))
+    +(C?(a.complete?'הושלם'+(a.doneDate?' · '+e(wrMonth(a.doneDate)):''):a.started?(a.week&&a.total?P1(a.week/a.total,1)+' '+e(a.weekLabel):'בביצוע'):'טרם החל')
+      :(a.complete?'הושלם'+(a.doneDate?' ב-'+e(isoText(a.doneDate)):'')+' · '+N(a.total):N(a.done)+' / '+N(a.total)+(a.week?' · <b>'+NP(a.week)+'</b> '+e(a.weekLabel):' · אין התקדמות השבוע')+(a.last?' · עדכון אחרון '+e(isoText(a.last)):'')))
     +'</small></div>'; });
   if(!C||D.hasPlan) h+='<h3>מול התוכנית</h3>';
   if(!D.hasPlan){ if(!C) h+='<div class="empty">יתמלא כשיוזן לוח הזמנים (גאנט) של הפרויקט. כרגע לא הוזנו תאריכי יעד, ולכן אין כאן השוואה לתוכנית.</div>'; }
@@ -5543,7 +5546,7 @@ function wrText(mode,D,o){
   L.push((C?"עדכון שבועי · ":"דוח סטטוס שבועי · ")+site+" · "+wrRange(D.startIso,D.endIso)); L.push("");
   if(o&&o.lead) { L.push(o.lead); L.push(""); }
   if(pan&&pan.required) L.push("פאנלים מותקנים: "+wrPct(pan.installed/pan.required)+"%"+(C?"":" ("+fmtN(pan.installed)+" מתוך "+fmtN(pan.required)+")"));
-  D.acts.filter(a=>!a.complete&&a.started).forEach(a=>L.push(a.name+": "+wrPct(a.pct)+"%"+(!C&&a.week?" · +"+fmtN(a.week)+" השבוע":"")));
+  D.acts.filter(a=>!a.complete&&a.started).forEach(a=>L.push(a.name+": "+wrPct(a.pct)+"%"+(!C&&a.week?" · +"+fmtN(a.week)+" "+a.weekLabel:"")));
   const dn=D.acts.filter(a=>a.complete).map(a=>a.name); if(dn.length) L.push("הושלמו: "+dn.join(", "));
   if(!C){ L.push(""); L.push("בטון השבוע: "+D.con.wn+" תעודות, "+fmtN(D.con.wm3)+" מ״ק · נופקו "+D.iss.wt+" שולחנות · "+D.notes.length+" תעודות משלוח"); if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
   L.push(""); L.push("הדוח המלא מצורף."); return L.join("\n");
