@@ -17,7 +17,7 @@
 | `legacy/` | גרסה מוקדמת (ספטמבר 2026) כ-PWA על Vercel. לא בשימוש. |
 
 גרסאות קודמות נשמרות כתגיות git (`v51`, `v52` …) ולא כקבצי גיבוי. לשליפת גרסה: `git show v51:artifact/yoman.html > yoman-v51.html`.
-גרסה 50 שמורה בתגית `v51` בנתיב `artifact/backups/yoman-v50.html`.
+גרסה 50 שמורה בתגית `v51` (קומיט `010873d`) בנתיב `artifact/backups/yoman-v50.html`.
 
 ## פריסה
 
