@@ -1,14 +1,17 @@
-/* ================= דוח שבועי: דף אחד למנהלים / ליזם, נבנה מהנתונים שכבר באפליקציה =================
-   מקורות: סטטוס התקדמות (כל הפעילויות), מאזן פאנלים, תעודות בטון, ניפוקים, תעודות משלוח, בקשות רכש / PO / תאריכי אספקה.
-   ליזם: אחוזים, אבני דרך ותמונה בלבד. בלי ספקים, נהגים, קבלנים, מחירים וכמויות קטנות. הערות מתעודות לא נכנסות לאף גרסה. */
-let DRONE=[], droneSub=false;
-function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
+import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, popup, shared, toast } from "./core.js";
+import { fmtN, loadImg } from "./01-stock.js";
+import { shortSup } from "./04-contractors.js";
+import { SITE, saveFile } from "./08-settings.js";
+import { canvasBlob } from "./09-doc-scanner.js";
+import { isoOf, isoText } from "./11-daylog.js";
+import { poStatus, requestMatch } from "./14-cba.js";
+import { saveStatus, statusHolidays, workdaysBetween } from "./16-status.js";
+import { etaRows, fmtIso } from "./17-eta.js";
+import { ROLE, watch } from "./18-identity.js";
+export let DRONE, droneSub, wrRedraw, wrPct, wrRange, wrMonth, WR_CSS, wrDataUrl;
+export function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
   try{ watch(shared.DB.collection("drone"),snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); }); }catch(e){} }
-let wrRedraw=null;
-const wrPct=x=>Math.round(Math.max(0,Math.min(1,x))*100);
-const wrRange=(a,b)=>{ const [ya,ma,da]=a.split("-"), [yb,mb,db]=b.split("-"); return (+da)+"."+(+ma)+(ya!==yb?"."+ya:"")+"–"+(+db)+"."+(+mb)+"."+yb; };
-const wrMonth=iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d\d)/); return m?["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"][+m[2]-1]+" "+m[1]:""; };
-function wrData(endIso){
+export function wrData(endIso){
   const endT=new Date(endIso+"T23:59:59").getTime(), startT=endT-7*864e5+1000, startIso=isoOf(startT);
   const inW=t=>t>=startT&&t<=endT, hol=statusHolidays();
   const acts=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(a=>{
@@ -52,30 +55,7 @@ function wrData(endIso){
   return {endIso,startIso,acts,panels,panA,con:{n:con.length,m3:m3(con),wn:conW.length,wm3:m3(conW)},
     iss:{n:iss.length,t:tabs(iss),wn:issW.length,wt:tabs(issW),list:issW},conA,pgCon,notes,sup,reqOpen,reqBad,poLate,etaLate,etaSoon,flags,hasPlan:acts.some(a=>a.planEnd)};
 }
-const WR_CSS='*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#121212;font-family:"Alef","Heebo",Arial,sans-serif;font-size:15px;line-height:1.5;direction:rtl}'
- +'.pg{max-width:780px;margin:0 auto;background:#fff;padding:28px 24px 22px;border-top:6px solid #E40033}'
- +'.n{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}'
- +'.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid #D9DADA;padding-bottom:14px}'
- +'.brand{color:#E40033;font-weight:700;letter-spacing:.16em;font-size:.8rem}.hd h1{margin:4px 0 2px;font-size:1.55rem;line-height:1.2}.hd .sub{color:#666B6E;font-size:.9rem}'
- +'.tag{flex:none;border:1px solid #121212;border-radius:99px;padding:3px 12px;font-size:.78rem;font-weight:700;white-space:nowrap}.tag.c{border-color:#4F7F0B;color:#4F7F0B}'
- +'.hero{display:flex;gap:20px;align-items:center;margin:20px 0 6px}.ring{flex:none;width:132px;height:132px;border-radius:50%;display:grid;place-items:center}'
- +'.ring i{width:104px;height:104px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:1.9rem;font-weight:700}'
- +'.hero h2{margin:0;font-size:1.25rem}.hero p{margin:4px 0 0;color:#3F4447}.lead{margin:12px 0 0;padding:10px 14px;background:#EEF5DE;border-radius:6px;font-weight:700}'
- +'.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}.tile{border:1px solid #D9DADA;border-radius:6px;padding:10px}'
- +'.tile b{display:block;font-size:1.6rem;line-height:1.2}.tile>span{font-size:.8rem;color:#666B6E}'
- +'h3{margin:22px 0 8px;font-size:1.05rem;border-right:4px solid #E40033;padding-right:8px}'
- +'.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}'
- +'.empty{border:2px dashed #D9DADA;border-radius:6px;padding:16px;text-align:center;color:#666B6E;font-size:.9rem}'
- +'.act{padding:8px 0;border-bottom:1px solid #ECEDED;break-inside:avoid}.act .t{display:flex;justify-content:space-between;gap:10px;font-weight:700}'
- +'.bar{height:9px;border-radius:5px;background:#ECEDED;margin:6px 0 3px;overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:5px}'
- +'.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#121212}.act small{color:#666B6E;font-size:.8rem}'
- +'.ms{list-style:none;margin:0;padding:0}.ms li{display:flex;gap:10px;align-items:baseline;padding:5px 0}.ms li i{flex:none;width:11px;height:11px;border-radius:50%;display:inline-block;transform:translateY(1px)}'
- +'table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{text-align:right;padding:6px 6px;border-bottom:1px solid #ECEDED;vertical-align:top}th{color:#666B6E;font-weight:700;font-size:.78rem}'
- +'.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.flags{margin:0;padding:0 18px 0 0}.flags li{margin:4px 0}'
- +'.ft{margin-top:24px;padding-top:10px;border-top:1px solid #D9DADA;color:#666B6E;font-size:.76rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}'
- +'@media (max-width:560px){.pg{padding:20px 16px}.cmp{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.hero{gap:14px}.ring{width:104px;height:104px}.ring i{width:82px;height:82px;font-size:1.5rem}.hd{flex-direction:column}}'
- +'@media print{body{background:#fff}.pg{max-width:none;padding:0;border-top:0}@page{size:A4;margin:14mm}h3{break-after:avoid}}';
-function wrHtml(mode,D,o){
+export function wrHtml(mode,D,o){
   o=o||{}; const C=mode==="client", e=esc, N=v=>'<span class="n">'+fmtN(v)+'</span>', NP=v=>'<span class="n">+'+fmtN(v)+'</span>', P=x=>'<span class="n">'+wrPct(x)+'%</span>';
   const P1=(x,plus)=>{ const v=Math.round(x*1000)/10; return '<span class="n">'+(plus?'+':'')+(v>0&&v<1?"<1":Math.round(v))+'%</span>'; };
   const col=a=>a.complete?"#9AC339":a.planGap!=null?(a.planGap<-0.05?"#E40033":a.planGap<0?"#FFAA00":"#9AC339"):a.started?"#3199CC":"#D9DADA";
@@ -132,7 +112,7 @@ function wrHtml(mode,D,o){
   h+='<div class="ft"><span>'+(C?e(SITE.company||"BELECTRIC")+' · '+e(site):'נוצר אוטומטית מיומן אתר · מסמך פנימי, לא להעביר')+'</span><span>נתונים נכון ל-<span class="n">'+e(isoText(D.endIso))+'</span></span></div></div></body></html>';
   return h;
 }
-function wrText(mode,D,o){
+export function wrText(mode,D,o){
   const C=mode==="client", site=SITE.name||"האתר", pan=D.panels; const L=[];
   L.push((C?"עדכון שבועי · ":"דוח סטטוס שבועי · ")+site+" · "+wrRange(D.startIso,D.endIso)); L.push("");
   if(o&&o.lead) { L.push(o.lead); L.push(""); }
@@ -142,10 +122,9 @@ function wrText(mode,D,o){
   if(!C){ L.push(""); L.push("בטון השבוע: "+D.con.wn+" תעודות, "+fmtN(D.con.wm3)+" מ״ק · נופקו "+D.iss.wt+" שולחנות · "+D.notes.length+" תעודות משלוח"); if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
   L.push(""); L.push("הדוח המלא מצורף."); return L.join("\n");
 }
-async function wrShrink(file){ const im=await loadImg(file); const k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight));
+export async function wrShrink(file){ const im=await loadImg(file); const k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight));
   const c=document.createElement("canvas"); c.width=Math.round(im.naturalWidth*k); c.height=Math.round(im.naturalHeight*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); return canvasBlob(c,0.82); }
-const wrDataUrl=blob=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(blob); });
-function openWeekly(){
+export function openWeekly(){
   droneWatch(); let mode="mgr", endIso=isoOf(Date.now()), lead="", localImg=null;
   const scrim=popup('<div class="sheet wr-sheet" role="dialog" aria-modal="true" aria-label="דוח שבועי"><div class="grab"></div><h2>דוח שבועי</h2>'
     +'<div class="note-card">דף אחד שנבנה לבד מהנתונים באפליקציה: סטטוס התקדמות, מאזן פאנלים, בטון, ניפוקים, תעודות ורכש. «ליזם» בלי ספקים, קבלנים, מחירים וכמויות קטנות.</div>'
@@ -191,4 +170,39 @@ function openWeekly(){
   q("#wrMail").onclick=async()=>{ const t=wrText(mode,wrData(endIso),{lead}); try{ await navigator.clipboard.writeText(t); toast("הטקסט הועתק. להדביק במייל ולצרף את הקובץ."); }catch(e){ await ask("העתק את הטקסט למייל","סגור","var(--ink)",t); } };
   drawPlan(); draw();
 }
+export function __init(){
+/* ================= דוח שבועי: דף אחד למנהלים / ליזם, נבנה מהנתונים שכבר באפליקציה =================
+   מקורות: סטטוס התקדמות (כל הפעילויות), מאזן פאנלים, תעודות בטון, ניפוקים, תעודות משלוח, בקשות רכש / PO / תאריכי אספקה.
+   ליזם: אחוזים, אבני דרך ותמונה בלבד. בלי ספקים, נהגים, קבלנים, מחירים וכמויות קטנות. הערות מתעודות לא נכנסות לאף גרסה. */
+DRONE = [];
+droneSub = false;
+wrRedraw = null;
+wrPct = x=>Math.round(Math.max(0,Math.min(1,x))*100);
+wrRange = (a,b)=>{ const [ya,ma,da]=a.split("-"), [yb,mb,db]=b.split("-"); return (+da)+"."+(+ma)+(ya!==yb?"."+ya:"")+"–"+(+db)+"."+(+mb)+"."+yb; };
+wrMonth = iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d\d)/); return m?["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"][+m[2]-1]+" "+m[1]:""; };
+WR_CSS = '*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#121212;font-family:"Alef","Heebo",Arial,sans-serif;font-size:15px;line-height:1.5;direction:rtl}'
+ +'.pg{max-width:780px;margin:0 auto;background:#fff;padding:28px 24px 22px;border-top:6px solid #E40033}'
+ +'.n{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}'
+ +'.hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid #D9DADA;padding-bottom:14px}'
+ +'.brand{color:#E40033;font-weight:700;letter-spacing:.16em;font-size:.8rem}.hd h1{margin:4px 0 2px;font-size:1.55rem;line-height:1.2}.hd .sub{color:#666B6E;font-size:.9rem}'
+ +'.tag{flex:none;border:1px solid #121212;border-radius:99px;padding:3px 12px;font-size:.78rem;font-weight:700;white-space:nowrap}.tag.c{border-color:#4F7F0B;color:#4F7F0B}'
+ +'.hero{display:flex;gap:20px;align-items:center;margin:20px 0 6px}.ring{flex:none;width:132px;height:132px;border-radius:50%;display:grid;place-items:center}'
+ +'.ring i{width:104px;height:104px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:1.9rem;font-weight:700}'
+ +'.hero h2{margin:0;font-size:1.25rem}.hero p{margin:4px 0 0;color:#3F4447}.lead{margin:12px 0 0;padding:10px 14px;background:#EEF5DE;border-radius:6px;font-weight:700}'
+ +'.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}.tile{border:1px solid #D9DADA;border-radius:6px;padding:10px}'
+ +'.tile b{display:block;font-size:1.6rem;line-height:1.2}.tile>span{font-size:.8rem;color:#666B6E}'
+ +'h3{margin:22px 0 8px;font-size:1.05rem;border-right:4px solid #E40033;padding-right:8px}'
+ +'.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}'
+ +'.empty{border:2px dashed #D9DADA;border-radius:6px;padding:16px;text-align:center;color:#666B6E;font-size:.9rem}'
+ +'.act{padding:8px 0;border-bottom:1px solid #ECEDED;break-inside:avoid}.act .t{display:flex;justify-content:space-between;gap:10px;font-weight:700}'
+ +'.bar{height:9px;border-radius:5px;background:#ECEDED;margin:6px 0 3px;overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:5px}'
+ +'.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#121212}.act small{color:#666B6E;font-size:.8rem}'
+ +'.ms{list-style:none;margin:0;padding:0}.ms li{display:flex;gap:10px;align-items:baseline;padding:5px 0}.ms li i{flex:none;width:11px;height:11px;border-radius:50%;display:inline-block;transform:translateY(1px)}'
+ +'table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{text-align:right;padding:6px 6px;border-bottom:1px solid #ECEDED;vertical-align:top}th{color:#666B6E;font-weight:700;font-size:.78rem}'
+ +'.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.flags{margin:0;padding:0 18px 0 0}.flags li{margin:4px 0}'
+ +'.ft{margin-top:24px;padding-top:10px;border-top:1px solid #D9DADA;color:#666B6E;font-size:.76rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}'
+ +'@media (max-width:560px){.pg{padding:20px 16px}.cmp{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.hero{gap:14px}.ring{width:104px;height:104px}.ring i{width:82px;height:82px;font-size:1.5rem}.hd{flex-direction:column}}'
+ +'@media print{body{background:#fff}.pg{max-width:none;padding:0;border-top:0}@page{size:A4;margin:14mm}h3{break-after:avoid}}';
+wrDataUrl = blob=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(blob); });
 $("#btnWeekly").onclick=openWeekly;
+}

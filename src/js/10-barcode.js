@@ -1,7 +1,8 @@
-/* ================= סורק ברקודים: מק״טים של שלטר על הקרטונים ================= */
-shared.BARCODES={};   // ברקוד → קוד פריט בקיט (נלמד)
-const BC_FORMATS=["code_128","code_39","ean_13","ean_8","upc_a","upc_e","itf","codabar","qr_code","data_matrix","pdf417","aztec"];
-function matchBarcode(text){
+import { esc, logAct, mergeSettingsMap, popup, shared, toast } from "./core.js";
+import { shortName } from "./04-contractors.js";
+import { loadScript } from "./08-settings.js";
+export let BC_FORMATS;
+export function matchBarcode(text){
   const t=String(text||"").trim(); if(!t) return null;
   if(shared.BARCODES[t]){ const k=shared.kit.find(x=>x.code===shared.BARCODES[t]); if(k) return k; }
   const norm=s=>String(s||"").replace(/\s+/g,"").toUpperCase();
@@ -13,17 +14,17 @@ function matchBarcode(text){
   const m2=T.match(/(?:^|\D)(\d{3})(?:\D|$)/); if(m2){ const ks=shared.kit.filter(x=>x.code===m2[1]); if(ks.length===1) return ks[0]; }
   return null;
 }
-async function saveBarcode(text,code){
+export async function saveBarcode(text,code){
   shared.BARCODES[text]=code;
   try{ await mergeSettingsMap("barcodes",{[text]:code}); }catch(e){}
   logAct("settings","edit","ברקוד הוצמד לפריט: "+text+" → "+code,"settings/barcodes");
 }
-function beep(){
+export function beep(){
   try{ const A=window.AudioContext||window.webkitAudioContext; if(!A) return; const ac=beep.ac||(beep.ac=new A()); const o=ac.createOscillator(), g=ac.createGain();
     o.frequency.value=1480; g.gain.value=0.08; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.09); }catch(e){}
   try{ if(navigator.vibrate) navigator.vibrate(50); }catch(e){}
 }
-function openBarcodeScanner(opts){
+export function openBarcodeScanner(opts){
   opts=opts||{}; const mode=opts.mode||"count";
   const hits=new Map();   // text → {text,item,n,per}
   let det=null, zx=null, stream=null, loop=null, lastText="", lastAt=0, busy=false, live=false;
@@ -111,6 +112,9 @@ function openBarcodeScanner(opts){
   start();
   return {close,decode:onDecode};
 }
-
-
-
+export function __init(){
+/* ================= סורק ברקודים: מק״טים של שלטר על הקרטונים ================= */
+shared.BARCODES={};
+   // ברקוד → קוד פריט בקיט (נלמד)
+BC_FORMATS = ["code_128","code_39","ean_13","ean_8","upc_a","upc_e","itf","codabar","qr_code","data_matrix","pdf417","aztec"];
+}

@@ -1,10 +1,10 @@
-/* ================= יומיות: עובדים ומפעילי צמ״ה ================= */
-shared.daylog=[];shared.dayISO="";shared.CREW=[];let dayCon="",csCon="",csPeriod="month";
-const isoOf=t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
-const isoText=iso=>{ const [y,m,d]=iso.split("-"); return fmtD(new Date(+y,+m-1,+d,12)); };
-const dayRows=iso=>shared.daylog.filter(w=>w.date===iso).sort((a,b)=>(a.machine?0:1)-(b.machine?0:1)||String(a.name).localeCompare(String(b.name),"he"));
-const LATE=w=>w.arrive==="late", EARLY=w=>w.leave==="early";
-function renderDay(){
+import { $, actorName, ask, esc, fmtD, logAct, ls, popup, shared, toast } from "./core.js";
+import { fmtN } from "./01-stock.js";
+import { csvOf, saveFile } from "./08-settings.js";
+import { foldSum } from "./12-ui-cleanup.js";
+import { ROLE } from "./18-identity.js";
+export let dayCon, csCon, csPeriod, isoOf, isoText, dayRows, LATE, EARLY;
+export function renderDay(){
   if(!$("#viewDay")) return;
   if(!shared.dayISO) shared.dayISO=isoOf(Date.now());
   $("#dyDate").value=shared.dayISO;
@@ -47,7 +47,7 @@ function renderDay(){
   P.forEach(e=>{ const d=document.createElement("div"); d.className="holder"; d.innerHTML='<div class="who"><span></span><div class="what"></div></div><div class="q num"></div>';
     d.querySelector(".who span").textContent=e.name; d.querySelector(".what").textContent=e.days+" ימי עבודה"; d.querySelector(".q").textContent=(e.late?e.late+" איחורים":"")+(e.late&&e.early?" · ":"")+(e.early?e.early+" מוקדם":""); d.querySelector(".q").style.fontSize=".85rem"; pp.appendChild(d); });
 }
-function openWorker(w){
+export function openWorker(w){
   const edit=!!w; w=w||{date:shared.dayISO,name:"",machine:"",tasks:"",note:"",arrive:"ontime",leave:"ontime",lateMin:"",earlyMin:"",contractor:"",job:""};
   const names=[...new Set([...shared.CREW.filter(c=>c.active!==false).map(c=>c.name),...shared.daylog.map(x=>x.name)].filter(Boolean))], machs=[...new Set([...shared.CREW.map(c=>c.machine),...shared.daylog.map(x=>x.machine)].filter(Boolean))], cons=[...new Set([...shared.CREW.map(c=>c.contractor),...shared.daylog.map(x=>x.contractor)].filter(Boolean))], jobs=[...new Set([...shared.CREW.map(c=>c.job),...shared.daylog.map(x=>x.job)].filter(Boolean))];
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
@@ -90,7 +90,7 @@ function openWorker(w){
     logAct("daylog","delete","נמחק מיום "+isoText(w.date)+": "+w.name,w.id,null,w); close(); renderDay(); };
   if(!edit) setTimeout(()=>q("#wkName").focus(),60);
 }
-async function copyCrew(){
+export async function copyCrew(){
   const prev=[...new Set(shared.daylog.filter(w=>w.date<shared.dayISO).map(w=>w.date))].sort().pop();
   if(!prev){ toast("אין יום קודם להעתיק ממנו."); return; }
   const have=new Set(dayRows(shared.dayISO).map(w=>w.name));
@@ -104,7 +104,7 @@ async function copyCrew(){
   renderDay();
 }
 /* ---- הצוות היומי: רשימת כל העובדים והמפעילים (שם, תפקיד, קבלן, כלי) ---- */
-function renderCrew(){
+export function renderCrew(){
   const el=$("#dyCrew"); if(!el) return; el.innerHTML="";
   const act=shared.CREW.filter(c=>c.active!==false).sort((a,b)=>String(a.contractor||"").localeCompare(String(b.contractor||""),"he")||String(a.name).localeCompare(String(b.name),"he")), off=shared.CREW.filter(c=>c.active===false);
   foldSum("crew",act.length?act.length+" פעילים"+(off.length?" · "+off.length+" לא":""):"ריק");
@@ -118,7 +118,7 @@ function renderCrew(){
   if(off.length){ const h=document.createElement("div"); h.className="grouphead"; h.innerHTML='<i style="background:var(--ink3)"></i>לא פעילים<span>'+off.length+'</span>'; el.appendChild(h);
     off.forEach(c=>{ const b=document.createElement("button"); b.type="button"; b.className="slip"; b.style.opacity=".6"; b.innerHTML='<b>'+esc(c.name)+'</b><span>'+esc([c.job,c.contractor].filter(Boolean).join(" · "))+'</span>'; b.onclick=()=>{ if(ROLE!=="viewer") openCrewForm(c); }; el.appendChild(b); }); }
 }
-function openCrewForm(existing){
+export function openCrewForm(existing){
   const c=existing?{...existing}:{id:"cw"+Date.now().toString(36),name:"",kind:"w",job:"",machine:"",contractor:"",phone:"",note:"",active:true,since:isoOf(Date.now()),ts:Date.now()};
   let isOp=!!c.machine||c.kind==="o";
   const dl=(id,a)=>'<datalist id="'+id+'">'+[...new Set(a.filter(Boolean))].map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
@@ -147,15 +147,15 @@ function openCrewForm(existing){
   if(!existing) setTimeout(()=>q("#cwName").focus(),60);
 }
 /* ---- סיכום לקבלן: ימים לעובד, ימי עבודה ושעות לכלי, לפי קבלן ותקופה ---- */
-function csRangeIso(){
+export function csRangeIso(){
   const now=new Date(); const y=now.getFullYear(), m=now.getMonth();
   if(csPeriod==="month") return [isoOf(new Date(y,m,1).getTime()),isoOf(now.getTime())];
   if(csPeriod==="prev") return [isoOf(new Date(y,m-1,1).getTime()),isoOf(new Date(y,m,0).getTime())];
   if(csPeriod==="30") return [isoOf(now.getTime()-30*86400000),isoOf(now.getTime())];
   const f=$("#csFrom").value||isoOf(new Date(y,m,1).getTime()), t=$("#csTo").value||isoOf(now.getTime()); return [f,t];
 }
-function conRows(con,from,to){ return shared.daylog.filter(w=>w.date>=from&&w.date<=to&&(w.contractor||"ללא קבלן")===con); }
-function renderConSummary(){
+export function conRows(con,from,to){ return shared.daylog.filter(w=>w.date>=from&&w.date<=to&&(w.contractor||"ללא קבלן")===con); }
+export function renderConSummary(){
   const box=$("#csBody"); if(!box) return;
   const cons=[...new Set(shared.daylog.map(w=>w.contractor||"ללא קבלן"))].sort((a,b)=>a.localeCompare(b,"he"));
   const cc=$("#csCon"); if(!cons.length){ cc.innerHTML=""; $("#csStats").innerHTML=""; box.innerHTML='<div class="empty" style="padding:16px">אין עדיין רישומים ביומיות. אחרי כמה ימים של רישום הסיכום לקבלן נבנה לבד.</div>'; foldSum("consum",""); return; }
@@ -180,16 +180,7 @@ function renderConSummary(){
   P.forEach(p=>{ const d=document.createElement("div"); d.className="holder"; d.innerHTML='<div class="who">'+esc(p.name)+'<div class="what">'+esc([p.machine?"מפעיל "+p.machine:p.job||"עובד"].join(""))+(p.hours?' · '+fmtN(p.hours)+' שעות':'')+(p.late?' · <span style="color:var(--clay)">'+p.late+' איחורים</span>':'')+(p.early?' · <span style="color:var(--clay)">'+p.early+' יציאות מוקדמות</span>':'')+'</div></div><div class="q num">'+fmtN(p.days.size)+' <small>ימים</small></div>'; box.appendChild(d); });
   const tot=document.createElement("div"); tot.className="hint"; tot.textContent="סה״כ "+manDays+" ימי עובד"+(hrs?" · "+fmtN(hrs)+" שעות שנרשמו":"")+" · "+isoText(from)+" – "+isoText(to); box.appendChild(tot);
 }
-$("#btnCsCsv").onclick=async()=>{
-  const [from,to]=csRangeIso(); const rows=conRows(csCon,from,to).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.name.localeCompare(b.name,"he"));
-  if(!rows.length){ toast("אין רישומים לקבלן בתקופה."); return; }
-  const daysOf=new Map(); rows.forEach(w=>{ const k=w.name; const e=daysOf.get(k)||{name:w.name,job:w.job||"",machine:w.machine||"",days:new Set(),hours:0,late:0,early:0}; e.days.add(w.date); e.hours+=Number(w.hours)||0; if(LATE(w)) e.late++; if(EARLY(w)) e.early++; if(w.machine) e.machine=w.machine; daysOf.set(k,e); });
-  const sum=csvOf(["קבלן","עובד / מפעיל","תפקיד","כלי צמ\"ה","ימי עבודה","שעות שנרשמו","איחורים","יציאות מוקדמות"],[...daysOf.values()].map(e=>[csCon,e.name,e.job,e.machine,e.days.size,e.hours||"",e.late,e.early]));
-  const det=csvOf(["תאריך","עובד / מפעיל","כלי צמ\"ה","שעות","עבודה/אזור","הגעה","איחור (דק׳)","יציאה","יציאה מוקדמת (דק׳)","משימות"],rows.map(w=>[isoText(w.date),w.name,w.machine,w.hours||"",w.area||"",w.arrive==="late"?"איחר":"בזמן",w.lateMin||"",w.leave==="early"?"מוקדם":"בזמן",w.earlyMin||"",w.tasks]));
-  await saveFile("דוח-קבלן-"+csCon.replace(/[\\/:*?"<>|]/g,"")+"-"+from+"-"+to+".csv",new Blob(["﻿סיכום לחשבון קבלן: "+csCon+" · "+isoText(from)+" – "+isoText(to)+"\r\n"+sum.replace(/^\ufeff/,"")+"\r\n\r\nפירוט יומי\r\n"+det.replace(/^\ufeff/,"")],{type:"text/csv"}));
-  logAct("daylog","export","יוצא דוח לחשבון קבלן: "+csCon+" · "+isoText(from)+" – "+isoText(to)+" · "+rows.length+" רשומות","");
-};
-async function registerCrewToday(){
+export async function registerCrewToday(){
   const act=shared.CREW.filter(c=>c.active!==false); if(!act.length){ toast("אין צוות עדיין. הוסף עובדים לצוות קודם."); openCrewForm(); return; }
   const have=new Set(dayRows(shared.dayISO).map(w=>w.name)); const src=act.filter(c=>!have.has(c.name));
   if(!src.length){ toast("כל הצוות כבר רשום ל-"+isoText(shared.dayISO)+"."); return; }
@@ -200,6 +191,28 @@ async function registerCrewToday(){
   logAct("daylog","add","נרשם הצוות ליום "+isoText(shared.dayISO)+": "+src.length+" אנשים","");
   renderDay();
 }
+export function __init(){
+/* ================= יומיות: עובדים ומפעילי צמ״ה ================= */
+shared.daylog=[];
+shared.dayISO="";
+shared.CREW=[];
+dayCon = "";
+csCon = "";
+csPeriod = "month";
+isoOf = t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+isoText = iso=>{ const [y,m,d]=iso.split("-"); return fmtD(new Date(+y,+m-1,+d,12)); };
+dayRows = iso=>shared.daylog.filter(w=>w.date===iso).sort((a,b)=>(a.machine?0:1)-(b.machine?0:1)||String(a.name).localeCompare(String(b.name),"he"));
+LATE = w=>w.arrive==="late";
+EARLY = w=>w.leave==="early";
+$("#btnCsCsv").onclick=async()=>{
+  const [from,to]=csRangeIso(); const rows=conRows(csCon,from,to).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.name.localeCompare(b.name,"he"));
+  if(!rows.length){ toast("אין רישומים לקבלן בתקופה."); return; }
+  const daysOf=new Map(); rows.forEach(w=>{ const k=w.name; const e=daysOf.get(k)||{name:w.name,job:w.job||"",machine:w.machine||"",days:new Set(),hours:0,late:0,early:0}; e.days.add(w.date); e.hours+=Number(w.hours)||0; if(LATE(w)) e.late++; if(EARLY(w)) e.early++; if(w.machine) e.machine=w.machine; daysOf.set(k,e); });
+  const sum=csvOf(["קבלן","עובד / מפעיל","תפקיד","כלי צמ\"ה","ימי עבודה","שעות שנרשמו","איחורים","יציאות מוקדמות"],[...daysOf.values()].map(e=>[csCon,e.name,e.job,e.machine,e.days.size,e.hours||"",e.late,e.early]));
+  const det=csvOf(["תאריך","עובד / מפעיל","כלי צמ\"ה","שעות","עבודה/אזור","הגעה","איחור (דק׳)","יציאה","יציאה מוקדמת (דק׳)","משימות"],rows.map(w=>[isoText(w.date),w.name,w.machine,w.hours||"",w.area||"",w.arrive==="late"?"איחר":"בזמן",w.lateMin||"",w.leave==="early"?"מוקדם":"בזמן",w.earlyMin||"",w.tasks]));
+  await saveFile("דוח-קבלן-"+csCon.replace(/[\\/:*?"<>|]/g,"")+"-"+from+"-"+to+".csv",new Blob(["﻿סיכום לחשבון קבלן: "+csCon+" · "+isoText(from)+" – "+isoText(to)+"\r\n"+sum.replace(/^\ufeff/,"")+"\r\n\r\nפירוט יומי\r\n"+det.replace(/^\ufeff/,"")],{type:"text/csv"}));
+  logAct("daylog","export","יוצא דוח לחשבון קבלן: "+csCon+" · "+isoText(from)+" – "+isoText(to)+" · "+rows.length+" רשומות","");
+};
 $("#btnDayCrew").onclick=registerCrewToday;
 $("#btnCrewAdd").onclick=()=>openCrewForm();
 $("#dyDate").onchange=e=>{ if(e.target.value){ shared.dayISO=e.target.value; renderDay(); } };
@@ -212,5 +225,4 @@ $("#btnDayCsv").onclick=async()=>{
   if(!rows.length){ toast("אין רשומות."); return; }
   await saveFile("יומיות-"+isoOf(Date.now())+".csv",new Blob([csvOf(["תאריך","שם","סוג","תפקיד","כלי צמ\"ה","קבלן","שעות","עבודה/אזור","הגעה","איחור (דק׳)","יציאה","יציאה מוקדמת (דק׳)","משימות","הערות"],rows.map(w=>[isoText(w.date),w.name,w.machine?"מפעיל":"עובד",w.job||"",w.machine,w.contractor,w.hours||"",w.area||"",w.arrive==="late"?"איחר":"בזמן",w.lateMin||"",w.leave==="early"?"מוקדם":"בזמן",w.earlyMin||"",w.tasks,w.note]))],{type:"text/csv"}));
 };
-
-
+}

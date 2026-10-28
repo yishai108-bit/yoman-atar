@@ -1,5 +1,9 @@
+import { $, esc, shared } from "./core.js";
+import { moneyPoints, openProgress } from "./04-contractors.js";
+import { showTab } from "./08-settings.js";
+import { ROLE } from "./18-identity.js";
 /* ================= התרעות בראש הדף ================= */
-function renderAlerts(){
+export function renderAlerts(){
   const box=$("#ovAlerts"); if(!box) return;
   box.innerHTML="";
   if(shared.demoStock){ box.hidden=true; return; }
@@ -15,4 +19,6 @@ function renderAlerts(){
   });
   box.hidden=false;
 }
+export function __init(){
 
+}

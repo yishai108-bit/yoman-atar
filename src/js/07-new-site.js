@@ -1,5 +1,10 @@
+import { $, esc, shared } from "./core.js";
+import { openImport } from "./01-stock.js";
+import { openPanelBal } from "./05-panels.js";
+import { KIT_SOURCE_DEFAULT, SITE, openBomImport, openSettings } from "./08-settings.js";
+import { ROLE } from "./18-identity.js";
 /* ================= אתר חדש: צעדי התחלה ================= */
-function renderOnboarding(){
+export function renderOnboarding(){
   const card=$("#onbCard"), box=$("#onbSteps"); if(!card) return;
   const hasBomStock=shared.deliveries.some(n=>n.source==="bom");
   const steps=[
@@ -19,4 +24,6 @@ function renderOnboarding(){
     box.appendChild(el);
   });
 }
+export function __init(){
 
+}

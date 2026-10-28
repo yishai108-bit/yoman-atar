@@ -1,20 +1,25 @@
-/* ================= הגדרות אתר, גיבוי, ייבוא BOM ================= */
-const KIT_SOURCE_DEFAULT="BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-const APP_VERSION="52";
-const SHOW_PRICES=false;   // בלי מחירים באפליקציה: שום ₪ לא מוצג (מחירים שנשמרו נשארים מוסתרים)
-let SITE={name:"אתר הקמה עין תמר",company:"BELECTRIC",panelsPerTable:81,custom:false};
-function applySite(d){
+import { $, BLAME, LOG_KINDS, ask, byId, esc, fmtD, logAct, ls, openLog, popup, render, shared, toast } from "./core.js";
+import { CATS, fmtN, renderOverview, renderStock } from "./01-stock.js";
+import { renderConcrete } from "./02-concrete.js";
+import { openKitEditor, perOf, saveKit, typeLabel } from "./03-kit.js";
+import { shortName } from "./04-contractors.js";
+import { FAB_LABEL } from "./05-panels.js";
+import { saveBoq } from "./13-purchasing.js";
+import { openImportChooser, saveCba } from "./14-cba.js";
+import { ROLE } from "./18-identity.js";
+export let KIT_SOURCE_DEFAULT, APP_VERSION, SHOW_PRICES, SITE, csvOf;
+export function applySite(d){
   if(!d) return;
   SITE={name:String(d.name||SITE.name),company:String(d.company||SITE.company),panelsPerTable:Number(d.panelsPerTable)||81,custom:true,bomImported:!!d.bomImported};
   shared.PANELS_PER_TABLE=SITE.panelsPerTable;
   const el=$("#siteName"); if(el) el.innerHTML='<b>'+esc(SITE.company)+'</b>'+esc(SITE.name);
   document.title="יומן אתר · "+SITE.name;
 }
-async function saveSite(doc){
+export async function saveSite(doc){
   doc.ts=Date.now();
   if(shared.DB) await shared.DB.doc("settings/site").set(doc); else { ls.set("site",JSON.stringify(doc)); applySite(doc); }
 }
-function openSettings(){
+export function openSettings(){
   let types=shared.kitTypes.map(t=>({...t}));
   const F=(id,l,v,hint,ph)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'" autocomplete="off">'+(hint?'<div class="hint">'+hint+'</div>':'')+'</div>';
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2>'
@@ -79,27 +84,24 @@ function openSettings(){
   drawTypes();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnSettings").onclick=openSettings;
-
 /* ---- גיבוי ושחזור ---- */
-async function saveFile(name,blob){
+export async function saveFile(name,blob){
   if(shared.DOWNLOADS){ try{ await shared.DOWNLOADS.save({filename:name,data:blob}); return true; }catch(e){ if(!(e&&e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return false; } }
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click(); return true;
 }
-function backupObject(){
+export function backupObject(){
   return {app:"yoman-atar",version:2,exportedAt:new Date().toISOString(),site:SITE,
     bom:{types:shared.kitTypes,lines:shared.kit,source:shared.kitSource},prices:shared.prices,
     deliveries:shared.deliveries,moves:shared.moves,counts:shared.counts,concrete:shared.concrete,issues:shared.issues,progress:shared.progress,panelbal:shared.panelBal,panelmoves:shared.panelMoves,daylog:shared.daylog,crew:shared.CREW,status:shared.STATUS,orders:shared.orders,pos:shared.POS,eta:shared.ETA,boq:{lines:shared.boq,source:shared.boqSource},cba:ROLE==="owner"?shared.cba:undefined,suppliers:shared.SUPPLIERS,panels:shared.records,log:shared.logs};
 }
-async function exportBackup(){
+export async function exportBackup(){
   if(shared.demoStock&&!shared.deliveries.length){ toast("אין עדיין נתונים אמיתיים לגיבוי."); return; }
   const o=backupObject();
   const n=["deliveries","moves","counts","concrete","issues","progress","panelbal","panels"].reduce((s,k)=>s+(o[k]||[]).length,0);
   const name="יומן-אתר-גיבוי-"+new Date().toISOString().slice(0,10)+".json";
   if(await saveFile(name,new Blob([JSON.stringify(o)],{type:"application/json"}))){ toast("גיבוי: "+fmtN(n)+" רשומות."); logAct("backup","add","גיבוי מלא יוצא · "+fmtN(n)+" רשומות",""); }
 }
-const csvOf=(head,rows)=>"﻿"+[head.join(",")].concat(rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(","))).join("\r\n");
-async function exportAllCsv(){
+export async function exportAllCsv(){
   if(!window.JSZip){ toast("ספריית ה-ZIP לא נטענה."); return; }
   const z=new JSZip(); const d=t=>t?fmtD(t):"";
   z.file("תעודות-משלוח.csv",csvOf(["תאריך","ספק","מספר תעודה","פריט","כמות","יחידה","קטגוריה","הערה"],shared.deliveries.filter(n=>n.source!=="bom").flatMap(n=>(n.lines||[]).map(l=>[n.dateText||d(n.ts),n.supplier,n.noteNo,l.name,l.qty,l.unit,(CATS.find(c=>c.id===l.cat)||{}).label||"",n.note||""]))));
@@ -114,7 +116,7 @@ async function exportAllCsv(){
   const blob=await z.generateAsync({type:"blob"});
   if(await saveFile("יומן-אתר-"+new Date().toISOString().slice(0,10)+".zip",blob)) toast("9 טבלאות ב-ZIP.");
 }
-function openRestore(){
+export function openRestore(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2>'
     +'<div class="note-card">בוחרים קובץ גיבוי (JSON) שיוצא מהאפליקציה. הרשומות שבקובץ ייכתבו <b>בנוסף</b> לקיימות: רשומה עם אותו מזהה תוחלף, אחרות לא יימחקו. כך מעבירים אתר למרחב חדש.</div>'
     +'<div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>yoman-atar · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div>'
@@ -151,10 +153,9 @@ function openRestore(){
     scrim.remove(); render(); renderStock(); renderConcrete(); toast("שוחזרו "+fmtN(n)+" רשומות"+(fail?", "+fail+" נכשלו":"")+".");
   };
 }
-
 /* ---- ייבוא BOM מאקסל ---- */
-function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector('script[src="'+src+'"]')) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
-function parseSchletterBom(rows){
+export function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector('script[src="'+src+'"]')) return res(); const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load")); document.head.appendChild(s); }); }
+export function parseSchletterBom(rows){
   const hi=rows.findIndex(r=>Array.isArray(r)&&r.some(c=>/item number/i.test(String(c)))&&r.some(c=>/total amount|calculated amount/i.test(String(c))));
   if(hi<0) return null;
   const H=rows[hi].map(c=>String(c||"").trim().toLowerCase());
@@ -178,7 +179,7 @@ function parseSchletterBom(rows){
   lines.forEach(l=>{ const parts=l.no.split("-"); let code=(parts[1]||parts[0]||"").replace(/\D/g,"")||l.no; if(seen.has(code)) code=code+"-"+(l.len||seen.get(code)+1); seen.set(code,(seen.get(code)||0)+1); l.code=code; });
   return {lines,types};
 }
-async function hebrewNames(lines){ // תרגום קצר של שמות הפריטים, ודגל "קיט לקבלן"
+export async function hebrewNames(lines){ // תרגום קצר של שמות הפריטים, ודגל "קיט לקבלן"
   const fallback=()=>lines.map(l=>({no:l.no,heb:l.name+(l.len?" "+l.len+"mm":""),kit:/bolt|nut|washer|clamp|connector|screw|plate|adapter/i.test(l.name)}));
   if(!shared.SAMPLE) return fallback();
   try{
@@ -189,7 +190,7 @@ async function hebrewNames(lines){ // תרגום קצר של שמות הפריט
     return lines.map(l=>{ const x=byNo.get(l.no); return x&&x.heb?{no:l.no,heb:String(x.heb).trim(),kit:x.kit!==false}:fallback().find(f=>f.no===l.no); });
   }catch(e){ return fallback(); }
 }
-function openBomImport(){
+export function openBomImport(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא BOM"><div class="grab"></div><h2>ייבוא BOM מאקסל</h2>'
     +'<div class="note-card">בוחרים את קובץ ה-BOM של היצרן (xlsx או csv). קובץ של שלטר (Customs bill of material) נקרא ישירות: פריטים, כמויות כוללות, ספייר וסוגי השולחנות. פורמט אחר נקרא בעזרת AI. בסוף <b>אתה מאשר או מתקן</b> בעורך הכמויות.</div>'
     +'<div class="legend">סוגי השולחנות היום: '+shared.kitTypes.map(t=>esc(t.label)+" × "+fmtN(Number(t.count)||0)).join(" · ")+'.</div>'
@@ -274,9 +275,8 @@ function openBomImport(){
     scrim.remove(); openKitEditor({lines:kitLines,source:out.source||"BOM מיובא"}); toast("בדוק את הכמויות לשולחן ושמור.");
   };
 }
-
 /* ---- לשוניות ---- */
-function showTab(which){
+export function showTab(which){
   const tabs={over:["#tabOver","#viewOver"],stock:["#tabStock","#viewStock"],concrete:["#tabConcrete","#viewConcrete"],panels:["#tabPanels","#viewPanels"],day:["#tabDay","#viewDay"],orders:["#tabOrders","#viewOrders"]};
   if(which==="con") which="over";
   if(!tabs[which]) which="over";
@@ -285,11 +285,19 @@ function showTab(which){
   ls.set("tab",which);
   window.scrollTo(0,0);
 }
+export function __init(){
+/* ================= הגדרות אתר, גיבוי, ייבוא BOM ================= */
+KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
+APP_VERSION = "54";
+SHOW_PRICES = false;
+   // בלי מחירים באפליקציה: שום ₪ לא מוצג (מחירים שנשמרו נשארים מוסתרים)
+SITE = {name:"אתר הקמה עין תמר",company:"BELECTRIC",panelsPerTable:81,custom:false};
+$("#btnSettings").onclick=openSettings;
+csvOf = (head,rows)=>"﻿"+[head.join(",")].concat(rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(","))).join("\r\n");
 $("#tabOver").onclick=()=>showTab("over");
 $("#tabStock").onclick=()=>showTab("stock");
 $("#tabConcrete").onclick=()=>showTab("concrete");
 $("#tabPanels").onclick=()=>showTab("panels");
 $("#tabDay").onclick=()=>showTab("day");
 $("#tabOrders").onclick=()=>showTab("orders");
-
-
+}

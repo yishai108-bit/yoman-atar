@@ -1,11 +1,19 @@
-/* ================= זהות, תפקיד, קוד PIN ================= */
-let ROLE="owner", ME=null;
-const ROLE_LABEL={owner:"בעלים",editor:"עריכה",viewer:"צפייה"};
-function applyRole(){
+import { $, esc, logAct, ls, popup, render, shared, toast } from "./core.js";
+import { renderOverview, renderStock } from "./01-stock.js";
+import { renderConcrete } from "./02-concrete.js";
+import { renderSlips } from "./03-kit.js";
+import { renderPanelBal } from "./05-panels.js";
+import { SHOW_PRICES, SITE, applySite, showTab } from "./08-settings.js";
+import { renderDay } from "./11-daylog.js";
+import { tidyUI } from "./12-ui-cleanup.js";
+import { renderOrders } from "./14-cba.js";
+import { renderStatus } from "./16-status.js";
+export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
+export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
   document.querySelectorAll('[data-w]').forEach(el=>{ const need=el.dataset.w; el.classList.toggle("w-edit",need==="edit"); el.classList.toggle("w-owner",need==="owner"); });
 }
-async function loadIdentity(){
+export async function loadIdentity(){
   if(!shared.USER){ ROLE="owner"; applyRole(); return; }
   try{ ME=await shared.USER.me(); }catch(e){ ME=null; }
   ROLE = ME&&ME.isOwner ? "owner" : ME&&ME.canEdit ? "editor" : "viewer";
@@ -19,7 +27,7 @@ async function loadIdentity(){
   if(ROLE==="viewer"&&shared.fabTab) { const f=$("#fab"); if(f) f.hidden=true; }
   render(); renderStock(); renderConcrete();
 }
-function openWho(){
+export function openWho(){
   const rows=[["owner","בעלים","הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"],["editor","עריכה (מפקחים)","ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"],["viewer","צפייה (מנהלים)","רואה הכל בזמן אמת, לא משנה כלום"]];
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
     +'<div class="kv" style="align-items:center"><img src="'+(ME?ME.avatarUrl:"")+'" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-'+ROLE+'">'+ROLE_LABEL[ROLE]+'</span></span></div>'
@@ -30,9 +38,9 @@ function openWho(){
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#wPin").onclick=()=>{ scrim.remove(); if(ls.get("pin")) pinMenu(); else setPin(); };
 }
-async function pinHash(pin){ const salt=ls.get("pinSalt")||(()=>{ const v=Math.random().toString(36).slice(2); ls.set("pinSalt",v); return v; })();
+export async function pinHash(pin){ const salt=ls.get("pinSalt")||(()=>{ const v=Math.random().toString(36).slice(2); ls.set("pinSalt",v); return v; })();
   try{ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+":"+pin)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }catch(e){ return salt+pin; } }
-function pinScreen(title,sub,onPin){
+export function pinScreen(title,sub,onPin){
   const el=document.createElement("div"); el.className="lock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true");
   el.innerHTML='<div class="brand">'+esc(SITE.company||"BELECTRIC")+'</div>'+(ME&&ME.avatarUrl?'<img src="'+ME.avatarUrl+'" alt="">':'')
     +'<h2></h2><div class="sub"></div><div class="dots"><i></i><i></i><i></i><i></i></div>'
@@ -47,7 +55,7 @@ function pinScreen(title,sub,onPin){
   document.addEventListener("keydown",kd);
   return el;
 }
-function setPin(){
+export function setPin(){
   let first=null;
   const f=async p=>{ if(!first){ first=p; setTimeout(()=>pinScreen("שוב, לאישור","אותו קוד פעם נוספת",g),10); return true; } return true; };
   f.cancel=()=>{};
@@ -55,21 +63,38 @@ function setPin(){
   g.cancel=()=>{};
   pinScreen("קוד PIN חדש","4 ספרות. נשמר רק בטלפון הזה",f);
 }
-function pinMenu(){
+export function pinMenu(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div>'
     +'<div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>'); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#pChange").onclick=()=>{ scrim.remove(); setPin(); };
   scrim.querySelector("#pOff").onclick=()=>{ scrim.remove(); const h=async p=>{ if(await pinHash(p)!==ls.get("pin")) return false; try{ localStorage.removeItem("pin"); }catch(e){} toast("הנעילה בוטלה."); return true; }; h.cancel=()=>{}; pinScreen("הקש את הקוד הנוכחי","כדי לבטל את הנעילה",h); };
 }
-let lockShown=false;
-function lockIfNeeded(){
+export function lockIfNeeded(){
   if(!ls.get("pin")||lockShown) return; lockShown=true;
   const name=ME&&ME.name?ME.name.split(" ")[0]:"";
   pinScreen(name?"שלום "+name:"יומן אתר","הקש קוד PIN",async p=>{ if(await pinHash(p)!==ls.get("pin")) return false; lockShown=false; return true; });
 }
-let hiddenAt=0;
+export function drawNet(){
+  const bar=$("#netBar"); if(!bar) return;
+  const stale=NET.cacheSince&&Date.now()-NET.cacheSince>45000;
+  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
+    : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש."
+    : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים."
+    : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
+  bar.hidden=!msg; $("#netMsg").textContent=msg;
+  document.body.classList.toggle("net-off",!!msg);
+  document.body.style.setProperty("--netH",msg?bar.offsetHeight+"px":"0px");
+}
+export function netErr(e){ NET.dead++; drawNet(); }
+export function netSeen(snap){ const c=!!(snap&&snap.metadata&&snap.metadata.fromCache); if(!c) NET.cacheSince=0; else if(!NET.cacheSince) NET.cacheSince=Date.now(); }
+export function __init(){
+/* ================= זהות, תפקיד, קוד PIN ================= */
+ROLE = "owner";
+ME = null;
+ROLE_LABEL = {owner:"בעלים",editor:"עריכה",viewer:"צפייה"};
+lockShown = false;
+hiddenAt = 0;
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else if(hiddenAt&&Date.now()-hiddenAt>5*60000) lockIfNeeded(); });
-
 /* ---------- boot ---------- */
 shared.demoMode = !ls.get("demoDone");
 shared.demoStock = !ls.get("demoDoneS");
@@ -102,33 +127,22 @@ lockIfNeeded();
 if(!SHOW_PRICES){ const b=$("#btnPrices"); if(b) b.remove(); }
 tidyUI();
 showTab(ls.get("tab")||"over");
-render(); renderStock(); renderConcrete(); renderDay(); renderOrders();
-
+render();
+ renderStock();
+ renderConcrete();
+ renderDay();
+ renderOrders();
 /* ---------- מצב חיבור למאגר ---------- */
 // אין חיבור לאינטרנט, האזנה למאגר שמתה, או מאגר שלא נטען בכלל: מראים פס אדום למעלה.
 // עד גרסה 51 השגיאות נבלעו בשקט והעובד ראה נתונים ישנים כאילו הם עדכניים.
-const NET={offline:navigator.onLine===false, dead:0, noDb:false, cacheSince:0};
-function drawNet(){
-  const bar=$("#netBar"); if(!bar) return;
-  const stale=NET.cacheSince&&Date.now()-NET.cacheSince>45000;
-  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
-    : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש."
-    : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים."
-    : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
-  bar.hidden=!msg; $("#netMsg").textContent=msg;
-  document.body.classList.toggle("net-off",!!msg);
-  document.body.style.setProperty("--netH",msg?bar.offsetHeight+"px":"0px");
-}
-function netErr(e){ NET.dead++; drawNet(); }
-function netSeen(snap){ const c=!!(snap&&snap.metadata&&snap.metadata.fromCache); if(!c) NET.cacheSince=0; else if(!NET.cacheSince) NET.cacheSince=Date.now(); }
-const watch=(ref,next)=>ref.onSnapshot(snap=>{ netSeen(snap); next(snap); },netErr);
+NET = {offline:navigator.onLine===false, dead:0, noDb:false, cacheSince:0};
+watch = (ref,next)=>ref.onSnapshot(snap=>{ netSeen(snap); next(snap); },netErr);
 window.addEventListener("online",()=>{ NET.offline=false; drawNet(); });
 window.addEventListener("offline",()=>{ NET.offline=true; drawNet(); });
 window.addEventListener("resize",()=>{ if(!$("#netBar").hidden) drawNet(); });
 setInterval(drawNet,15000);
 $("#netRe").onclick=()=>location.reload();
 drawNet();
-
 (async ()=>{
   const localOnly = () => { NET.noDb=true; drawNet(); $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
                             $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
@@ -220,3 +234,4 @@ drawNet();
     });
   }
 })();
+}

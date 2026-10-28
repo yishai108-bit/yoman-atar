@@ -1,14 +1,12 @@
-/* ================= קבלנים: מגמות, נורמה, לכמה שולחנות מספיק ================= */
-shared.progress=[];shared.prices={concreteM3:0,dieselL:0,panel:0,parts:{}};
-const shortName=n=>String(n||"").replace(/\s*\((?:שלטר\s*)?מק״ט[^)]*\)/,"").replace(/\s*—\s*קרטון/,"").trim();
-const shortSup=s=>String(s||"").replace(/\s*בע"מ.*$/,"").replace(/\s*\(.*?\)/g,"").trim();
-
-const emptyWho=w=>({who:w,n:0,tables:0,units:0,signed:0,undecl:0,last:0,first:Infinity,done:0,donePan:0,doneOk:0,lastDone:0});
-const STAGES=[["con","קונסטרוקציה הושלמה","שולחנות שהקונסטרוקציה שלהם הורכבה ונגמרה (ברגים בפנים)"],["pan","פאנלים הורכבו","שולחנות שהפאנלים כבר עליהם"],["ok","אושר ע״י מפקח","שולחנות שהמפקח בדק ואישר"]];
-const stageOf=p=>STAGES.some(x=>x[0]===p.stage)?p.stage:"con";
-const stageLabel=st=>(STAGES.find(x=>x[0]===st)||STAGES[0])[1];
-
-function kitStats(){
+import { $, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { curConcrete, curNotes, fmtM3, fmtN, holders, noteFlags, renderOverview, stockRows } from "./01-stock.js";
+import { missingConcrete, openIssue, openKitEditor, perOf, trucksText, typeLabel } from "./03-kit.js";
+import { N, curPb, pbCalc, prevPb, ringHtml } from "./05-panels.js";
+import { SHOW_PRICES, showTab } from "./08-settings.js";
+import { foldSum } from "./12-ui-cleanup.js";
+import { ROLE } from "./18-identity.js";
+export let shortName, shortSup, emptyWho, STAGES, stageOf, stageLabel, moneyMax, rateMax, runMax;
+export function kitStats(){
   const mvs=shared.demoStock?[]:shared.moves, iss=shared.demoStock?[]:shared.issues, prog=shared.demoStock?[]:shared.progress;
   const byName=new Map(shared.kit.map(k=>[k.name,k]));
   const types=shared.kitTypes.map(t=>({...t,count:Number(t.count)||0}));
@@ -93,8 +91,7 @@ function kitStats(){
   if(conRep.length>1&&done){ const t0=Math.min(...conRep.map(p=>p.ts)); paceDone=done/Math.max(7,(Date.now()-t0)/86400000)*7; }
   return {total,done,donePan,doneOk,doneEff,doneProxy,proxySrc,panelTables,remaining,declTables,declN,undeclN,hidden,cartons,parts,cons,pace,paceDone,issuesN:iss.length};
 }
-
-function moneyPoints(){
+export function moneyPoints(){
   const P=[]; const cons=curConcrete(); const notes=curNotes(); const K=kitStats(); const pr=shared.prices||{}; const pp=pr.parts||{};
   const ils=v=>SHOW_PRICES&&v>0?"₪"+fmtN(Math.round(v)):"";
   // בטון בלי תעודה
@@ -197,8 +194,7 @@ function moneyPoints(){
     s:"כל אחת היא חשבונית שצריך לבדוק לפני שמשלמים. הרשימה המלאה בכרטיס «דורש בדיקה».",tab:"over",act:"flags"});
   return P.sort((a,b)=>b.sev-a.sev);
 }
-
-function renderMoney(){
+export function renderMoney(){
   const box=$("#ovMoney"), head=$("#ovMoneyHead"); if(!box) return;
   box.innerHTML=""; head.innerHTML="";
   if(shared.demoStock){ box.innerHTML='<div class="empty" style="padding:18px">כשייקלטו תעודות וניפוקים אמיתיים, הנקודות יופיעו כאן לבד.</div>'; return; }
@@ -223,17 +219,14 @@ function renderMoney(){
   if(P.length>moneyMax){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent="עוד "+(P.length-moneyMax)+" נקודות"; m.onclick=()=>{moneyMax=99; renderMoney();}; box.appendChild(m); }
   else if(moneyMax>3&&P.length>3){ const m=document.createElement("button"); m.className="linkbtn"; m.type="button"; m.textContent="הצג פחות"; m.onclick=()=>{moneyMax=3; renderMoney();}; box.appendChild(m); }
 }
-let moneyMax=3, rateMax=4, runMax=4;
-
-function sparkHtml(pts,norm){
+export function sparkHtml(pts,norm){
   if(!pts.length) return "";
   const max=Math.max(norm*1.15,...pts.map(p=>p.rate))||1;
   return '<div class="spark" title="כמות לשולחן בכל ניפוק">'
     +'<div class="norm" style="bottom:'+(norm/max*100)+'%"><span class="nl">'+fmtN(Math.round(norm))+'</span></div>'
     +pts.map(p=>'<i class="'+(p.rate>p.norm*1.05?"hi":p.rate<p.norm*0.9?"lo":"")+'" style="height:'+(p.rate/max*100)+'%" title="'+fmtD(p.ts)+' · '+fmtN(Math.round(p.rate))+' לשולחן"></i>').join("")+'</div>';
 }
-
-function renderContractors(){
+export function renderContractors(){
   if(!$("#conWho")) return;
   const K=kitStats();
   $("#demoBarK").hidden=!(shared.demoStock||!K.issuesN);
@@ -341,17 +334,8 @@ function renderContractors(){
     pg.appendChild(el);
   });
 }
-$("#conProg").onclick=async e=>{
-  const b=e.target.closest("[data-delprog]"); if(!b) return;
-  if(!(await ask("למחוק את הדיווח הזה?"))) return;
-  const id=b.dataset.delprog; const old=byId(shared.progress,id);
-  try{ if(shared.DB) await shared.DB.doc("progress/"+id).delete(); else { shared.progress=shared.progress.filter(p=>p.id!==id); ls.set("progress",JSON.stringify(shared.progress)); renderOverview(); } }
-  catch(err){ toast("המחיקה נכשלה."); return; }
-  logAct("progress","delete","נמחק דיווח ביצוע"+(old?": "+fmtN(old.tables)+" שולחנות · "+(old.who||"")+" · "+(old.dateText||""):""),id,null,old);
-};
-
 /* ---- דיווח שולחנות שהושלמו ---- */
-function openProgress(opt){
+export function openProgress(opt){
   const whos=[...new Set([...(shared.demoStock?[]:shared.issues).map(i=>i.who),...(shared.demoStock?[]:shared.progress).map(p=>p.who)].filter(Boolean))];
   let tables=5, ttype="", stage=opt&&opt.stage||"con";
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
@@ -396,9 +380,8 @@ function openProgress(opt){
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-
 /* ---- מחירים ל-₪ ---- */
-function openPrices(){
+export function openPrices(){
   const pp=shared.prices.parts||{};
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מחירים">'
     +'<div class="grab"></div><h2>מחירים לחישוב ₪</h2>'
@@ -423,10 +406,31 @@ function openPrices(){
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
+export function __init(){
+/* ================= קבלנים: מגמות, נורמה, לכמה שולחנות מספיק ================= */
+shared.progress=[];
+shared.prices={concreteM3:0,dieselL:0,panel:0,parts:{}};
+shortName = n=>String(n||"").replace(/\s*\((?:שלטר\s*)?מק״ט[^)]*\)/,"").replace(/\s*—\s*קרטון/,"").trim();
+shortSup = s=>String(s||"").replace(/\s*בע"מ.*$/,"").replace(/\s*\(.*?\)/g,"").trim();
+emptyWho = w=>({who:w,n:0,tables:0,units:0,signed:0,undecl:0,last:0,first:Infinity,done:0,donePan:0,doneOk:0,lastDone:0});
+STAGES = [["con","קונסטרוקציה הושלמה","שולחנות שהקונסטרוקציה שלהם הורכבה ונגמרה (ברגים בפנים)"],["pan","פאנלים הורכבו","שולחנות שהפאנלים כבר עליהם"],["ok","אושר ע״י מפקח","שולחנות שהמפקח בדק ואישר"]];
+stageOf = p=>STAGES.some(x=>x[0]===p.stage)?p.stage:"con";
+stageLabel = st=>(STAGES.find(x=>x[0]===st)||STAGES[0])[1];
+moneyMax = 3;
+rateMax = 4;
+runMax = 4;
+$("#conProg").onclick=async e=>{
+  const b=e.target.closest("[data-delprog]"); if(!b) return;
+  if(!(await ask("למחוק את הדיווח הזה?"))) return;
+  const id=b.dataset.delprog; const old=byId(shared.progress,id);
+  try{ if(shared.DB) await shared.DB.doc("progress/"+id).delete(); else { shared.progress=shared.progress.filter(p=>p.id!==id); ls.set("progress",JSON.stringify(shared.progress)); renderOverview(); } }
+  catch(err){ toast("המחיקה נכשלה."); return; }
+  logAct("progress","delete","נמחק דיווח ביצוע"+(old?": "+fmtN(old.tables)+" שולחנות · "+(old.who||"")+" · "+(old.dateText||""):""),id,null,old);
+};
 $("#btnProgress").onclick=openProgress;
 $("#btnIssue2").onclick=openIssue;
 $("#btnKitEd").onclick=openKitEditor;
 $("#btnPrices").onclick=openPrices;
 if($("#ovGoCon")) $("#ovGoCon").onclick=()=>showTab("over");
 if($("#ovGoCon2")) $("#ovGoCon2").onclick=()=>showTab("over");
-
+}

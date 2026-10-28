@@ -1,16 +1,24 @@
-/* ================= CBA: חבילות רכש והשוואת הצעות (מסחרי · לבעלים בלבד) ================= */
-shared.cba={packages:[],prices:[],source:"",ts:0};
-const CBA_ST={po:["הוזמן","var(--sage)"],pending:["ממתין להחלטה","var(--amber)"],quotes:["הצעות מחיר","var(--info)"],open:["פתוח","var(--ink3)"]};
-const fmtMoney=(v,cur)=>{ v=Number(v)||0; if(!v) return ""; return (cur==="€"?"€":cur==="$"?"$":"₪")+(v<100?String(Math.round(v*100)/100):fmtN(Math.round(v))); };
-async function saveCba(d){
+import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, ls, mergeSettingsMap, popup, shared, toast, unitMult } from "./core.js";
+import { CATS, fmtN } from "./01-stock.js";
+import { copyText } from "./03-kit.js";
+import { shortSup } from "./04-contractors.js";
+import { SHOW_PRICES, SITE, csvOf, loadScript, openBomImport, saveFile } from "./08-settings.js";
+import { buildPdf, canvasBlob } from "./09-doc-scanner.js";
+import { isoOf } from "./11-daylog.js";
+import { foldSum } from "./12-ui-cleanup.js";
+import { ORDER_ST, boqName, catalog, normName, openBoqImport, sameItem } from "./13-purchasing.js";
+import { openPoDetail, renderEta, renderPos } from "./17-eta.js";
+import { ROLE } from "./18-identity.js";
+export let CBA_ST, fmtMoney, REQ_ST, poLineDue, reqSame, REQM, reqOf, lineRef;
+export async function saveCba(d){
   const doc={packages:(d.packages||[]).map(p=>({name:String(p.name||"").trim(),supplier:p.supplier||"",po:p.po||"",price:Number(p.price)||0,currency:p.currency||"₪",budget:Number(p.budget)||0,lead:p.lead||"",status:CBA_ST[p.status]?p.status:(p.po?"po":"open"),note:p.note||""})).filter(p=>p.name),
     prices:(d.prices||[]).map(x=>({type:String(x.type||"").trim(),supplier:x.supplier||"",price:Number(x.price)||0,currency:x.currency||"₪",unit:x.unit||"מטר",manufacturer:x.manufacturer||"",lead:x.lead||"",note:x.note||""})).filter(x=>x.type&&x.price>0),
     source:d.source||"CBA",ts:Date.now()};
   if(shared.DB) await shared.DB.doc("settings/cba").set(doc); else { shared.cba=doc; ls.set("cba",JSON.stringify(doc)); }
   logAct("settings","edit","CBA עודכן · "+doc.packages.length+" חבילות · "+doc.prices.length+" מחירי יחידה · "+doc.source,"settings/cba");
 }
-function cbaPrice(en){ if(!en||!shared.cba.prices.length) return null; const k=normName(en); const hits=shared.cba.prices.filter(x=>normName(x.type)===k||k.includes(normName(x.type))||normName(x.type).includes(k)); if(!hits.length) return null; return hits.slice().sort((a,b)=>a.price-b.price)[0]; }
-function openImportChooser(){
+export function cbaPrice(en){ if(!en||!shared.cba.prices.length) return null; const k=normName(en); const hits=shared.cba.prices.filter(x=>normName(x.type)===k||k.includes(normName(x.type))||normName(x.type).includes(k)); if(!hits.length) return null; return hits.slice().sort((a,b)=>a.price-b.price)[0]; }
+export function openImportChooser(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא"><div class="grab"></div><h2>איזה קובץ?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="bom"><b>BOM · שלטר</b><span>קיט הקונסטרוקציה של היצרן: כמויות לשולחן ומלאי הפתיחה</span></button>'
     +'<button type="button" class="slip" data-k="eboq"><b>EBOQ · חשמל</b><span>גיליון הרכש של חשמל: פריטים, כמויות, PO, ספק ומק״ט ספק. נקרא ישירות</span></button>'
@@ -18,7 +26,7 @@ function openImportChooser(){
     +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ scrim.remove(); ({bom:openBomImport,eboq:openBoqImport,cba:openCbaImport})[b.dataset.k](); });
 }
-function openCbaImport(){
+export function openCbaImport(){
   if(ROLE!=="owner"){ toast("CBA נשמר רק על ידי הבעלים."); return; }
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא CBA"><div class="grab"></div><h2>ייבוא CBA (מסחרי)</h2>'
     +'<div class="note-card">קובץ ה-CBA של הפרויקט: גיליון לכל חבילת רכש עם ההצעות, התקציב ומספר ה-PO של ההצעה שנבחרה. נקרא בעזרת AI, ואתה מאשר. <b>מידע מסחרי: נשמר כך שרק הבעלים רואה אותו.</b></div>'
@@ -53,7 +61,7 @@ function openCbaImport(){
     try{ await saveCba(out); }catch(e){ toast("השמירה נכשלה."); b.disabled=false; b.textContent="שמור CBA"; return; }
     scrim.remove(); toast("נשמרו "+out.packages.length+" חבילות רכש."); renderOrders(); };
 }
-function renderCba(){
+export function renderCba(){
   const el=$("#orCba"); if(!el) return; el.innerHTML="";
   const P=ROLE==="owner"?shared.cba.packages:[];
   if(!P.length){ foldSum("cba",""); el.innerHTML='<div class="empty" style="padding:16px">'+(ROLE==="owner"?'ייבא את קובץ ה-CBA כדי לראות את חבילות הרכש, הספקים וה-PO.':'')+'</div>'; return; }
@@ -67,8 +75,8 @@ function renderCba(){
       +(SHOW_PRICES?'<div class="q num" style="color:'+(p.price&&p.budget&&p.price>p.budget?"var(--clay)":"var(--ink)")+'">'+esc(fmtMoney(p.price,p.currency)||"—")+(p.budget?'<small style="display:block;color:var(--ink3);font-weight:500">תקציב '+esc(fmtMoney(p.budget,p.currency))+'</small>':'')+'</div>':'');
     el.appendChild(d); });
 }
-function orderNo(){ const y=new Date().getFullYear(); const n=shared.orders.filter(o=>String(o.no||"").includes("PO-"+y)||String(o.no||"").includes("בקשה-"+y)).length+1; return "בקשה-"+y+"-"+String(n).padStart(3,"0"); }
-function openOrder(existing){
+export function orderNo(){ const y=new Date().getFullYear(); const n=shared.orders.filter(o=>String(o.no||"").includes("PO-"+y)||String(o.no||"").includes("בקשה-"+y)).length+1; return "בקשה-"+y+"-"+String(n).padStart(3,"0"); }
+export function openOrder(existing){
   const edit=!!existing; const o=existing?JSON.parse(JSON.stringify(existing)):{no:orderNo(),task:"",need:"",note:"",lines:[],status:"sent"};
   const cat=catalog(); const byName=new Map(cat.map(c=>[c.name,c]));
   const sups=[...new Set([...cat.map(c=>c.supplier),...Object.values(shared.SUPPLIERS)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he"));
@@ -155,18 +163,9 @@ function openOrder(existing){
   drawSug(); drawLines();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a&&scrim.contains(a)) a.blur(); });
 }
-function orderGroups(o){ const g=new Map(); (o.lines||[]).forEach(l=>{ const k=l.supplier||"ללא ספק"; (g.get(k)||g.set(k,[]).get(k)).push(l); }); return g; }
-function receivedSince(o,l){ return Math.max(0,(shared.demoStock?[]:shared.deliveries).filter(n=>n.source!=="bom"&&n.ts>=o.ts).reduce((s,n)=>s+(n.lines||[]).filter(x=>sameItem(x,l)).reduce((a,x)=>a+(Number(x.qty)||0)*unitMult(x.unit),0),0)); }
-/* בקשות מול הזמנות: כל שורת בקשה שנשלחה לרכש נסגרת מול שורות ה-PO של הרכש ומול תעודות המשלוח.
-   קישור ידני (l.po + l.poLine) קודם; אחר כך לפי פריט (סעיף EBOQ / שם / מק״ט ספק), הבקשה הוותיקה קודם, PO מיומיים לפני הבקשה והלאה.
-   הגיע: תעודות משלוח בלבד (כלל 4), מיום לפני הבקשה והלאה, כל שורת תעודה נספרת פעם אחת. */
-const REQ_ST={ok:["הגיע","var(--sage)"],none:["ביקשתי, לא הוזמן","var(--clay)"],fresh:["ממתין לרכש","var(--info)"],hold:["PO מוקפא","var(--clay)"],short:["הוזמן פחות","var(--amber)"],late:["הוזמן, לא הגיע · באיחור","var(--clay)"],wait:["הוזמן, בדרך","var(--info)"]};
-const poLineDue=l=>{ const m=String((l&&l.due)||"").match(/^(\d\d)\/(\d\d)\/(\d\d)$/); return m?new Date(2000+ +m[3],+m[2]-1,+m[1],23,59).getTime():0; };
-const reqSame=(x,l)=>{ const xb=x.boq&&x.boq!=="-"?String(x.boq):"", lb=l.boq&&l.boq!=="-"?String(l.boq):"";
-  if(xb&&lb){ if(xb===lb) return true; const n=boqName(xb); if(n&&n===boqName(lb)) return true; }
-  if(x.sku&&l.sku&&String(x.sku)===String(l.sku)) return true; const n=(x.name||"").trim(); return !!n&&n===(l.name||"").trim(); };
-let REQM=null;
-function requestMatch(){
+export function orderGroups(o){ const g=new Map(); (o.lines||[]).forEach(l=>{ const k=l.supplier||"ללא ספק"; (g.get(k)||g.set(k,[]).get(k)).push(l); }); return g; }
+export function receivedSince(o,l){ return Math.max(0,(shared.demoStock?[]:shared.deliveries).filter(n=>n.source!=="bom"&&n.ts>=o.ts).reduce((s,n)=>s+(n.lines||[]).filter(x=>sameItem(x,l)).reduce((a,x)=>a+(Number(x.qty)||0)*unitMult(x.unit),0),0)); }
+export function requestMatch(){
   const now=Date.now(), D=864e5;
   const R=(shared.demoStock?[]:shared.orders).filter(o=>o.status!=="draft"&&o.status!=="cancelled").slice().sort((a,b)=>a.ts-b.ts);
   const P=(shared.demoStock?[]:shared.POS).filter(p=>p.status!=="cancelled").slice().sort((a,b)=>a.ts-b.ts);
@@ -193,12 +192,11 @@ function requestMatch(){
   const by=new Map(); rows.forEach(r=>by.set(r.o.id+"#"+r.li,r));
   REQM={rows,extra,by}; return REQM;
 }
-const reqOf=(o,li)=>(REQM||requestMatch()).by.get(o.id+"#"+li);
-function reqLineHtml(r){ const st=REQ_ST[r.k]||REQ_ST.wait; const u=esc(r.l.unit||"");
+export function reqLineHtml(r){ const st=REQ_ST[r.k]||REQ_ST.wait; const u=esc(r.l.unit||"");
   return '<small style="color:var(--ink3)">ביקשתי '+fmtN(r.qty)+' · הוזמן '+fmtN(r.ordered)+(r.hold?' (+'+fmtN(r.hold)+' מוקפא)':'')+' · הגיעו '+fmtN(r.arrived)+' '+u+'</small>'
     +(r.pos.length?'<br><small style="color:var(--ink3)">'+esc(r.pos.map(m=>m.p.no+(m.due?' · אספקה '+fmtD(m.due):'')).join(" · "))+(r.l.po?' · קישור ידני':'')+'</small>':'')
     +'<br><small style="color:'+st[1]+';font-weight:700">'+st[0]+'</small>'; }
-function renderRequests(){
+export function renderRequests(){
   const el=$("#orReq"); if(!el) return; const M=REQM||requestMatch(); el.innerHTML="";
   const open=M.rows.filter(r=>r.k!=="ok");
   if(!M.rows.length){ foldSum("reqs",""); el.innerHTML='<div class="empty" style="padding:16px">עוד אין בקשות שנשלחו לרכש.<br>«בקשת רכש חדשה» למעלה, או להעלות לתיקיית הפרויקט את מה ששלחתי לרכש ואת אישורי ההזמנה, וזה ייקלט כאן.</div>'; return; }
@@ -220,14 +218,14 @@ function renderRequests(){
       d.onclick=()=>openPoDetail(x.p); el.appendChild(d); });
     const d=document.createElement("div"); d.className="hint"; d.textContent="שורות PO שיצאו מאז הבקשה הראשונה ולא נמצאה מולן בקשה. אם זו בקשה שלי בשם אחר: לפתוח את הבקשה ולקשר ידנית."; el.appendChild(d); }
 }
-function reqMissingText(){ const M=REQM||requestMatch(); const pick=k=>M.rows.filter(r=>k.includes(r.k));
+export function reqMissingText(){ const M=REQM||requestMatch(); const pick=k=>M.rows.filter(r=>k.includes(r.k));
   const sec=(title,rs,f)=>rs.length?"*"+title+"*\n"+rs.map((r,i)=>(i+1)+". "+r.l.name+(r.l.boq?" (סעיף "+r.l.boq+")":"")+" — "+f(r)).join("\n"):"";
   return ["*"+SITE.name+" · בקשות רכש פתוחות · "+fmtD(Date.now())+"*",
     sec("ביקשתי ועוד לא הוזמן",pick(["none","hold"]),r=>fmtN(r.qty)+" "+(r.l.unit||"")+" · ביקשתי ב-"+fmtD(r.o.ts)+(r.k==="hold"?" · ה-PO מוקפא":"")),
     sec("הוזמן פחות ממה שביקשתי",pick(["short"]),r=>"ביקשתי "+fmtN(r.qty)+", הוזמן "+fmtN(r.ordered)+" "+(r.l.unit||"")+" · "+[...new Set(r.pos.map(m=>m.p.no))].join(", ")),
     sec("הוזמן ולא הגיע, עבר תאריך",pick(["late"]),r=>"חסר "+fmtN(r.qty-r.arrived)+" "+(r.l.unit||"")+" · "+[...new Set(r.pos.map(m=>m.p.no))].join(", ")+(r.due?" · אספקה הייתה ב-"+fmtD(r.due):""))
   ].filter(Boolean).join("\n\n"); }
-function openPoLinkPicker(o,li,done){
+export function openPoLinkPicker(o,li,done){
   const l=o.lines[li]; const P=(shared.demoStock?[]:shared.POS).filter(p=>p.status!=="cancelled"&&p.ts>=o.ts-45*864e5).slice().sort((a,b)=>b.ts-a.ts);
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-PO"><div class="grab"></div><h2>קישור ל-PO</h2><div class="note-card">'+esc(l.name)+' · ביקשתי '+fmtN(l.qty)+' '+esc(l.unit||"")+'</div>'
     +'<div class="search" style="margin-bottom:8px"><input type="text" id="plQ" placeholder="חפש PO, ספק או פריט" autocomplete="off"><span class="ico">⌕</span></div><div class="stock" id="plList"></div>'
@@ -242,21 +240,20 @@ function openPoLinkPicker(o,li,done){
   q("#plQ").oninput=e=>draw(e.target.value.trim()); draw("");
   const cl=q("#plClear"); if(cl) cl.onclick=async()=>{ close(); await done("",null); };
 }
-async function setReqLink(o,li,po,poLine){
+export async function setReqLink(o,li,po,poLine){
   const doc=JSON.parse(JSON.stringify(o)); const l=doc.lines[li]; if(po){ l.po=po; l.poLine=poLine; } else { delete l.po; delete l.poLine; } doc.updated=Date.now();
   try{ if(shared.DB) await shared.DB.doc("orders/"+o.id).set(doc); else { shared.orders=shared.orders.map(x=>x.id===o.id?doc:x); ls.set("orders",JSON.stringify(shared.orders)); } }catch(e){ toast("השמירה נכשלה."); return null; }
   shared.orders=shared.orders.map(x=>x.id===o.id?doc:x); REQM=null;
   logAct("order","edit",(po?"קושרה":"בוטל קישור")+" שורת בקשה "+doc.no+" · "+l.name+(po?" → "+po:""),o.id); renderOrders(); return doc;
 }
-const lineRef=l=>[l.sku?"מק״ט ספק "+l.sku:"",l.boq?"סעיף "+l.boq:(l.code&&!l.name.includes(l.code)?"מק״ט "+l.code:"")].filter(Boolean).join(" · ");
-function orderText(o,sup){
+export function orderText(o,sup){
   const g=orderGroups(o); const sups=sup?[sup]:[...g.keys()];
   return sups.map(sp=>{ const L=g.get(sp)||[]; const cats=[...new Set(L.map(l=>(CATS.find(c=>c.id===l.cat)||{}).label||l.cat))];
     return "*הזמנת רכש "+o.no+" · "+sp+"*\n"+(SITE.company||"BELECTRIC")+" · "+SITE.name+"\nלטובת: "+(o.task||"")+" · "+cats.join(" / ")+(o.need?"\nנדרש עד: "+fmtDT(o.need.split("-").reverse().join("/")):"")+"\n"
       +L.map((l,i)=>(i+1)+". "+l.name+(lineRef(l)?" ("+lineRef(l)+")":"")+" — "+fmtN(l.qty)+" "+(l.unit||"")+(l.note?" · "+l.note:"")).join("\n")
       +(o.note?"\nהערה: "+o.note:"")+"\nמבקש: "+(o.by||actorName())+" · "+fmtD(o.ts); }).join("\n\n");
 }
-async function orderPdf(o,sup){
+export async function orderPdf(o,sup){
   try{ await document.fonts.load("700 28px Alef"); await document.fonts.load("400 24px Alef"); }catch(e){}
   const g=orderGroups(o); const sups=sup?[sup]:[...g.keys()]; const pages=[];
   for(const sp of sups){
@@ -294,12 +291,12 @@ async function orderPdf(o,sup){
   }
   const blob=await buildPdf(pages,"הזמנת רכש "+o.no); await saveFile("הזמנת-רכש-"+o.no+(sup?"-"+sup.replace(/[\\/:*?"<>|]/g,""):"")+".pdf",blob);
 }
-async function setOrderStatus(o,st){
+export async function setOrderStatus(o,st){
   const doc={...o,status:st,updated:Date.now()};
   try{ if(shared.DB) await shared.DB.doc("orders/"+o.id).set(doc); else { shared.orders=shared.orders.map(x=>x.id===o.id?doc:x); ls.set("orders",JSON.stringify(shared.orders)); } }catch(e){ toast("העדכון נכשל."); return; }
   logAct("order","edit","הזמנה "+o.no+" → "+ORDER_ST[st][0],o.id); renderOrders();
 }
-function openOrderDetail(o){
+export function openOrderDetail(o){
   o=shared.orders.find(x=>x.id===o.id)||o;
   const g=orderGroups(o);
   const st=ORDER_ST[o.status]||ORDER_ST.draft;
@@ -323,7 +320,7 @@ function openOrderDetail(o){
   scrim.querySelectorAll("[data-link]").forEach(b=>b.onclick=()=>{ const li=Number(b.dataset.link); openPoLinkPicker(o,li,async(po,pl)=>{ const d=await setReqLink(o,li,po,pl); if(d){ close(); openOrderDetail(d); } }); });
   scrim.querySelectorAll("[data-st]").forEach(b=>b.onclick=async()=>{ if(b.dataset.st==="cancelled"&&!(await ask("לבטל את הבקשה "+o.no+"?","בטל"))) return; await setOrderStatus(o,b.dataset.st); close(); });
 }
-function renderOrders(){
+export function renderOrders(){
   if(!$("#viewOrders")) return;
   const cat=catalog(); const list=(shared.demoStock?[]:shared.orders).slice().sort((a,b)=>b.ts-a.ts); REQM=null; const M=requestMatch();
   const open=list.filter(o=>o.status==="sent"||o.status==="partial"), drafts=list.filter(o=>o.status==="draft");
@@ -358,7 +355,7 @@ function renderOrders(){
   renderRequests(); renderEta(); renderPos(); renderCba();
 }
 /* הזמנות רכש של מחלקת הרכש: סטטוס לפי תעודות משלוח שנקלטו אחרי תאריך ההזמנה */
-function poStatus(p){
+export function poStatus(p){
   const L=(p.lines||[]).filter(l=>!l.skip); if(!L.length) return {k:"none",label:"—",color:"var(--ink3)",got:0,n:0};
   if(p.status==="hold") return {k:"hold",label:"מוקפא",color:"var(--clay)",got:0,n:L.length};
   if(p.status==="cancelled") return {k:"cancelled",label:"בוטל",color:"var(--ink3)",got:0,n:L.length};
@@ -369,4 +366,21 @@ function poStatus(p){
   if(part) return {k:"part",label:"חלקי"+(got?" · "+got+"/"+L.length:""),color:"var(--amber)",got,n:L.length};
   if(late) return {k:"late",label:"לא נקלט · באיחור",color:"var(--clay)",got,n:L.length};
   return {k:"wait",label:"בדרך",color:"var(--info)",got,n:L.length};
+}
+export function __init(){
+/* ================= CBA: חבילות רכש והשוואת הצעות (מסחרי · לבעלים בלבד) ================= */
+shared.cba={packages:[],prices:[],source:"",ts:0};
+CBA_ST = {po:["הוזמן","var(--sage)"],pending:["ממתין להחלטה","var(--amber)"],quotes:["הצעות מחיר","var(--info)"],open:["פתוח","var(--ink3)"]};
+fmtMoney = (v,cur)=>{ v=Number(v)||0; if(!v) return ""; return (cur==="€"?"€":cur==="$"?"$":"₪")+(v<100?String(Math.round(v*100)/100):fmtN(Math.round(v))); };
+/* בקשות מול הזמנות: כל שורת בקשה שנשלחה לרכש נסגרת מול שורות ה-PO של הרכש ומול תעודות המשלוח.
+   קישור ידני (l.po + l.poLine) קודם; אחר כך לפי פריט (סעיף EBOQ / שם / מק״ט ספק), הבקשה הוותיקה קודם, PO מיומיים לפני הבקשה והלאה.
+   הגיע: תעודות משלוח בלבד (כלל 4), מיום לפני הבקשה והלאה, כל שורת תעודה נספרת פעם אחת. */
+REQ_ST = {ok:["הגיע","var(--sage)"],none:["ביקשתי, לא הוזמן","var(--clay)"],fresh:["ממתין לרכש","var(--info)"],hold:["PO מוקפא","var(--clay)"],short:["הוזמן פחות","var(--amber)"],late:["הוזמן, לא הגיע · באיחור","var(--clay)"],wait:["הוזמן, בדרך","var(--info)"]};
+poLineDue = l=>{ const m=String((l&&l.due)||"").match(/^(\d\d)\/(\d\d)\/(\d\d)$/); return m?new Date(2000+ +m[3],+m[2]-1,+m[1],23,59).getTime():0; };
+reqSame = (x,l)=>{ const xb=x.boq&&x.boq!=="-"?String(x.boq):"", lb=l.boq&&l.boq!=="-"?String(l.boq):"";
+  if(xb&&lb){ if(xb===lb) return true; const n=boqName(xb); if(n&&n===boqName(lb)) return true; }
+  if(x.sku&&l.sku&&String(x.sku)===String(l.sku)) return true; const n=(x.name||"").trim(); return !!n&&n===(l.name||"").trim(); };
+REQM = null;
+reqOf = (o,li)=>(REQM||requestMatch()).by.get(o.id+"#"+li);
+lineRef = l=>[l.sku?"מק״ט ספק "+l.sku:"",l.boq?"סעיף "+l.boq:(l.code&&!l.name.includes(l.code)?"מק״ט "+l.code:"")].filter(Boolean).join(" · ");
 }

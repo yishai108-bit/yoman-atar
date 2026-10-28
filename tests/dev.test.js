@@ -10,7 +10,7 @@ try { require.resolve("vite"); vite = true; } catch (e) {}
 
 test("npm run dev מגיש את האפליקציה וטוען מחדש בשינוי ב-src/", { skip: !vite && "vite לא מותקן" }, async () => {
   const { createServer } = await import("vite");
-  const server = await createServer({ root: ROOT, configFile: path.join(ROOT, "vite.config.mjs"), logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ configFile: path.join(ROOT, "vite.config.mjs"), logLevel: "silent", server: { port: 0 } });
   await server.listen();
   const url = "http://localhost:" + server.httpServer.address().port + "/";
   const browser = await launch();

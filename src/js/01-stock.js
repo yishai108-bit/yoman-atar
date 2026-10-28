@@ -1,39 +1,18 @@
-/* ================= מלאי ================= */
-const DEMO_NOTES = [
-  {id:"n1",supplier:"ג'ינקו סולאר",noteNo:"DN-88214",dateText:"12/09/2026",demo:true,
-   ts:Date.now()-86400000*2,lines:[
-     {name:"פאנל JKM72N-540W",qty:936,unit:"יח'",cat:"panels"},
-     {name:"משטח עץ",qty:36,unit:"יח'",cat:"staging"}]},
-  {id:"n2",supplier:"מבנים סולאריים בע\"מ",noteNo:"7734",dateText:"08/09/2026",demo:true,
-   ts:Date.now()-86400000*6,lines:[
-     {name:"מסילת אלומיניום 4.2מ'",qty:420,unit:"יח'",cat:"construction"},
-     {name:"בורג ראש כפתור M8",qty:5000,unit:"יח'",cat:"construction"},
-     {name:"קלאמפ אמצעי 35מ\"מ",qty:1800,unit:"יח'",cat:"construction"}]},
-];
-const DEMO_COUNTS = [
-  {id:"c1",item:"מסילת אלומיניום 4.2מ'",qty:274,who:"ישי",ts:Date.now()-86400000*2,demo:true},
-];
-const DEMO_MOVES = [
-  {id:"m1",item:"פאנל JKM72N-540W",qty:312,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*1,demo:true},
-  {id:"m2",item:"מסילת אלומיניום 4.2מ'",qty:140,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*3,demo:true},
-];
-const CATS=[
-  {id:"construction",label:"קונסטרוקציה",color:"var(--amber-fill)"},
-  {id:"electrical",  label:"חשמל",        color:"var(--info-fill)"},
-  {id:"panels",      label:"פאנלים",      color:"var(--sage-fill)"},
-  {id:"safety",      label:"בטיחות",      color:"var(--pv)"},
-  {id:"staging",     label:"שטח התארגנות",color:"var(--ink2)"},
-  {id:"tools",       label:"כלי עבודה",   color:"var(--ink3)"},
-  {id:"containers",  label:"מכולות",      color:"var(--ink)"},
-  {id:"civil",       label:"סיביל",       color:"var(--clay)"},
-];
-const CATLIST = CATS.map(c=>c.id+' = '+c.label).join(', ');
-shared.deliveries=[];shared.moves=[];shared.counts=[];shared.demoStock=true;let catFilter="all";
-let openCats=new Set((()=>{ try{ return JSON.parse(localStorage.getItem("openCats")||"[]"); }catch(e){ return []; } })());
-shared.panelMax=40;let stockQ="",stockMax=40,holdMax=6,panelQ="",supFilter="all";
-const hit=(t,q)=>!q||String(t||"").toLowerCase().includes(q);
-
-function stockRows(){
+import { $, actorName, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, render, shared, toast, unitMult, unitOf } from "./core.js";
+import { DEMO_CONCRETE, renderConcrete } from "./02-concrete.js";
+import { copyText, issuePdfById, missingConcrete, renderSlips, saveKitCartons, sigPad } from "./03-kit.js";
+import { renderContractors, renderMoney, shortSup } from "./04-contractors.js";
+import { N } from "./05-panels.js";
+import { renderAlerts } from "./06-alerts.js";
+import { renderOnboarding } from "./07-new-site.js";
+import { showTab } from "./08-settings.js";
+import { exportNotePdf, openScanner } from "./09-doc-scanner.js";
+import { openBarcodeScanner } from "./10-barcode.js";
+import { foldSum, renderTodayTip } from "./12-ui-cleanup.js";
+import { linkNoteToBoq } from "./13-purchasing.js";
+import { renderStatus } from "./16-status.js";
+export let DEMO_NOTES, DEMO_COUNTS, DEMO_MOVES, CATS, CATLIST, catFilter, openCats, stockQ, stockMax, holdMax, panelQ, supFilter, hit, moveSigned, CONCRETE_FIELDS, IMPORT_PROMPT, ham, hashId, ISSUE_RE, RET_RE, curNotes, isBomNote, realNotes, fmtN, curConcrete, fmtM3, flagMax;
+export function stockRows(){
   const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
   const mvs   = shared.demoStock?DEMO_MOVES:shared.moves;
   const map = new Map();
@@ -70,8 +49,7 @@ function stockRows(){
   });
   return rows.sort((a,b)=>(a.counted===null?0:1)-(b.counted===null?0:1) || b.mag-a.mag);
 }
-
-function holders(){
+export function holders(){
   const mvs = shared.demoStock?DEMO_MOVES:shared.moves;
   const catOf = new Map(stockRows().map(r=>[r.name,r.cat]));
   const m=new Map();
@@ -87,8 +65,7 @@ function holders(){
     return at-bt || b.qty-a.qty;
   });
 }
-
-function renderStock(){
+export function renderStock(){
   const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
   const rows = stockRows();
   $("#demoBarS").hidden = !shared.demoStock;
@@ -224,9 +201,8 @@ function renderStock(){
   });
   renderOverview();
 }
-
 /* ---- קליטת תעודה ---- */
-function openNote(){
+export function openNote(){
   let pages=[], lines=[], reading=0;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת משלוח">'
   +'<div class="grab"></div><h2>קליטת תעודת משלוח</h2>'
@@ -348,15 +324,12 @@ function openNote(){
   };
   drawLines(); drawPages();
 }
-
-/* ---- חתימה בניפוק ציוד (כמו בניפוק ברגים) ---- */
-const moveSigned=m=>!!(m.sigAsset||m.sigUrl||m.sigData);
-function moveOuts(who,item){ return (shared.demoStock?DEMO_MOVES:shared.moves).filter(m=>m.dir!=="in"&&m.source!=="issue"&&(m.who||"").trim()===who&&m.item===item).sort((a,b)=>b.ts-a.ts); }
-function moveSlipText(who,item,outs){
+export function moveOuts(who,item){ return (shared.demoStock?DEMO_MOVES:shared.moves).filter(m=>m.dir!=="in"&&m.source!=="issue"&&(m.who||"").trim()===who&&m.item===item).sort((a,b)=>b.ts-a.ts); }
+export function moveSlipText(who,item,outs){
   return "ניפוק ציוד · "+item+"\nל: "+who
     +"\n"+outs.map(m=>{ const d=new Date(m.ts); return fmtD(d)+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+": "+fmtN(m.qty)+" · חתימה: "+(moveSigned(m)?"יש":"אין"); }).join("\n");
 }
-function openMoveSlip(who,item){
+export function openMoveSlip(who,item){
   const outs=moveOuts(who,item);
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>'+esc(item)+' · '+esc(who)+'</h2>'
     +outs.map(m=>{ const d=new Date(m.ts); const sig=m.sigAsset?"/_blob/"+m.sigAsset:(m.sigUrl||m.sigData||"");
@@ -370,9 +343,8 @@ function openMoveSlip(who,item){
   scrim.querySelector("#msCopy").onclick=()=>copyText(moveSlipText(who,item,outs));
   scrim.querySelectorAll("[data-mpdf]").forEach(b=>b.onclick=()=>issuePdfById(b.dataset.mpdf,b));
 }
-
 /* ---- ניפוק: הוצאה / החזרה / ספירה ---- */
-function openMove(item){
+export function openMove(item){
   let dir="out";
   const names=[...new Set((shared.demoStock?DEMO_MOVES:shared.moves).map(m=>m.who).filter(Boolean))];
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק">'
@@ -440,105 +412,15 @@ function openMove(item){
   };
   setTimeout(()=>q("#mQty").focus(),50);
 }
-
-/* ---- אירועים ---- */
-$("#btnNote").onclick=openNote;
-$("#btnClearDemoS").onclick=()=>{shared.demoStock=false;ls.set("demoDoneS","1");renderStock();};
-$("#stockList").onclick=e=>{
-  const n=e.target.dataset&&e.target.dataset.out; if(n) openMove(n);
-};
-$("#noteList").onkeydown=e=>{ if(e.key==="Enter"){ const c=e.target.closest(".dnote[data-id]"); if(c) openNoteDetail(c.dataset.id); } };
-$("#noteList").onclick=async e=>{
-  const id=e.target.dataset&&e.target.dataset.delnote;
-  if(!id){ const c=e.target.closest(".dnote[data-id]"); if(c) openNoteDetail(c.dataset.id); return; }
-  if(!(await ask("למחוק את התעודה? הפריטים שלה ירדו מהמלאי."))) return;
-  const old=byId(shared.deliveries,id);
-  try{
-    if(shared.DB) await shared.DB.collection("deliveries").doc(id).delete();
-    else { shared.deliveries=shared.deliveries.filter(d=>d.id!==id);
-      ls.set("deliveries",JSON.stringify(shared.deliveries)); renderStock(); }
-  }catch(err){ toast("המחיקה נכשלה."); return; }
-  logAct("delivery","delete","נמחקה תעודה "+(old?(old.noteNo||"—")+" · "+(old.supplier||""):id),id,null,old?{...old,photoUrl:""}:null);
-};
-$("#btnStockCsv").onclick=async()=>{
-  const rows=stockRows();
-  if(!rows.length){ toast("אין מלאי לייצוא."); return; }
-  const head=["קטגוריה","ספק","פריט","יחידה","הגיע","יצא לשטח","תיאורטי","נספר","תאריך ספירה","פער"];
-  const lines=[head.join(",")].concat(rows.map(r=>
-    [(CATS.find(c=>c.id===r.cat)||{}).label||"",[...(r.sups||[])].join(" · "),r.name,r.unit,r.in,r.out,r.derived,
-      r.counted===null?"לא נספר":r.counted,
-      r.countedTs?fmtD(r.countedTs):"",
-      r.counted===null?"":(r.counted-r.derived)]
-      .map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")));
-  const csv="﻿"+lines.join("\r\n");
-  const name="מלאי-אתר-"+new Date().toISOString().slice(0,10)+".csv";
-  if(shared.DOWNLOADS){
-    try{ await shared.DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
-    catch(e){ if(!(e && e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return; }
-  }
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download=name; a.click();
-};
-
-/* ---- ספק ---- */
-$("#supSel").onchange=e=>{ supFilter=e.target.value; stockMax=40; renderStock(); };
-$("#supClr").onclick=()=>{ supFilter="all"; stockMax=40; renderStock(); };
-
-/* ---- חיפוש ---- */
-$("#stockSearch").oninput=e=>{
-  stockQ=e.target.value.trim().toLowerCase(); stockMax=40;
-  $("#stockClr").hidden=!stockQ; renderStock();
-};
-$("#stockClr").onclick=()=>{
-  $("#stockSearch").value=""; stockQ=""; stockMax=40;
-  $("#stockClr").hidden=true; renderStock();
-};
-$("#panelSearch").oninput=e=>{
-  panelQ=e.target.value.trim().toLowerCase(); shared.panelMax=40;
-  $("#panelClr").hidden=!panelQ; render();
-};
-$("#panelClr").onclick=()=>{
-  $("#panelSearch").value=""; panelQ=""; shared.panelMax=40;
-  $("#panelClr").hidden=true; render();
-};
-
-/* ---- ייבוא מוואטסאפ ---- */
-shared.imported=new Set();   // hashes already ingested (db "imports" or local)
-const CONCRETE_FIELDS =
-  '"m3":<כמות הבטון במ״ק במשלוח הזה, מספר>,"cum":<"מצטבר"/"סה״כ להיום" כפי שמודפס על התעודה, מספר, או null>,'
-+ '"ordered":<כמות שהוזמנה במ״ק אם מודפסת, או null>,"mix":"<סוג הבטון, למשל ב-30, או null>",'
-+ '"element":"<איפה נוצק: שדה/שורה/שולחן/אלמנט כפי שכתוב, או null>","truck":"<מספר ערבל ו/או מספר רישוי, או null>",'
-+ '"driver":"<שם הנהג או null>","times":"<יציאה/הגעה/סיום פריקה אם מודפס, או null>"';
-const IMPORT_PROMPT =
-  "בתמונה מסמך שצולם בקבוצת וואטסאפ של אתר הקמה סולארי. החזר רק JSON: "
-+ '{"kind":"delivery"|"concrete"|"skip","skipReason":"<אם skip: למה, בקצרה>",'
-+ '"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>",'
-+ '"page":"<למשל 1/4 אם כתוב, אחרת null>",'
-+ '"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}],'
-+ CONCRETE_FIELDS+'}. '
-+ "delivery = תעודת משלוח/קבלה של ציוד שנספר במלאי. "
-+ "concrete = תעודת משלוח של מפעל בטון (ערבל, מ״ק, סוג בטון, מספר תעודה): אז lines ריק וממלאים את שדות הבטון. "
-+ "skip = כל אחד מאלה: תעודת שקילה של חול/חצץ/אגרגט; יומן עבודה של קבלן; תעודת ביצוע או שטר מטען של מנופים/הובלות שלא מפרטים סחורה; "
-+ "סלעית (מכולות אשפה); קבלה/חשבונית של מינימרקט או מזון; טופס תיקון; חשבונית סיכום חודשית; דף שאינו מסמך. "
-+ "מסירת מטען ממכולה (קונטרם/פרידנסון) עם משטחים = delivery עם cat=containers. "
-+ "דלק = delivery, שם הפריט בדיוק סולר או בנזין, cat=staging. "
-+ "כדי מים: כדים שסופקו כמות חיובית, כדים ריקים שהוחזרו כמות שלילית. "
-+ "תעודת החזרה לספק: כל הכמויות שליליות. "
-+ "קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם לא קריא החזר null. "
-+ "cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
-+ "פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, כבלים/ממירים/חיבורים/צנרת חשמל=electrical, "
-+ "קסדות/רתמות/גידור/שילוט=safety, ריהוט/משרד/ניקיון/מים/דלק/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, משטחים במכולה=containers.";
-
-function parseChat(txt){
+export function parseChat(txt){
   const m=new Map();
   const re=/\[(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*[\d:]+\]\s*([^:]+?):\s*‎?<attached:\s*([^>]+)>/g;
   let x; while((x=re.exec(txt))){ m.set(x[5].trim().split("/").pop(), {date:`${x[1].padStart(2,"0")}/${x[2].padStart(2,"0")}/${x[3]}`, sender:x[4].trim()}); }
   return m;
 }
-function loadImg(blob){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(blob); const im=new Image();
+export function loadImg(blob){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(blob); const im=new Image();
   im.onload=()=>{URL.revokeObjectURL(u); res(im);}; im.onerror=()=>{URL.revokeObjectURL(u); rej(new Error("decode"));}; im.src=u; }); }
-async function prepImage(blob){
+export async function prepImage(blob){
   const im=await loadImg(blob);
   const k=Math.min(1, 1500/Math.max(im.naturalWidth,im.naturalHeight));
   const w=Math.round(im.naturalWidth*k), h=Math.round(im.naturalHeight*k);
@@ -552,14 +434,12 @@ async function prepImage(blob){
   const out=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
   return {blob:out, bits, url:URL.createObjectURL(out)};
 }
-const ham=(a,b)=>{ let n=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) n++; return n; };
-const hashId=bits=>{ let h=0x811c9dc5; for(let i=0;i<bits.length;i++){ h^=bits.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(16).padStart(8,"0")+bits.length.toString(16); };
-function parseDate(t){
+export function parseDate(t){
   if(!t) return null; const m=String(t).match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/); if(!m) return null;
   let y=Number(m[3]); if(y<100) y+=2000; const d=new Date(y,Number(m[2])-1,Number(m[1]),12,0,0);
   return isNaN(d)?null:{ts:d.getTime(), text:`${m[1].padStart(2,"0")}/${m[2].padStart(2,"0")}/${y}`};
 }
-async function collectFiles(files){
+export async function collectFiles(files){
   const out=[];
   for(const f of files){
     if(/\.zip$/i.test(f.name)){
@@ -575,7 +455,7 @@ async function collectFiles(files){
   }
   return out;
 }
-function openImport(){
+export function openImport(){
   let ctl=null, items=[], results=[], stage="pick";
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא מוואטסאפ">'
   +'<div class="grab"></div><h2>ייבוא מוואטסאפ</h2>'
@@ -711,11 +591,8 @@ function openImport(){
     body().innerHTML='<div class="empty">נקלטו '+(chosen.length-nCon)+' תעודות למלאי'+(nCon?' ו-'+nCon+' תעודות בטון ליומן הבטון':'')+'.</div>'; setMain("סגור",close,true); renderStock(); renderConcrete();
   }
 }
-$("#btnImport").onclick=openImport;
-$("#btnImportC").onclick=openImport;
-
 /* ---- בטון: תעודה בודדת מהאפליקציה ---- */
-function concreteFromAi(d,it){
+export function concreteFromAi(d,it){
   const m3=Number(d.m3); if(!isFinite(m3)||m3<=0) return null;
   const dt=parseDate(d.date)||(it&&it.meta&&parseDate(it.meta.date))||null;
   const cum=Number(d.cum), ordered=Number(d.ordered);
@@ -726,7 +603,7 @@ function concreteFromAi(d,it){
   if(isFinite(ordered)&&ordered>0) rec.ordered=ordered;
   return rec;
 }
-function openConcreteNote(){
+export function openConcreteNote(){
   let photo=null;
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   const sups=[...new Set(curConcrete().map(c=>c.supplier).filter(Boolean))];
@@ -791,16 +668,7 @@ function openConcreteNote(){
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnConcreteNote").onclick=openConcreteNote;
-
-/* ---- תמונת מצב ---- */
-const ISSUE_RE=/לא תקינ|פגו[םמ]|חוס[ר]|חיסור|לאמת|חלקית|שבור|נזק/;
-const RET_RE=/החזרה/;
-const curNotes=()=>shared.demoStock?DEMO_NOTES:shared.deliveries;
-const isBomNote=n=>n.source==="bom";
-const realNotes=()=>curNotes().filter(n=>!isBomNote(n));
-const fmtN=n=>Number(n).toLocaleString("he-IL");
-function noteFlags(n){
+export function noteFlags(n){
   const issue = Array.isArray(n.flags)
     ? n.flags.some(f=>f==="shortage"||f==="damaged"||f==="unreadable qty")
     : ISSUE_RE.test(n.note||"");
@@ -808,10 +676,8 @@ function noteFlags(n){
   const ret = (ls.length>0 && ls.every(l=>Number(l.qty)<0)) || /תעודת החזרה|החזרה לספק/.test(n.note||"");
   return {issue, ret};
 }
-const curConcrete=()=>shared.demoStock?DEMO_CONCRETE:shared.concrete;
-const fmtM3=n=>(Math.round(n*10)/10).toLocaleString("he-IL");
-function weekStart(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
-function renderOverview(){
+export function weekStart(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
+export function renderOverview(){
   renderStatus();
   const notes=realNotes();
   if($("#demoBarO")) $("#demoBarO").hidden=!shared.demoStock;
@@ -949,11 +815,8 @@ function renderOverview(){
   renderOnboarding();
   renderTodayTip();
 }
-let flagMax=6;
-if($("#ovFlags")) $("#ovFlags").onclick=e=>{ const b=e.target.closest(".flag[data-id]"); if(b) openNoteDetail(b.dataset.id); };
-
 /* ---- פרטי תעודה ---- */
-function openNoteDetail(id){
+export function openNoteDetail(id){
   const n=curNotes().find(x=>x.id===id); if(!n) return;
   const srcs=noteImages(n);
   const lines=(n.lines||[]).map(l=>{
@@ -972,13 +835,12 @@ function openNoteDetail(id){
   const pdf=scrim.querySelector("#ndPdf");
   if(pdf) pdf.onclick=async()=>{ pdf.disabled=true; pdf.textContent="מכין…"; await exportNotePdf(srcs,"תעודה-"+(n.noteNo||n.id)+".pdf",(n.supplier||"")+" "+(n.noteNo||"")); pdf.disabled=false; pdf.textContent="PDF"; };
 }
-function noteImages(n){
+export function noteImages(n){
   const ids=Array.isArray(n.pages)&&n.pages.length?n.pages:(n.photoAsset?[n.photoAsset]:[]);
   const out=ids.map(id=>"/_blob/"+id); if(!out.length&&n.photoUrl) out.push(n.photoUrl); return out;
 }
-
 /* ---- כל התעודות ---- */
-function openAllNotes(){
+export function openAllNotes(){
   let q="", max=30;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="כל התעודות">'
     +'<div class="grab"></div><h2>כל התעודות</h2>'
@@ -1007,5 +869,151 @@ function openAllNotes(){
   scrim.querySelector(".acts .cancel").onclick=close;
   draw();
 }
+export function __init(){
+/* ================= מלאי ================= */
+DEMO_NOTES = [
+  {id:"n1",supplier:"ג'ינקו סולאר",noteNo:"DN-88214",dateText:"12/09/2026",demo:true,
+   ts:Date.now()-86400000*2,lines:[
+     {name:"פאנל JKM72N-540W",qty:936,unit:"יח'",cat:"panels"},
+     {name:"משטח עץ",qty:36,unit:"יח'",cat:"staging"}]},
+  {id:"n2",supplier:"מבנים סולאריים בע\"מ",noteNo:"7734",dateText:"08/09/2026",demo:true,
+   ts:Date.now()-86400000*6,lines:[
+     {name:"מסילת אלומיניום 4.2מ'",qty:420,unit:"יח'",cat:"construction"},
+     {name:"בורג ראש כפתור M8",qty:5000,unit:"יח'",cat:"construction"},
+     {name:"קלאמפ אמצעי 35מ\"מ",qty:1800,unit:"יח'",cat:"construction"}]},
+];
+DEMO_COUNTS = [
+  {id:"c1",item:"מסילת אלומיניום 4.2מ'",qty:274,who:"ישי",ts:Date.now()-86400000*2,demo:true},
+];
+DEMO_MOVES = [
+  {id:"m1",item:"פאנל JKM72N-540W",qty:312,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*1,demo:true},
+  {id:"m2",item:"מסילת אלומיניום 4.2מ'",qty:140,dir:"out",who:"צוות התקנה א'",ts:Date.now()-86400000*3,demo:true},
+];
+CATS = [
+  {id:"construction",label:"קונסטרוקציה",color:"var(--amber-fill)"},
+  {id:"electrical",  label:"חשמל",        color:"var(--info-fill)"},
+  {id:"panels",      label:"פאנלים",      color:"var(--sage-fill)"},
+  {id:"safety",      label:"בטיחות",      color:"var(--pv)"},
+  {id:"staging",     label:"שטח התארגנות",color:"var(--ink2)"},
+  {id:"tools",       label:"כלי עבודה",   color:"var(--ink3)"},
+  {id:"containers",  label:"מכולות",      color:"var(--ink)"},
+  {id:"civil",       label:"סיביל",       color:"var(--clay)"},
+];
+CATLIST = CATS.map(c=>c.id+' = '+c.label).join(', ');
+shared.deliveries=[];
+shared.moves=[];
+shared.counts=[];
+shared.demoStock=true;
+catFilter = "all";
+openCats = new Set((()=>{ try{ return JSON.parse(localStorage.getItem("openCats")||"[]"); }catch(e){ return []; } })());
+shared.panelMax=40;
+stockQ = "";
+stockMax = 40;
+holdMax = 6;
+panelQ = "";
+supFilter = "all";
+hit = (t,q)=>!q||String(t||"").toLowerCase().includes(q);
+/* ---- חתימה בניפוק ציוד (כמו בניפוק ברגים) ---- */
+moveSigned = m=>!!(m.sigAsset||m.sigUrl||m.sigData);
+/* ---- אירועים ---- */
+$("#btnNote").onclick=openNote;
+$("#btnClearDemoS").onclick=()=>{shared.demoStock=false;ls.set("demoDoneS","1");renderStock();};
+$("#stockList").onclick=e=>{
+  const n=e.target.dataset&&e.target.dataset.out; if(n) openMove(n);
+};
+$("#noteList").onkeydown=e=>{ if(e.key==="Enter"){ const c=e.target.closest(".dnote[data-id]"); if(c) openNoteDetail(c.dataset.id); } };
+$("#noteList").onclick=async e=>{
+  const id=e.target.dataset&&e.target.dataset.delnote;
+  if(!id){ const c=e.target.closest(".dnote[data-id]"); if(c) openNoteDetail(c.dataset.id); return; }
+  if(!(await ask("למחוק את התעודה? הפריטים שלה ירדו מהמלאי."))) return;
+  const old=byId(shared.deliveries,id);
+  try{
+    if(shared.DB) await shared.DB.collection("deliveries").doc(id).delete();
+    else { shared.deliveries=shared.deliveries.filter(d=>d.id!==id);
+      ls.set("deliveries",JSON.stringify(shared.deliveries)); renderStock(); }
+  }catch(err){ toast("המחיקה נכשלה."); return; }
+  logAct("delivery","delete","נמחקה תעודה "+(old?(old.noteNo||"—")+" · "+(old.supplier||""):id),id,null,old?{...old,photoUrl:""}:null);
+};
+$("#btnStockCsv").onclick=async()=>{
+  const rows=stockRows();
+  if(!rows.length){ toast("אין מלאי לייצוא."); return; }
+  const head=["קטגוריה","ספק","פריט","יחידה","הגיע","יצא לשטח","תיאורטי","נספר","תאריך ספירה","פער"];
+  const lines=[head.join(",")].concat(rows.map(r=>
+    [(CATS.find(c=>c.id===r.cat)||{}).label||"",[...(r.sups||[])].join(" · "),r.name,r.unit,r.in,r.out,r.derived,
+      r.counted===null?"לא נספר":r.counted,
+      r.countedTs?fmtD(r.countedTs):"",
+      r.counted===null?"":(r.counted-r.derived)]
+      .map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")));
+  const csv="﻿"+lines.join("\r\n");
+  const name="מלאי-אתר-"+new Date().toISOString().slice(0,10)+".csv";
+  if(shared.DOWNLOADS){
+    try{ await shared.DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+    catch(e){ if(!(e && e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return; }
+  }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download=name; a.click();
+};
+/* ---- ספק ---- */
+$("#supSel").onchange=e=>{ supFilter=e.target.value; stockMax=40; renderStock(); };
+$("#supClr").onclick=()=>{ supFilter="all"; stockMax=40; renderStock(); };
+/* ---- חיפוש ---- */
+$("#stockSearch").oninput=e=>{
+  stockQ=e.target.value.trim().toLowerCase(); stockMax=40;
+  $("#stockClr").hidden=!stockQ; renderStock();
+};
+$("#stockClr").onclick=()=>{
+  $("#stockSearch").value=""; stockQ=""; stockMax=40;
+  $("#stockClr").hidden=true; renderStock();
+};
+$("#panelSearch").oninput=e=>{
+  panelQ=e.target.value.trim().toLowerCase(); shared.panelMax=40;
+  $("#panelClr").hidden=!panelQ; render();
+};
+$("#panelClr").onclick=()=>{
+  $("#panelSearch").value=""; panelQ=""; shared.panelMax=40;
+  $("#panelClr").hidden=true; render();
+};
+/* ---- ייבוא מוואטסאפ ---- */
+shared.imported=new Set();
+   // hashes already ingested (db "imports" or local)
+CONCRETE_FIELDS = '"m3":<כמות הבטון במ״ק במשלוח הזה, מספר>,"cum":<"מצטבר"/"סה״כ להיום" כפי שמודפס על התעודה, מספר, או null>,'
++ '"ordered":<כמות שהוזמנה במ״ק אם מודפסת, או null>,"mix":"<סוג הבטון, למשל ב-30, או null>",'
++ '"element":"<איפה נוצק: שדה/שורה/שולחן/אלמנט כפי שכתוב, או null>","truck":"<מספר ערבל ו/או מספר רישוי, או null>",'
++ '"driver":"<שם הנהג או null>","times":"<יציאה/הגעה/סיום פריקה אם מודפס, או null>"';
+IMPORT_PROMPT = "בתמונה מסמך שצולם בקבוצת וואטסאפ של אתר הקמה סולארי. החזר רק JSON: "
++ '{"kind":"delivery"|"concrete"|"skip","skipReason":"<אם skip: למה, בקצרה>",'
++ '"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>",'
++ '"page":"<למשל 1/4 אם כתוב, אחרת null>",'
++ '"lines":[{"name":"<תיאור הפריט>","qty":<מספר>,"unit":"<יחידה או null>","cat":"<קטגוריה>"}],'
++ CONCRETE_FIELDS+'}. '
++ "delivery = תעודת משלוח/קבלה של ציוד שנספר במלאי. "
++ "concrete = תעודת משלוח של מפעל בטון (ערבל, מ״ק, סוג בטון, מספר תעודה): אז lines ריק וממלאים את שדות הבטון. "
++ "skip = כל אחד מאלה: תעודת שקילה של חול/חצץ/אגרגט; יומן עבודה של קבלן; תעודת ביצוע או שטר מטען של מנופים/הובלות שלא מפרטים סחורה; "
++ "סלעית (מכולות אשפה); קבלה/חשבונית של מינימרקט או מזון; טופס תיקון; חשבונית סיכום חודשית; דף שאינו מסמך. "
++ "מסירת מטען ממכולה (קונטרם/פרידנסון) עם משטחים = delivery עם cat=containers. "
++ "דלק = delivery, שם הפריט בדיוק סולר או בנזין, cat=staging. "
++ "כדי מים: כדים שסופקו כמות חיובית, כדים ריקים שהוחזרו כמות שלילית. "
++ "תעודת החזרה לספק: כל הכמויות שליליות. "
++ "קח רק שורות פריטים אמיתיות עם כמות. אל תמציא ואל תשלים מספרים שלא ברורים — אם לא קריא החזר null. "
++ "cat חייב להיות אחד מאלה בדיוק (הערך האנגלי): "+CATLIST+". "
++ "פאנלים סולאריים=panels, מסילות/מבנה/ברגים/קלאמפים=construction, כבלים/ממירים/חיבורים/צנרת חשמל=electrical, "
++ "קסדות/רתמות/גידור/שילוט=safety, ריהוט/משרד/ניקיון/מים/דלק/ציוד אתר=staging, מקדחות/מפתחות/ציוד עבודה=tools, משטחים במכולה=containers.";
+ham = (a,b)=>{ let n=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) n++; return n; };
+hashId = bits=>{ let h=0x811c9dc5; for(let i=0;i<bits.length;i++){ h^=bits.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h.toString(16).padStart(8,"0")+bits.length.toString(16); };
+$("#btnImport").onclick=openImport;
+$("#btnImportC").onclick=openImport;
+$("#btnConcreteNote").onclick=openConcreteNote;
+/* ---- תמונת מצב ---- */
+ISSUE_RE = /לא תקינ|פגו[םמ]|חוס[ר]|חיסור|לאמת|חלקית|שבור|נזק/;
+RET_RE = /החזרה/;
+curNotes = ()=>shared.demoStock?DEMO_NOTES:shared.deliveries;
+isBomNote = n=>n.source==="bom";
+realNotes = ()=>curNotes().filter(n=>!isBomNote(n));
+fmtN = n=>Number(n).toLocaleString("he-IL");
+curConcrete = ()=>shared.demoStock?DEMO_CONCRETE:shared.concrete;
+fmtM3 = n=>(Math.round(n*10)/10).toLocaleString("he-IL");
+flagMax = 6;
+if($("#ovFlags")) $("#ovFlags").onclick=e=>{ const b=e.target.closest(".flag[data-id]"); if(b) openNoteDetail(b.dataset.id); };
 $("#btnAllNotes").onclick=openAllNotes;
-
+}

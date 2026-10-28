@@ -1,6 +1,11 @@
-/* ================= מאזן פאנלים ================= */
-shared.panelBal=[];shared.panelMoves=[];   // panelMoves: קבלות/העברות פאנלים בין אתרים אחרי המאזן האחרון
-function pbEffective(b){
+import { $, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { CATS, fmtN, openMove, openNote, renderOverview, renderStock, stockRows } from "./01-stock.js";
+import { openIssue, openQuickCount } from "./03-kit.js";
+import { kitStats } from "./04-contractors.js";
+import { openOrder } from "./14-cba.js";
+export let curPb, prevPb, N, FAB_LABEL;
+   // panelMoves: קבלות/העברות פאנלים בין אתרים אחרי המאזן האחרון
+export function pbEffective(b){
   if(!b) return null; const e={...b,brokenReasons:(b.brokenReasons||[]).map(r=>({...r})),takenOut:(b.takenOut||[]).map(t=>({...t})),arrBroken:0,liveNotes:[]};
   (shared.demoStock?[]:shared.panelMoves).filter(m=>m.ts>b.ts).sort((x,y)=>x.ts-y.ts).forEach(m=>{
     const q=N(m.qty), br=Math.min(q,N(m.broken)), pl=N(m.pallets);
@@ -11,11 +16,7 @@ function pbEffective(b){
   });
   e.closed=Math.max(0,N(e.closed)); return e;
 }
-const curPb=()=>pbEffective(shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[0]||null);
-const prevPb=()=>shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[1]||null;
-shared.PANELS_PER_TABLE=81;   // שולחן 27 × 3 שורות (ניתן לשינוי בהגדרות האתר)
-const N=v=>Number(v)||0;
-function pbCalc(b,prev){
+export function pbCalc(b,prev){
   const onSite=N(b.closed)+N(b.singles)+N(b.installed)+N(b.scattered)+N(b.broken);
   const taken=(b.takenOut||[]).reduce((s,t)=>s+N(t.qty),0);
   const takenPallets=(b.takenOut||[]).reduce((s,t)=>s+N(t.pallets),0);
@@ -37,7 +38,7 @@ function pbCalc(b,prev){
   }
   return r;
 }
-function renderPanelBal(){
+export function renderPanelBal(){
   const card=$("#pbCard"); if(!card) return;
   const b=curPb(), pv=prevPb();
   const stats=$("#pbStats"), mc=$("#pbMoneyCard"), bb=$("#pbBroken");
@@ -99,8 +100,7 @@ function renderPanelBal(){
   (b.liveNotes||[]).forEach(t=>L.push(row("<b>מאז המאזן:</b> "+esc(t),"")));
   $("#pbLines").innerHTML=L.join("");
 }
-$("#pbToggle").onclick=()=>{ const f=$("#pbFull"); f.hidden=!f.hidden; $("#pbToggle").textContent=f.hidden?"הצג את כל השורות ›":"הסתר"; };
-function openPanelBal(){
+export function openPanelBal(){
   const cur=curPb()||{};   // כולל תנועות אחרי המאזן: המספרים המוצעים הם המצב העדכני
   let reasons=(cur.brokenReasons||[]).map(r=>({...r})); if(!reasons.length) reasons=[{reason:"",qty:""}];
   let taken=(cur.takenOut||[]).map(t=>({...t})); if(!taken.length) taken=[{site:"",pallets:"",qty:""}];
@@ -161,8 +161,7 @@ function openPanelBal(){
   drawR(); drawT();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnPb").onclick=openPanelBal;
-function openPanelMove(){
+export function openPanelMove(){
   let dir="in";
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   const sites=[...new Set([...shared.panelMoves.map(m=>m.site),...shared.panelBal.flatMap(b=>(b.takenOut||[]).map(t=>t.site))].filter(Boolean))];
@@ -199,19 +198,13 @@ function openPanelMove(){
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnPbMove").onclick=openPanelMove;
-
 /* ---- טבעת אחוז (בילטון) ---- */
-function ringHtml(pct,cls,label,lg){
+export function ringHtml(pct,cls,label,lg){
   const p=Math.max(0,Math.min(1,Number(pct)||0)); const r=20, c=2*Math.PI*r;
   return '<span class="ring'+(cls?" "+cls:"")+(lg?" lg":"")+'" aria-hidden="true"><svg viewBox="0 0 48 48"><circle class="bg" cx="24" cy="24" r="'+r+'"></circle>'
     +'<circle class="fg" cx="24" cy="24" r="'+r+'" stroke-dasharray="'+(c*p).toFixed(1)+' '+c.toFixed(1)+'"></circle></svg><b>'+(label!=null?label:Math.round(p*100)+"%")+'</b></span>';
 }
-/* ---- כפתור פעולה ראשי (בילטון) ---- */
-const FAB_LABEL="פעולה";
-shared.fabTab="over";
-$("#fab").onclick=()=>openFabMenu();
-function openFabMenu(){
+export function openFabMenu(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="order"><b>בקשת רכש</b><span>מה ביקשתי מהרכש, מה-BOM / EBOQ או פריט חופשי, ונסגר מול ה-PO</span></button>'
     +'<button type="button" class="slip" data-k="equip"><b>ניפוק ציוד</b><span>כלי עבודה או חומר שיוצא מהמלאי — מי לקח וכמה</span></button>'
@@ -220,7 +213,7 @@ function openFabMenu(){
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="order") openOrder(); else if(k==="equip") openEquipIssue(); else openIssue(); });
 }
 /* ניפוק ציוד: בוחרים פריט מהמלאי (כלי עבודה וחומרים קודם) ואז הוצאה עם «מי לקח» */
-function openEquipIssue(){
+export function openEquipIssue(){
   const rows=(shared.demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
   rows.sort((a,b)=>(pri[a.cat]??9)-(pri[b.cat]??9)||String(a.name).localeCompare(String(b.name),"he"));
   let qtxt="";
@@ -239,7 +232,7 @@ function openEquipIssue(){
   q("#eqNew").onclick=()=>{ const nm=qtxt.trim(); if(!nm){ toast("כתוב את שם הפריט בחיפוש."); q("#eqQ").focus(); return; } close(); openMove(nm); };
   draw(); setTimeout(()=>q("#eqQ").focus(),60);
 }
-function openStockActions(){
+export function openStockActions(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button>'
     +'<button type="button" class="slip" data-k="issue"><b>ניפוק לקבלן</b><span>ברגים וחומרים שיוצאים מהמלאי לקבלן, עם חתימה</span></button>'
@@ -247,4 +240,20 @@ function openStockActions(){
     +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="note") openNote(); else if(k==="issue") openIssue(); else openQuickCount(); });
 }
-
+export function __init(){
+/* ================= מאזן פאנלים ================= */
+shared.panelBal=[];
+shared.panelMoves=[];
+curPb = ()=>pbEffective(shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[0]||null);
+prevPb = ()=>shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[1]||null;
+shared.PANELS_PER_TABLE=81;
+   // שולחן 27 × 3 שורות (ניתן לשינוי בהגדרות האתר)
+N = v=>Number(v)||0;
+$("#pbToggle").onclick=()=>{ const f=$("#pbFull"); f.hidden=!f.hidden; $("#pbToggle").textContent=f.hidden?"הצג את כל השורות ›":"הסתר"; };
+$("#btnPb").onclick=openPanelBal;
+$("#btnPbMove").onclick=openPanelMove;
+/* ---- כפתור פעולה ראשי (בילטון) ---- */
+FAB_LABEL = "פעולה";
+shared.fabTab="over";
+$("#fab").onclick=()=>openFabMenu();
+}

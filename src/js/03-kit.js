@@ -1,34 +1,14 @@
-/* ================= קיט שלטר: ברגים לשולחן ================= */
-const KIT_TYPES=[
-  {id:"in27",label:"שולחן 27 פנימי (IN)",count:145},
-  {id:"ex27",label:"שולחן 27 חיצוני (EX)",count:74},
-  {id:"ex9", label:"שולחן 9 חיצוני (EX)", count:42},
-];
-const KIT_DEFAULT=[
-  {code:"289",no:"943001-289",name:"בורג M12x30 (שלטר מק״ט 289)",per:{in27:60,ex27:66,ex9:24},def:true},
-  {code:"013",no:"943000-013",name:"אום M12 (שלטר מק״ט 013)",per:{in27:60,ex27:66,ex9:24},def:true},
-  {code:"308",no:"943001-308",name:"שייבה M12 (שלטר מק״ט 308)",per:{in27:60,ex27:66,ex9:24},def:true},
-  {code:"337",no:"144999-337",name:"שייבה מרובעת (שלטר מק״ט 337)",per:{in27:40,ex27:44,ex9:16},def:true},
-  {code:"087",no:"144999-087",name:"מחבר פרלין-קורה A4 (שלטר מק״ט 087)",per:{in27:60,ex27:66,ex9:24},def:true},
-  {code:"188",no:"800000-188",name:"מחבר פרלין-קורה מגולוון (שלטר מק״ט 188)",per:{in27:60,ex27:66,ex9:24},def:true},
-  {code:"288",no:"943001-288",name:"בורג M10x50 (שלטר מק״ט 288)",per:{in27:60,ex27:66,ex9:24},def:true},
-  {code:"341",no:"144999-341-865552",name:"מחבר פרלין Vario (שלטר מק״ט 341)",per:{in27:36,ex27:30,ex9:6},def:true},
-  {code:"287",no:"943001-287",name:"בורג M10x25 (שלטר מק״ט 287)",per:{in27:144,ex27:120,ex9:24},def:true},
-  {code:"307",no:"943001-307",name:"שייבה M10 (שלטר מק״ט 307)",per:{in27:144,ex27:120,ex9:24},def:true},
-  {code:"022",no:"943000-022",name:"אום M10 (שלטר מק״ט 022)",per:{in27:204,ex27:186,ex9:48},def:true},
-  {code:"186",no:"800000-186",name:"קלאמפ אמצעי (שלטר מק״ט 186)",per:{in27:156,ex27:156,ex9:48},def:false},
-  {code:"187",no:"800000-187",name:"קלאמפ קצה (שלטר מק״ט 187)",per:{in27:12,ex27:12,ex9:12},def:false},
-  {code:"189",no:"800000-189",name:"אדפטר קלאמפ 60/65 (שלטר מק״ט 189)",per:{in27:168,ex27:168,ex9:60},def:false},
-  {code:"926",no:"943755-926",name:"בורג קודח 5.5x25 (שלטר מק״ט 926)",per:{in27:168,ex27:168,ex9:60},def:false},
-];
-shared.kit=KIT_DEFAULT.map(k=>({...k,per:{...k.per}}));shared.kitTypes=KIT_TYPES.map(t=>({...t}));shared.kitSource="BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";shared.issues=[];
-const TABLE_STEP=5;
-const perOf=(l,t)=> (typeof l.per==="number") ? l.per : (Number((l.per||{})[t])||0);
-const typeLabel=t=>{ const x=shared.kitTypes.find(k=>k.id===t); return x?x.label:t; };
-const nowText=()=>fmtD()+" "+new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
-const newId=p=>p+Date.now()+Math.random().toString(36).slice(2,6);
-
-async function saveKit(lines,source,why){
+import { $, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { DEMO_COUNTS, DEMO_MOVES, DEMO_NOTES, curConcrete, fmtM3, fmtN, loadImg, noteFlags, renderStock, stockRows } from "./01-stock.js";
+import { kitStats, moneyPoints, shortName, stageOf } from "./04-contractors.js";
+import { N, curPb, pbCalc, prevPb } from "./05-panels.js";
+import { SITE, saveFile } from "./08-settings.js";
+import { buildPdf, canvasBlob } from "./09-doc-scanner.js";
+import { openBarcodeScanner } from "./10-barcode.js";
+import { foldSum } from "./12-ui-cleanup.js";
+import { ROLE } from "./18-identity.js";
+export let KIT_TYPES, KIT_DEFAULT, TABLE_STEP, perOf, typeLabel, nowText, newId, recSig, recSigned, isoDay, fileSafe, siteShort, issueFileName, trucksText;
+export async function saveKit(lines,source,why){
   const doc={types:shared.kitTypes,lines:lines.map(l=>({code:l.code,name:l.name,per:l.per,def:l.def!==false,carton:Number(l.carton)||0,no:l.no||(KIT_DEFAULT.find(k=>k.code===l.code)||{}).no||""})),source:source||shared.kitSource,ts:Date.now()};
   if(shared.DB){ await shared.DB.doc("settings/bom").set(doc); }
   else { shared.kit=doc.lines; shared.kitSource=doc.source; ls.set("bom",JSON.stringify(doc)); }
@@ -36,14 +16,14 @@ async function saveKit(lines,source,why){
 }
 // למידת «כמות בקרטון» משנה רק את שדה carton של הפריטים שנספרו, על הגרסה העדכנית במאגר,
 // כדי לא לדרוס עריכה של הכמויות לשולחן שנשמרה בינתיים במכשיר אחר. patch: {code: יחידות בקרטון}
-async function saveKitCartons(patch,why){
+export async function saveKitCartons(patch,why){
   if(shared.DB){ try{ const s=await shared.DB.doc("settings/bom").get(); const d=s&&s.exists?s.data():null;
     if(d&&Array.isArray(d.lines)&&d.lines.length){ shared.kit=d.lines; shared.kitSource=d.source||shared.kitSource; if(Array.isArray(d.types)&&d.types.length) shared.kitTypes=d.types; } }catch(e){} }
   let changed=false;
   const lines=shared.kit.map(k=>{ const pb=Number(patch[k.code]); if(pb>0&&Number(k.carton)!==pb){ changed=true; return {...k,carton:pb}; } return k; });
   if(changed) await saveKit(lines,shared.kitSource,why);
 }
-function openKitEditor(preset){
+export function openKitEditor(preset){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ברגים לשולחן">'
     +'<div class="grab"></div><h2>כמויות לשולחן אחד</h2>'
     +'<div class="note-card">לכל סוג שולחן כמות משלו. ניפוק = שולחנות × הכמות של הסוג שנבחר. <b>מקור: '+esc(shared.kitSource)+'</b></div>'
@@ -84,9 +64,8 @@ function openKitEditor(preset){
   };
   draw();
 }
-
 /* ---- חתימה ---- */
-function sigPad(box){
+export function sigPad(box){
   const c=box.querySelector("canvas"); const g=c.getContext("2d");
   let drawing=false, has=false, last=null;
   function fit(){ const r=box.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
@@ -100,9 +79,8 @@ function sigPad(box){
   box.querySelector(".clr2").onclick=()=>{ g.clearRect(0,0,c.width,c.height); has=false; box.classList.remove("has"); };
   return { has:()=>has, blob:()=>new Promise(r=>c.toBlob(r,"image/png")), dataUrl:()=>c.toDataURL("image/png") };
 }
-
 /* ---- ניפוק לפי שולחנות ---- */
-function openIssue(){
+export function openIssue(){
   const whos=[...new Set((shared.demoStock?DEMO_MOVES:shared.moves).map(m=>m.who).filter(Boolean))];
   let tables=TABLE_STEP, ttype=(ls.get("ttype")&&shared.kitTypes.some(t=>t.id===ls.get("ttype")))?ls.get("ttype"):shared.kitTypes[0].id;
   let lines=shared.kit.map(k=>({...k,qty:perOf(k,ttype)*tables,on:k.def!==false}));
@@ -190,7 +168,7 @@ function openIssue(){
   drawRows(); check();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-function slipText(s){
+export function slipText(s){
   const d=new Date(s.ts);
   return "ניפוק ברגים · "+fmtD(d)+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})
     +"\nל: "+(s.who||"")+(s.tables?" · "+s.tables+" שולחנות"+(s.typeLabel?" ("+s.typeLabel+")":""):"")+(s.by?" · מנפיק: "+s.by:"")
@@ -198,7 +176,7 @@ function slipText(s){
     +(s.note?"\nהערה: "+s.note:"")
     +"\nחתימת המקבל: "+((s.sigAsset||s.sigUrl||s.sigData)?"יש":"אין");
 }
-async function copyText(t){
+export async function copyText(t){
   try{ await navigator.clipboard.writeText(t); toast("הועתק. אפשר להדביק בוואטסאפ."); return true; }
   catch(e){
     const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta);
@@ -206,7 +184,7 @@ async function copyText(t){
     ta.remove(); toast(ok?"הועתק. אפשר להדביק בוואטסאפ.":"לא הצלחתי להעתיק. סמן את הטקסט והעתק ידנית."); return ok;
   }
 }
-function openSlip(s){
+export function openSlip(s){
   const sig=s.sigAsset?"/_blob/"+s.sigAsset:(s.sigUrl||s.sigData||"");
   const d=new Date(s.ts);
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת ניפוק">'
@@ -223,7 +201,7 @@ function openSlip(s){
   scrim.querySelector("#slCopy").onclick=()=>copyText(slipText(s));
   scrim.querySelector("#slPdf").onclick=e=>issuePdfById(s.id,e.currentTarget);
 }
-function renderSlips(){
+export function renderSlips(){
   const list=(shared.demoStock?[]:shared.issues).slice().sort((a,b)=>b.ts-a.ts);
   $("#slipWrap").hidden=!list.length;
   $("#slipCount").textContent=list.length?list.length+" ניפוקים":"";
@@ -240,7 +218,7 @@ function renderSlips(){
   });
   if(list.length){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent=(list.length>5?"כל הניפוקים ("+list.length+")":"כל הניפוקים")+" · PDF לתקופה"; m.onclick=()=>openAllSlips(list); box.appendChild(m); }
 }
-function openAllSlips(list){
+export function openAllSlips(list){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="כל הניפוקים"><div class="grab"></div><h2>כל הניפוקים</h2><div id="asRange"></div><div class="stock" id="asList"></div>'
     +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   issueRangeBox(scrim.querySelector("#asRange"));
@@ -250,20 +228,13 @@ function openAllSlips(list){
     b.onclick=()=>openSlip(s); box.appendChild(b); });
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
 }
-/* ---- PDF לניפוק: עמוד לכל ניפוק (ברגים או ציוד) עם החתימה. בלי ת.ז. ובלי מחירים ---- */
-const recSig=r=>r.sigAsset?"/_blob/"+r.sigAsset:(r.sigUrl||r.sigData||"");
-const recSigned=r=>!!(r.sigAsset||r.sigUrl||r.sigData);
-function issueRecs(){
+export function issueRecs(){
   const a=(shared.demoStock?[]:shared.issues).map(s=>({kind:"bolts",id:s.id,ts:s.ts,who:s.who||"",by:s.by||"",tables:s.tables,typeLabel:s.typeLabel||"",lines:(s.lines||[]).map(l=>({name:l.name,qty:l.qty})),note:s.note||"",sig:recSig(s),signed:recSigned(s)}));
   const b=(shared.demoStock?[]:shared.moves).filter(m=>m.dir==="out"&&m.source!=="issue").map(m=>({kind:"tool",id:m.id,ts:m.ts,who:m.who||"",by:m.by||"",lines:[{name:m.item,qty:m.qty}],note:m.note||"",sig:recSig(m),signed:recSigned(m)}));
   const all=a.concat(b).sort((x,y)=>x.ts-y.ts||String(x.id).localeCompare(String(y.id))); all.forEach((r,i)=>r.no=i+1); return all;
 }
-const isoDay=t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
-const fileSafe=t=>String(t||"").replace(/[\\/:*?"<>|]/g,"").trim().replace(/\s+/g,"-");
-const siteShort=()=>fileSafe(String(SITE.name||"").replace(/^אתר הקמה\s*/,""))||"אתר";
-const issueFileName=r=>[siteShort(),isoDay(r.ts),fileSafe(r.who)||"ללא-שם",r.no].join("_")+".pdf";
-async function sigImg(src){ if(!src) return null; try{ const res=await fetch(src); if(!res.ok) return null; return await loadImg(await res.blob()); }catch(e){ return null; } }
-async function issuePage(r){
+export async function sigImg(src){ if(!src) return null; try{ const res=await fetch(src); if(!res.ok) return null; return await loadImg(await res.blob()); }catch(e){ return null; } }
+export async function issuePage(r){
   const W=1240,H=1754; const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d");
   x.fillStyle="#fff"; x.fillRect(0,0,W,H); x.direction="rtl"; x.textAlign="right"; const R=W-80, Lx=80;
   const d=new Date(r.ts); const dt=d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear()+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
@@ -296,18 +267,18 @@ async function issuePage(r){
   x.fillStyle="#666B6E"; x.font="400 20px Alef, Arial"; x.fillText("הופק מיומן אתר · "+fmtD(Date.now()),R,H-70);
   const jb=await canvasBlob(c,0.85); return {bytes:new Uint8Array(await jb.arrayBuffer()),w:W,h:H};
 }
-async function issuesPdf(list,name,title){
+export async function issuesPdf(list,name,title){
   try{ await document.fonts.load("700 28px Alef"); await document.fonts.load("400 24px Alef"); }catch(e){}
   try{ const pages=[]; for(const r of list) pages.push(await issuePage(r)); return await saveFile(name,await buildPdf(pages,title)); }
   catch(e){ toast("יצירת ה-PDF נכשלה."); return false; }
 }
-async function issuePdfById(id,btn){
+export async function issuePdfById(id,btn){
   const r=issueRecs().find(x=>x.id===id); if(!r){ toast("הניפוק לא נמצא."); return; }
   const t=btn&&btn.textContent; if(btn){ btn.disabled=true; btn.textContent="מכין…"; }
   await issuesPdf([r],issueFileName(r),"ניפוק "+r.no);
   if(btn){ btn.disabled=false; btn.textContent=t; }
 }
-function issueRangeBox(host){
+export function issueRangeBox(host){
   const now=new Date(), wk=new Date(now); wk.setDate(now.getDate()-6);
   host.innerHTML='<div class="card" style="padding:12px;margin-bottom:12px"><h3 style="font-size:.95rem">PDF של הניפוקים החתומים לתקופה</h3>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><input type="date" id="irFrom" aria-label="מתאריך" value="'+isoDay(wk)+'"><input type="date" id="irTo" aria-label="עד תאריך" value="'+isoDay(now)+'"></div>'
@@ -320,11 +291,8 @@ function issueRangeBox(host){
     const ok=await issuesPdf(p.sig,[siteShort(),"ניפוקים-חתומים",p.f||"התחלה","עד",p.t||isoDay(Date.now())].join("_")+".pdf","ניפוקים חתומים");
     b.textContent="הורד PDF לתקופה"; hint(); if(ok) logAct("issue","add","PDF ניפוקים חתומים · "+p.sig.length+" עמודים",""); };
 }
-$("#btnIssue").onclick=openIssue;
-if($("#ovNewIssue")) $("#ovNewIssue").onclick=openIssue;
-
 /* ---- ספירה מהירה ---- */
-function openQuickCount(){
+export function openQuickCount(){
   const rows=stockRows(); const byName=new Map(rows.map(r=>[r.name,r]));
   let items=shared.kit.map(k=>k.name);
   const vals={};      // יחידות בודדות
@@ -409,10 +377,8 @@ function openQuickCount(){
   draw();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
-$("#btnCount").onclick=openQuickCount;
-
 /* ---- סיכום לוואטסאפ ---- */
-function periodSummary(days){
+export function periodSummary(days){
   const to=Date.now(), from=to-days*86400000;
   const inP=x=>x.ts>=from&&x.ts<=to;
   const notes=(shared.demoStock?DEMO_NOTES:shared.deliveries).filter(n=>n.source!=="bom").filter(inP);
@@ -466,7 +432,7 @@ function periodSummary(days){
   }
   return L.join("\n");
 }
-function openWa(){
+export function openWa(){
   let days=7;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סיכום לוואטסאפ"><div class="grab"></div><h2>סיכום לוואטסאפ</h2>'
     +'<div class="chips" id="waChips">'+[7,14,30].map(d=>'<button type="button" class="chip2" data-d="'+d+'" aria-pressed="'+(d===days)+'">'+d+' ימים</button>').join("")+'</div>'
@@ -481,11 +447,7 @@ function openWa(){
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   gen();
 }
-$("#btnWa").onclick=openWa;
-
-/* ---- בטון: משאיות ללא תעודה (לפי המונה המצטבר) ---- */
-const trucksText=n=>n===1?"משאית אחת":n+" משאיות";
-function missingConcrete(list){
+export function missingConcrete(list){
   const byDay=new Map();
   list.forEach(c=>{ const k=c.dateText; (byDay.get(k)||byDay.set(k,[]).get(k)).push(c); });
   let trucks=0, m3=0; const days=[]; const perDay=new Map();
@@ -497,4 +459,50 @@ function missingConcrete(list){
   });
   return {trucks,m3,days,perDay};
 }
-
+export function __init(){
+/* ================= קיט שלטר: ברגים לשולחן ================= */
+KIT_TYPES = [
+  {id:"in27",label:"שולחן 27 פנימי (IN)",count:145},
+  {id:"ex27",label:"שולחן 27 חיצוני (EX)",count:74},
+  {id:"ex9", label:"שולחן 9 חיצוני (EX)", count:42},
+];
+KIT_DEFAULT = [
+  {code:"289",no:"943001-289",name:"בורג M12x30 (שלטר מק״ט 289)",per:{in27:60,ex27:66,ex9:24},def:true},
+  {code:"013",no:"943000-013",name:"אום M12 (שלטר מק״ט 013)",per:{in27:60,ex27:66,ex9:24},def:true},
+  {code:"308",no:"943001-308",name:"שייבה M12 (שלטר מק״ט 308)",per:{in27:60,ex27:66,ex9:24},def:true},
+  {code:"337",no:"144999-337",name:"שייבה מרובעת (שלטר מק״ט 337)",per:{in27:40,ex27:44,ex9:16},def:true},
+  {code:"087",no:"144999-087",name:"מחבר פרלין-קורה A4 (שלטר מק״ט 087)",per:{in27:60,ex27:66,ex9:24},def:true},
+  {code:"188",no:"800000-188",name:"מחבר פרלין-קורה מגולוון (שלטר מק״ט 188)",per:{in27:60,ex27:66,ex9:24},def:true},
+  {code:"288",no:"943001-288",name:"בורג M10x50 (שלטר מק״ט 288)",per:{in27:60,ex27:66,ex9:24},def:true},
+  {code:"341",no:"144999-341-865552",name:"מחבר פרלין Vario (שלטר מק״ט 341)",per:{in27:36,ex27:30,ex9:6},def:true},
+  {code:"287",no:"943001-287",name:"בורג M10x25 (שלטר מק״ט 287)",per:{in27:144,ex27:120,ex9:24},def:true},
+  {code:"307",no:"943001-307",name:"שייבה M10 (שלטר מק״ט 307)",per:{in27:144,ex27:120,ex9:24},def:true},
+  {code:"022",no:"943000-022",name:"אום M10 (שלטר מק״ט 022)",per:{in27:204,ex27:186,ex9:48},def:true},
+  {code:"186",no:"800000-186",name:"קלאמפ אמצעי (שלטר מק״ט 186)",per:{in27:156,ex27:156,ex9:48},def:false},
+  {code:"187",no:"800000-187",name:"קלאמפ קצה (שלטר מק״ט 187)",per:{in27:12,ex27:12,ex9:12},def:false},
+  {code:"189",no:"800000-189",name:"אדפטר קלאמפ 60/65 (שלטר מק״ט 189)",per:{in27:168,ex27:168,ex9:60},def:false},
+  {code:"926",no:"943755-926",name:"בורג קודח 5.5x25 (שלטר מק״ט 926)",per:{in27:168,ex27:168,ex9:60},def:false},
+];
+shared.kit=KIT_DEFAULT.map(k=>({...k,per:{...k.per}}));
+shared.kitTypes=KIT_TYPES.map(t=>({...t}));
+shared.kitSource="BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
+shared.issues=[];
+TABLE_STEP = 5;
+perOf = (l,t)=> (typeof l.per==="number") ? l.per : (Number((l.per||{})[t])||0);
+typeLabel = t=>{ const x=shared.kitTypes.find(k=>k.id===t); return x?x.label:t; };
+nowText = ()=>fmtD()+" "+new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+newId = p=>p+Date.now()+Math.random().toString(36).slice(2,6);
+/* ---- PDF לניפוק: עמוד לכל ניפוק (ברגים או ציוד) עם החתימה. בלי ת.ז. ובלי מחירים ---- */
+recSig = r=>r.sigAsset?"/_blob/"+r.sigAsset:(r.sigUrl||r.sigData||"");
+recSigned = r=>!!(r.sigAsset||r.sigUrl||r.sigData);
+isoDay = t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+fileSafe = t=>String(t||"").replace(/[\\/:*?"<>|]/g,"").trim().replace(/\s+/g,"-");
+siteShort = ()=>fileSafe(String(SITE.name||"").replace(/^אתר הקמה\s*/,""))||"אתר";
+issueFileName = r=>[siteShort(),isoDay(r.ts),fileSafe(r.who)||"ללא-שם",r.no].join("_")+".pdf";
+$("#btnIssue").onclick=openIssue;
+if($("#ovNewIssue")) $("#ovNewIssue").onclick=openIssue;
+$("#btnCount").onclick=openQuickCount;
+$("#btnWa").onclick=openWa;
+/* ---- בטון: משאיות ללא תעודה (לפי המונה המצטבר) ---- */
+trucksText = n=>n===1?"משאית אחת":n+" משאיות";
+}

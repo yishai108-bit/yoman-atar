@@ -1,7 +1,15 @@
-/* ================= תאריכי אספקה לאתר ================= */
-const dueIso=d=>{ const m=String(d||"").match(/^(\d\d)\/(\d\d)\/(\d\d)$/); return m?("20"+m[3]+"-"+m[2]+"-"+m[1]):""; };
-const fmtIso=iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d\d)-(\d\d)$/); return m?fmtD(new Date(+m[1],+m[2]-1,+m[3],12)):""; };
-function etaRows(){
+import { $, actorName, ask, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast, unitMult } from "./core.js";
+import { CATS, fmtN } from "./01-stock.js";
+import { copyText } from "./03-kit.js";
+import { shortSup } from "./04-contractors.js";
+import { csvOf, saveFile } from "./08-settings.js";
+import { isoOf } from "./11-daylog.js";
+import { foldSum } from "./12-ui-cleanup.js";
+import { ORDER_ST, catalog, openBoqLinker } from "./13-purchasing.js";
+import { REQM, REQ_ST, openImportChooser, openOrder, openOrderDetail, orderGroups, poStatus, receivedSince, renderOrders, reqMissingText, requestMatch } from "./14-cba.js";
+import { ROLE } from "./18-identity.js";
+export let dueIso, fmtIso;
+export function etaRows(){
   const today=isoOf(Date.now()); const rows=[];
   (shared.demoStock?[]:shared.ETA).forEach(e=>{ rows.push({kind:"eta",id:e.id,date:e.date||"",title:e.title||"",supplier:e.supplier||"",note:e.note||"",ref:e.ref||"",source:e.source||"",arrived:e.status==="arrived",arrivedTs:e.arrivedTs||0,doc:e}); });
   (shared.demoStock?[]:shared.POS).forEach(p=>{ const st=poStatus(p); if(st.k==="ok"||st.k==="cancelled"||st.k==="none") return;
@@ -11,7 +19,7 @@ function etaRows(){
   rows.forEach(r=>{ r.late=!r.arrived&&!r.hold&&!!r.date&&r.date<today; r.soon=!r.arrived&&!!r.date&&r.date>=today&&r.date<=isoOf(Date.now()+7*864e5); });
   return rows.sort((a,b)=>(a.date||"9999")<(b.date||"9999")?-1:(a.date||"9999")>(b.date||"9999")?1:0);
 }
-function renderEta(){
+export function renderEta(){
   const el=$("#orEta"); if(!el) return; el.innerHTML="";
   const rows=etaRows(); const open=rows.filter(r=>!r.arrived), late=open.filter(r=>r.late), soon=open.filter(r=>r.soon), later=open.filter(r=>!r.late&&!r.soon), done=rows.filter(r=>r.arrived).sort((a,b)=>(b.arrivedTs||0)-(a.arrivedTs||0));
   foldSum("eta",(late.length?late.length+" באיחור":"")+(soon.length?(late.length?" · ":"")+soon.length+" השבוע":"")||(open.length?open.length+" צפויים":"אין"));
@@ -29,11 +37,11 @@ function renderEta(){
   group("בהמשך / בלי תאריך","var(--info)",later);
   group("הגיע","var(--sage)",done,5);
 }
-async function saveEta(doc){
+export async function saveEta(doc){
   try{ if(shared.DB) await shared.DB.doc("eta/"+doc.id).set(doc); else { shared.ETA=shared.ETA.filter(x=>x.id!==doc.id).concat(doc); ls.set("eta",JSON.stringify(shared.ETA)); } }catch(e){ toast("השמירה נכשלה."); return false; }
   renderOrders(); return true;
 }
-function openEtaForm(existing){
+export function openEtaForm(existing){
   const e=existing?{...existing}:{id:"eta"+Date.now().toString(36),date:"",title:"",supplier:"",ref:"",source:"ידני",note:"",status:"expected",by:actorName(),ts:Date.now()};
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תאריך אספקה"><div class="grab"></div><h2>'+(existing?"עריכת ":"")+'תאריך אספקה לאתר</h2>'
     +'<div class="f"><label for="etTitle">מה מגיע</label><input type="text" id="etTitle" placeholder="למשל: שנאי · 2 מכולות MVS · כבל סטרינג" value="'+esc(e.title)+'"></div>'
@@ -46,7 +54,7 @@ function openEtaForm(existing){
     const doc={...e,title,date:q("#etDate").value||"",supplier:q("#etSup").value.trim(),ref:q("#etRef").value.trim(),source:q("#etSrc").value.trim()||"ידני",note:q("#etNote").value.trim(),updated:Date.now()};
     q("#etSave").disabled=true; if(await saveEta(doc)){ logAct("order",existing?"edit":"add",(existing?"עודכן":"נוסף")+" תאריך אספקה: "+doc.title+(doc.date?" · "+fmtIso(doc.date):""),doc.id); close(); } else q("#etSave").disabled=false; };
 }
-function openEtaItem(e){
+export function openEtaItem(e){
   e=shared.ETA.find(x=>x.id===e.id)||e; const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="אספקה"><div class="grab"></div><h2>'+esc(e.title)+'</h2>'
     +'<div class="kv">'+(e.date?'<span>צפוי <b>'+esc(fmtIso(e.date))+'</b></span>':'<span>בלי תאריך</span>')+(e.supplier?'<span>'+esc(e.supplier)+'</span>':'')+(e.ref?'<span>'+esc(e.ref)+'</span>':'')+(e.source?'<span>מקור: '+esc(e.source)+'</span>':'')+(e.status==="arrived"?'<span style="color:var(--sage)">הגיע '+esc(fmtD(e.arrivedTs||0))+'</span>':'')+'</div>'
     +(e.note?'<div class="note-card">'+esc(e.note)+'</div>':'')
@@ -58,7 +66,7 @@ function openEtaItem(e){
   const ed=q("#etEdit"); if(ed) ed.onclick=()=>{ close(); openEtaForm(e); };
   const del=q("#etDel"); if(del) del.onclick=async()=>{ if(!(await ask("למחוק את "+e.title+"?","מחק","var(--clay)"))) return; try{ if(shared.DB) await shared.DB.doc("eta/"+e.id).delete(); else { shared.ETA=shared.ETA.filter(x=>x.id!==e.id); ls.set("eta",JSON.stringify(shared.ETA)); } }catch(err){ toast("המחיקה נכשלה."); return; } logAct("order","edit","נמחק תאריך אספקה: "+e.title,e.id); close(); renderOrders(); };
 }
-function renderPos(){
+export function renderPos(){
   const el=$("#orPos"); if(!el) return; el.innerHTML="";
   const P=(shared.demoStock?[]:shared.POS).slice().sort((a,b)=>b.ts-a.ts);
   if(!P.length){ foldSum("pos",""); el.innerHTML='<div class="empty" style="padding:16px">אין עדיין הזמנות רכש מהרכש. הן נכנסות מהמיילים של מחלקת הרכש.</div>'; return; }
@@ -69,7 +77,7 @@ function renderPos(){
     b.onclick=()=>openPoDetail(p); el.appendChild(b); });
   if(P.length>shared.posMax){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent="עוד "+(P.length-shared.posMax); m.onclick=()=>{ shared.posMax+=12; renderPos(); }; el.appendChild(m); }
 }
-function openPoDetail(p){
+export function openPoDetail(p){
   p=shared.POS.find(x=>x.id===p.id)||p; const st=poStatus(p); const cat=catalog();
   let html='<div class="sheet" role="dialog" aria-modal="true" aria-label="הזמנת רכש"><div class="grab"></div><h2>'+esc(p.no)+' <span class="role-badge" style="background:var(--line2);color:'+st.color+'">'+esc(st.label)+'</span></h2>'
     +'<div class="kv"><span>'+esc(fmtDT(p.dateText)||"")+'</span><span>'+esc(p.supplier||"")+'</span>'+(p.details?'<span>'+esc(p.details)+'</span>':'')+'</div>'
@@ -84,7 +92,10 @@ function openPoDetail(p){
   const lk=scrim.querySelector("#pdLink"); if(lk) lk.onclick=()=>{ close(); openBoqLinker(p.no); };
   scrim.querySelector("#pdCopy").onclick=()=>copyText("*"+p.no+" · "+(p.supplier||"")+"*\n"+(fmtDT(p.dateText)||"")+(p.details?" · "+p.details:"")+"\n"+(p.lines||[]).filter(l=>!l.skip).map((l,i)=>(i+1)+". "+l.name+" — "+fmtN(l.qty)+" "+(l.unit||"")+" · הגיעו "+fmtN(receivedSince(p,l))).join("\n"));
 }
-
+export function __init(){
+/* ================= תאריכי אספקה לאתר ================= */
+dueIso = d=>{ const m=String(d||"").match(/^(\d\d)\/(\d\d)\/(\d\d)$/); return m?("20"+m[3]+"-"+m[2]+"-"+m[1]):""; };
+fmtIso = iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d\d)-(\d\d)$/); return m?fmtD(new Date(+m[1],+m[2]-1,+m[3],12)):""; };
 $("#btnOrder").onclick=()=>openOrder();
 $("#btnBoq").onclick=openImportChooser;
 $("#btnBoqLink").onclick=openBoqLinker;
@@ -94,4 +105,4 @@ $("#btnReqCsv").onclick=()=>{ const M=REQM||requestMatch(); if(!M.rows.length){ 
   saveFile("בקשות-מול-הזמנות-"+isoOf(Date.now())+".csv",new Blob([csvOf(["בקשה","תאריך בקשה","פריט","סעיף EBOQ","יחידה","ביקשתי","הוזמן","מוקפא","PO","תאריך אספקה","הגיע","מצב","לטובת","נדרש עד"],M.rows.map(r=>[r.o.no,fmtD(r.o.ts),r.l.name,r.l.boq||"",r.l.unit||"",r.qty,r.ordered,r.hold||"",r.pos.map(m=>m.p.no).join(" "),r.due?fmtD(r.due):"",r.arrived,REQ_ST[r.k][0],r.o.task||"",r.o.need?r.o.need.split("-").reverse().join("/"):""]))],{type:"text/csv"})); };
 $("#btnOrdersCsv").onclick=()=>{ const rows=shared.orders.slice().sort((a,b)=>a.ts-b.ts).flatMap(o=>[...orderGroups(o).entries()].flatMap(([sp,L])=>L.map(l=>[o.no,fmtD(o.ts),(ORDER_ST[o.status]||ORDER_ST.draft)[0],sp,l.boq||l.code||"",l.sku||"",l.name,l.qty,l.unit,(CATS.find(c=>c.id===l.cat)||{}).label||l.cat,o.task,o.need?o.need.split("-").reverse().join("/"):"",l.note])));
   if(!rows.length){ toast("אין הזמנות."); return; } saveFile("הזמנות-רכש-"+isoOf(Date.now())+".csv",new Blob([csvOf(["הזמנה","תאריך","סטטוס","ספק","סעיף EBOQ","מק״ט ספק","פריט","כמות","יחידה","קטגוריה","לטובת","נדרש עד","הערה"],rows)],{type:"text/csv"})); };
-
+}

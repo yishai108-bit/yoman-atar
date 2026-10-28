@@ -1,11 +1,10 @@
-/* ================= בטון ================= */
-const DEMO_CONCRETE=[
-  {id:"dc1",supplier:"עמי-רן בטון בע\"מ",noteNo:"227254",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 80",note:"",demo:true},
-  {id:"dc2",supplier:"עמי-רן בטון בע\"מ",noteNo:"227253",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 78",note:"",demo:true},
-  {id:"dc3",supplier:"עמי-רן בטון בע\"מ",noteNo:"227120",dateText:"30/09/2026",ts:Date.now()-86400000*12,m3:8,mix:"ב-30",element:"שדה 3 שורה 19",truck:"ערבל 60",note:"",demo:true},
-];
-shared.concrete=[];let concreteQ="",cDayMax=20,openDays=new Set();
-function renderConcrete(){
+import { $, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { curConcrete, fmtM3, fmtN, hit, renderOverview, weekStart } from "./01-stock.js";
+import { missingConcrete, trucksText } from "./03-kit.js";
+import { showTab } from "./08-settings.js";
+import { exportNotePdf } from "./09-doc-scanner.js";
+export let DEMO_CONCRETE, concreteQ, cDayMax, openDays;
+export function renderConcrete(){
   const all=curConcrete();
   $("#demoBarC").hidden=!shared.demoStock;
   const q=concreteQ;
@@ -73,7 +72,7 @@ function renderConcrete(){
     b.textContent=left===1?"הצג עוד יום אחד":"הצג עוד "+left+" ימים"; b.onclick=()=>{cDayMax+=20; renderConcrete();}; list.appendChild(b);
   }
 }
-function openConcreteDetail(id){
+export function openConcreteDetail(id){
   const c=curConcrete().find(x=>x.id===id); if(!c) return;
   const psrc=c.photoAsset?"/_blob/"+c.photoAsset:c.photoUrl;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת בטון">'
@@ -97,6 +96,17 @@ function openConcreteDetail(id){
     close();
   };
 }
+export function __init(){
+/* ================= בטון ================= */
+DEMO_CONCRETE = [
+  {id:"dc1",supplier:"עמי-רן בטון בע\"מ",noteNo:"227254",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 80",note:"",demo:true},
+  {id:"dc2",supplier:"עמי-רן בטון בע\"מ",noteNo:"227253",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 78",note:"",demo:true},
+  {id:"dc3",supplier:"עמי-רן בטון בע\"מ",noteNo:"227120",dateText:"30/09/2026",ts:Date.now()-86400000*12,m3:8,mix:"ב-30",element:"שדה 3 שורה 19",truck:"ערבל 60",note:"",demo:true},
+];
+shared.concrete=[];
+concreteQ = "";
+cDayMax = 20;
+openDays = new Set();
 $("#cList").onclick=e=>{ const b=e.target.closest(".truck[data-cid]"); if(b) openConcreteDetail(b.dataset.cid); };
 $("#cSearch").oninput=e=>{ concreteQ=e.target.value.trim().toLowerCase(); cDayMax=20; $("#cClr").hidden=!concreteQ; renderConcrete(); };
 $("#cClr").onclick=()=>{ $("#cSearch").value=""; concreteQ=""; $("#cClr").hidden=true; renderConcrete(); };
@@ -115,4 +125,4 @@ $("#btnConcreteCsv").onclick=async()=>{
   }
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=name; a.click();
 };
-
+}

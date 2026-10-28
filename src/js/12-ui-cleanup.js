@@ -1,5 +1,10 @@
+import { $, ls, popup, shared } from "./core.js";
+import { openProgress } from "./04-contractors.js";
+import { showTab } from "./08-settings.js";
+import { copyCrew, isoOf, renderDay } from "./11-daylog.js";
+import { ROLE } from "./18-identity.js";
 /* ================= ניקיון ממשק ================= */
-function tidyUI(){
+export function tidyUI(){
   // 1. פעולות משניות → «עוד»
   document.querySelectorAll(".view").forEach(v=>{
     const rows=[...v.children].filter(c=>c.classList.contains("row2"));
@@ -33,9 +38,9 @@ function tidyUI(){
     h.onclick=()=>{ c.classList.toggle("folded"); folds[k]=c.classList.contains("folded"); ls.set("folds",JSON.stringify(folds)); };
   });
 }
-function foldSum(k,t){ const e=$("#sum_"+k); if(e) e.textContent=t||""; }
+export function foldSum(k,t){ const e=$("#sum_"+k); if(e) e.textContent=t||""; }
 /* 6. הצעה לפי השעה */
-function renderTodayTip(){
+export function renderTodayTip(){
   const box=$("#todayTip"); if(!box) return;
   box.hidden=true; box.innerHTML="";
   if(ROLE==="viewer"||shared.demoStock) return;
@@ -50,4 +55,6 @@ function renderTodayTip(){
   box.querySelector(".x").onclick=()=>{ ls.set("tipOff",iso+tip.k); renderTodayTip(); };
   box.hidden=false;
 }
+export function __init(){
 
+}

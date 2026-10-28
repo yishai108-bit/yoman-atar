@@ -1,32 +1,8 @@
-// מצב משותף: משתנים שקובץ אחד מגדיר וקובץ אחר משנה. מרוכזים כאן כדי שהמעבר למודולים יהיה אפשרי.
-const shared={};
-// תעודות ברגים נרשמות ב"אלף" או ב"מאה" (0.5 אלף = 500 יחידות). כל חישוב כמויות עובר דרך המכפיל.
-const unitMult=u=>/אלף/.test(String(u||""))?1000:/^\s*מאה\s*$/.test(String(u||""))?100:1;
-const unitOf=u=>unitMult(u)>1?"יח'":(u||"");
-const BLAME = [
-  {id:"supplier",   label:"ספק / יצרן",   cls:"c-supplier",   color:"var(--sage-fill)",  claim:true},
-  {id:"carrier",    label:"מוביל",        cls:"c-carrier",    color:"var(--info-fill)",    claim:true},
-  {id:"contractor", label:"מלגזן הקבלן",  cls:"c-contractor", color:"var(--amber-fill)", claim:true},
-  {id:"ours",       label:"המלגזן שלנו",  cls:"c-ours",       color:"var(--ink3)",  claim:false},
-  {id:"unknown",    label:"אחר",          cls:"c-unknown",    color:"var(--pv)",  claim:false},
-];
-const DEMO = [
-  {id:"d1",serial:"JKM72N-540-2416A00871",blame:"contractor",
-   note:"נפל מהמזלג בפריקה — שורה 14",ts:Date.now()-86400000*2,demo:true},
-  {id:"d2",serial:"JKM72N-540-2416A00902",blame:"unknown",
-   note:"נמצא שבור בערימה באחסון הצפוני",ts:Date.now()-86400000*5,demo:true},
-  {id:"d3",serial:"JKM72N-540-2416A01144",blame:"carrier",
-   note:"משטח פגוע בהגעה, צולם מול הנהג",ts:Date.now()-86400000*9,demo:true},
-];
-
-const fmtD=t=>{ const d=t instanceof Date?t:new Date(t); if(isNaN(d)) return ""; const y=d.getFullYear(); return d.getDate()+"."+(d.getMonth()+1)+(y!==new Date().getFullYear()?"."+y:""); };
-const fmtDT=x=>{ const m=String(x||"").match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/); if(!m) return x||""; return fmtD(new Date(+m[3],+m[2]-1,+m[1],12)); };
-const $ = s => document.querySelector(s);
-const ls = { get:k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } },
-             set:(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} } };
-const byId = (arr,id) => arr.find(x=>x.id===id);
-let toastT=null;
-function toast(msg){
+import { hit, panelQ, renderOverview } from "./01-stock.js";
+import { renderPanelBal } from "./05-panels.js";
+import { ROLE } from "./18-identity.js";
+export let shared, unitMult, unitOf, BLAME, DEMO, fmtD, fmtDT, $, ls, byId, toastT, UID, uidTried, LOG_KINDS, actorName, draft;
+export function toast(msg){
   let t=document.querySelector(".toast");
   if(!t){ t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); document.body.appendChild(t); }
   t.textContent=msg; t.hidden=false;
@@ -34,7 +10,7 @@ function toast(msg){
 }
 // חלון קופץ: יוצר את הרקע, שם בו את ה-HTML ומוסיף לדף. מחזיר את הרקע (scrim).
 // opts.z: שכבה מעל חלון אחר (למשל סורק מעל טופס).
-function popup(html,opts){
+export function popup(html,opts){
   const scrim=document.createElement("div"); scrim.className="scrim";
   if(opts&&opts.z) scrim.style.zIndex=String(opts.z);
   scrim.innerHTML=html; document.body.appendChild(scrim);
@@ -42,14 +18,14 @@ function popup(html,opts){
 }
 // סגירה של חלון: מחזירה close(), ומחברת אותה ל-Escape (רק לחלון העליון) וללחיצה על הרקע.
 // after: מה לעשות אחרי הסגירה (למשל לעצור מצלמה).
-function closer(scrim,after){
+export function closer(scrim,after){
   const k=ev=>{ if(ev.key==="Escape"&&[...document.querySelectorAll(".scrim")].pop()===scrim) close(); };
   function close(){ document.removeEventListener("keydown",k); scrim.remove(); if(after) after(); }
   document.addEventListener("keydown",k);
   scrim.addEventListener("click",e=>{ if(e.target===scrim) close(); });
   return close;
 }
-function ask(msg, okLabel, color, sub){
+export function ask(msg, okLabel, color, sub){
   return new Promise(res=>{
     const scrim=popup('<div class="sheet" role="alertdialog" aria-modal="true">'
       +'<div class="grab"></div><h2>'+esc(msg)+'</h2>'
@@ -63,14 +39,7 @@ function ask(msg, okLabel, color, sub){
     scrim.querySelector(".cancel").focus();
   });
 }
-shared.DB=null;shared.ASSETS=null;shared.SAMPLE=null;shared.DOWNLOADS=null;shared.USER=null;shared.IS_OWNER=null;let UID=null;
-shared.records=[];shared.unsub=null;shared.demoMode=true;
-
-/* ---------- יומן פעולות (audit log): מי, מתי, מה ---------- */
-shared.logs=[];let uidTried=false;
-const LOG_KINDS={issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש"};
-const actorName=()=>(ls.get("issuer")||"").trim();
-async function logAct(kind,action,summary,ref,who,data){
+export async function logAct(kind,action,summary,ref,who,data){
   if(shared.USER && UID===null && !uidTried){ uidTried=true; try{ UID=await shared.USER.id(); }catch(e){ UID=null; } }
   const rec={id:"lg"+Date.now()+Math.random().toString(36).slice(2,5),ts:Date.now(),kind,action,
     summary:String(summary||"").slice(0,240),ref:ref?String(ref):"",who:(who||actorName()).slice(0,60),uid:UID||"",
@@ -86,7 +55,7 @@ async function logAct(kind,action,summary,ref,who,data){
 // כך שתי שמירות כמעט בו זמנית (שני מכשירים) לא מוחקות זו לזו ספק או ברקוד.
 // לפי כללי הגישה רק הבעלים כותב ל-settings; למי שאינו בעלים השינוי נשאר בזיכרון בלבד,
 // במקום שמירה שנכשלת (עד גרסה 51 זה הפיל את שמירת בקשת הרכש של עורך: «השמירה נכשלה» אחרי שהבקשה כבר נשמרה).
-async function mergeSettingsMap(name,patch){
+export async function mergeSettingsMap(name,patch){
   if(!patch||!Object.keys(patch).length) return;
   if(!shared.DB){ let cur={}; try{ cur=JSON.parse(ls.get(name)||"{}")||{}; }catch(e){} ls.set(name,JSON.stringify({...cur,...patch})); return; }
   if(ROLE!=="owner") return;
@@ -96,7 +65,7 @@ async function mergeSettingsMap(name,patch){
   const cur=d&&d.map&&typeof d.map==="object"?d.map:{};
   await ref.set({map:{...cur,...patch},ts:Date.now()});
 }
-function openLog(){
+export function openLog(){
   let kind="all", max=60;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="יומן פעולות"><div class="grab"></div><h2>יומן פעולות</h2>'
     +'<div class="note-card">כל שמירה, עדכון ומחיקה באפליקציה, עם השם שהוקלד, המכשיר והשעה. מחיקות שומרות עותק של מה שנמחק.</div>'
@@ -129,14 +98,13 @@ function openLog(){
   q("#lgChips").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; kind=b.dataset.k; max=60; draw(); };
   draw();
 }
-function alertSheet(title,html){
+export function alertSheet(title,html){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>'+esc(title)+'</h2>'+html
     +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
 }
-
 /* ---------- render ---------- */
-function render(){
+export function render(){
   renderOverview(); renderPanelBal();
   const rows = shared.demoMode ? DEMO : shared.records;
   $("#demoBar").hidden = !shared.demoMode;
@@ -206,11 +174,8 @@ function render(){
     list.appendChild(b);
   }
 }
-function esc(s){return String(s??"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));}
-
-/* ---------- form ---------- */
-let draft = null;
-function openSheet(){
+export function esc(s){return String(s??"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));}
+export function openSheet(){
   draft = {serial:"",blame:"",blameOther:"",note:"",
            labelBlob:null,damageBlob:null,labelUrl:"",damageUrl:""};
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="רישום פאנל שבור">'
@@ -327,7 +292,51 @@ function openSheet(){
     scrim.remove();
   }
 }
-
+export function __init(){
+// מצב משותף: משתנים שקובץ אחד מגדיר וקובץ אחר משנה. מרוכזים כאן כדי שהמעבר למודולים יהיה אפשרי.
+shared = {};
+// תעודות ברגים נרשמות ב"אלף" או ב"מאה" (0.5 אלף = 500 יחידות). כל חישוב כמויות עובר דרך המכפיל.
+unitMult = u=>/אלף/.test(String(u||""))?1000:/^\s*מאה\s*$/.test(String(u||""))?100:1;
+unitOf = u=>unitMult(u)>1?"יח'":(u||"");
+BLAME = [
+  {id:"supplier",   label:"ספק / יצרן",   cls:"c-supplier",   color:"var(--sage-fill)",  claim:true},
+  {id:"carrier",    label:"מוביל",        cls:"c-carrier",    color:"var(--info-fill)",    claim:true},
+  {id:"contractor", label:"מלגזן הקבלן",  cls:"c-contractor", color:"var(--amber-fill)", claim:true},
+  {id:"ours",       label:"המלגזן שלנו",  cls:"c-ours",       color:"var(--ink3)",  claim:false},
+  {id:"unknown",    label:"אחר",          cls:"c-unknown",    color:"var(--pv)",  claim:false},
+];
+DEMO = [
+  {id:"d1",serial:"JKM72N-540-2416A00871",blame:"contractor",
+   note:"נפל מהמזלג בפריקה — שורה 14",ts:Date.now()-86400000*2,demo:true},
+  {id:"d2",serial:"JKM72N-540-2416A00902",blame:"unknown",
+   note:"נמצא שבור בערימה באחסון הצפוני",ts:Date.now()-86400000*5,demo:true},
+  {id:"d3",serial:"JKM72N-540-2416A01144",blame:"carrier",
+   note:"משטח פגוע בהגעה, צולם מול הנהג",ts:Date.now()-86400000*9,demo:true},
+];
+fmtD = t=>{ const d=t instanceof Date?t:new Date(t); if(isNaN(d)) return ""; const y=d.getFullYear(); return d.getDate()+"."+(d.getMonth()+1)+(y!==new Date().getFullYear()?"."+y:""); };
+fmtDT = x=>{ const m=String(x||"").match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/); if(!m) return x||""; return fmtD(new Date(+m[3],+m[2]-1,+m[1],12)); };
+$ = s => document.querySelector(s);
+ls = { get:k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+             set:(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} } };
+byId = (arr,id) => arr.find(x=>x.id===id);
+toastT = null;
+shared.DB=null;
+shared.ASSETS=null;
+shared.SAMPLE=null;
+shared.DOWNLOADS=null;
+shared.USER=null;
+shared.IS_OWNER=null;
+UID = null;
+shared.records=[];
+shared.unsub=null;
+shared.demoMode=true;
+/* ---------- יומן פעולות (audit log): מי, מתי, מה ---------- */
+shared.logs=[];
+uidTried = false;
+LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש"};
+actorName = ()=>(ls.get("issuer")||"").trim();
+/* ---------- form ---------- */
+draft = null;
 /* ---------- actions ---------- */
 $("#btnAdd").onclick = openSheet;
 $("#btnClearDemo").onclick = ()=>{ shared.demoMode=false; ls.set("demoDone","1"); render(); };
@@ -362,5 +371,4 @@ $("#btnCsv").onclick = async ()=>{
   a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
   a.download=name; a.click();
 };
-
-
+}
