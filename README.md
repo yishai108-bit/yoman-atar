@@ -1,16 +1,40 @@
 # יומן אתר
 
-Field logistics app for the Ein Tamar solar site: stock from delivery notes, movements, counts, broken-panel log, WhatsApp export import.
+אפליקציה לניהול לוגיסטיקה באתר הקמה סולארי, שפותחה ונבדקה באתר עין תמר של בלקטריק ישראל.
+מלאי מתעודות משלוח, ניפוקי ברגים וכלי עבודה עם חתימה, ספירות, תעודות בטון, מאזן פאנלים,
+רכש (BOM / EBOQ, הזמנות רכש, בקשות מול הזמנות, תאריכי אספקה), סטטוס התקדמות, עובדים יומיים וסיכום לקבלן.
+עברית, RTL, מותאמת לטלפון.
 
-- `public/` — the app (installable PWA), `manifest.webmanifest`, `sw.js`, `seed.json` (initial deliveries)
-- `api/` — Vercel serverless functions: `db` (documents in Vercel Blob), `upload` (photos), `read` (Claude vision extraction)
+**גרסה נוכחית: 51** (27.10.2026)
 
-## Environment variables (Vercel → Project → Settings → Environment Variables)
+## מבנה
 
-| Name | What |
+| תיקייה | מה |
 |---|---|
-| `SITE_PIN` | the code the crew types once to open the app |
-| `ANTHROPIC_API_KEY` | key from console.anthropic.com — used only by `/api/read` |
-| `BLOB_READ_WRITE_TOKEN` | created automatically when you add a **Blob** store under Project → Storage |
+| `artifact/yoman.html` | **האפליקציה הנוכחית.** קובץ HTML אחד (HTML + CSS + JS), בלי בנייה. מפורסם כ-artifact ב-Claude, שמספק מאגר נתונים משותף, צילומים, הורדות, זיהוי משתמש ו-AI לקריאת תעודות. |
+| `artifact/capabilities.json` | הצהרת ההרשאות של ה-artifact (מאגר, צילומים, הורדות, משתמש, AI). |
+| `artifact/backups/` | עותקים של גרסאות קודמות (v50). |
+| `public/`, `api/` | גרסה מוקדמת (ספטמבר 2026) כ-PWA על Vercel. לא בשימוש כיום, נשמרת לתיעוד. |
 
-Redeploy after setting them.
+## פריסה
+
+אותו קוד רץ כמופע נפרד לכל אתר, עם מאגר נתונים נפרד. ההבדל בין המופעים: `<title>` ושם האתר בברירת המחדל של `SITE`.
+
+- **עין תמר:** אתר הייחוס, בשימוש יומיומי. גרסה 51.
+- **מולדת, באר טוביה:** מופעים לפיילוט. גרסה 50.
+
+נתוני האתרים נשמרים במאגר של כל מופע ואינם חלק מהריפו. מחירים מוסתרים באפליקציה (`SHOW_PRICES=false`).
+
+## גרסאות אחרונות
+
+| גרסה | תאריך | מה נוסף |
+|---|---|---|
+| 49 | 14.10 | כפתור הפלוס בכל מקום (הזמנת רכש / ניפוק ציוד / ניפוק ברגים). גרסת הפיילוט. |
+| 50 | 21.10 | חתימת המקבל בניפוק כלי עבודה, כמו בניפוק ברגים. |
+| 51 | 27.10 | בקשות רכש מול הזמנות: מה התבקש, מה הוזמן, מה הגיע. |
+
+## עדכון גרסה
+
+1. לערוך את `artifact/yoman.html` ולהעלות את `APP_VERSION`; עותק של הקודמת ל-`artifact/backups/`.
+2. בדיקת תחביר ל-JS (`node --check` על הסקריפט) ובדיקת רינדור ברוחב 400px.
+3. לפרסם לכל מופע בנפרד, עם ה-`<title>` ושם האתר שלו.
