@@ -147,8 +147,7 @@ async function wrShrink(file){ const im=await loadImg(file); const k=Math.min(1,
 const wrDataUrl=blob=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(blob); });
 function openWeekly(){
   droneWatch(); let mode="mgr", endIso=isoOf(Date.now()), lead="", localImg=null;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet wr-sheet" role="dialog" aria-modal="true" aria-label="דוח שבועי"><div class="grab"></div><h2>דוח שבועי</h2>'
+  const scrim=popup('<div class="sheet wr-sheet" role="dialog" aria-modal="true" aria-label="דוח שבועי"><div class="grab"></div><h2>דוח שבועי</h2>'
     +'<div class="note-card">דף אחד שנבנה לבד מהנתונים באפליקציה: סטטוס התקדמות, מאזן פאנלים, בטון, ניפוקים, תעודות ורכש. «ליזם» בלי ספקים, קבלנים, מחירים וכמויות קטנות.</div>'
     +'<div class="chips" id="wrMode"><button type="button" class="chip2" data-m="mgr" aria-pressed="true">למנהלים</button><button type="button" class="chip2" data-m="client" aria-pressed="false">ליזם</button></div>'
     +'<div class="f"><label for="wrEnd">השבוע שמסתיים ב-</label><input type="date" id="wrEnd" value="'+endIso+'"></div>'
@@ -157,10 +156,8 @@ function openWeekly(){
     +(ROLE==="owner"?'<details class="wr-plan"><summary>תאריכי יעד מול הגאנט</summary><div class="note">כשיש לוח זמנים מהפרויקט: תאריך סיום מתוכנן לכל פעילות. בלי תאריך, השורה «מול התוכנית» נשארת ריקה.</div><div id="wrPlan"></div><button class="ghost" id="wrPlanSave" type="button" style="width:100%;margin-top:8px">שמור תאריכי יעד</button></details>':'')
     +'<iframe class="wr-frame" id="wrFrame" title="תצוגת הדוח"></iframe>'
     +'<div class="acts"><button class="save" id="wrDl" type="button">הורדת הדוח</button><button class="ghost" id="wrPrint" type="button">הדפסה</button></div>'
-    +'<div class="acts" style="margin-top:8px"><button class="ghost" id="wrMail" type="button">העתק טקסט למייל</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=s=>scrim.querySelector(s);
-  const close=()=>{ wrRedraw=null; document.removeEventListener("keydown",esck); scrim.remove(); }; const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck); q(".cancel").onclick=close; scrim.onclick=ev=>{ if(ev.target===scrim) close(); };
+    +'<div class="acts" style="margin-top:8px"><button class="ghost" id="wrMail" type="button">העתק טקסט למייל</button><button class="cancel" type="button">סגור</button></div></div>'); const q=s=>scrim.querySelector(s);
+  const close=closer(scrim,()=>{ wrRedraw=null; }); q(".cancel").onclick=close;
   // התמונה האחרונה עד סוף השבוע, ולהשוואה הצילום הראשון שקדם לה בחודש לפחות
   const shots=()=>DRONE.map(d=>({src:d.asset?"/_blob/"+d.asset:d.url,date:d.date})).concat(localImg?[localImg]:[]).filter(x=>x.date&&x.date<=endIso).sort((a,b)=>a.date<b.date?-1:1);
   const photo=()=>{ const L=shots(); return L[L.length-1]||null; };

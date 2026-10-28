@@ -35,27 +35,23 @@ async function saveEta(doc){
 }
 function openEtaForm(existing){
   const e=existing?{...existing}:{id:"eta"+Date.now().toString(36),date:"",title:"",supplier:"",ref:"",source:"ידני",note:"",status:"expected",by:actorName(),ts:Date.now()};
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="תאריך אספקה"><div class="grab"></div><h2>'+(existing?"עריכת ":"")+'תאריך אספקה לאתר</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תאריך אספקה"><div class="grab"></div><h2>'+(existing?"עריכת ":"")+'תאריך אספקה לאתר</h2>'
     +'<div class="f"><label for="etTitle">מה מגיע</label><input type="text" id="etTitle" placeholder="למשל: שנאי · 2 מכולות MVS · כבל סטרינג" value="'+esc(e.title)+'"></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="etDate">תאריך צפוי</label><input type="date" id="etDate" value="'+esc(e.date||"")+'"></div><div class="f"><label for="etSup">ספק / מוביל</label><input type="text" id="etSup" list="orSups2" value="'+esc(e.supplier||"")+'"><datalist id="orSups2">'+[...new Set([...POS.map(p=>shortSup(p.supplier||"")),...ETA.map(x=>x.supplier||"")].filter(Boolean))].map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="etRef">אסמכתא (PO / תיק מכס)</label><input type="text" id="etRef" value="'+esc(e.ref||"")+'"></div><div class="f"><label for="etSrc">מקור</label><input type="text" id="etSrc" placeholder="מייל רכש · מכס · טלפון" value="'+esc(e.source||"")+'"></div></div>'
     +'<div class="f"><label for="etNote">הערה</label><input type="text" id="etNote" placeholder="תיאום, איש קשר, מכולות" value="'+esc(e.note||"")+'"></div>'
-    +'<div class="acts"><button class="save" id="etSave" type="button">שמור</button><button class="cancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
+    +'<div class="acts"><button class="save" id="etSave" type="button">שמור</button><button class="cancel" type="button">ביטול</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q(".cancel").onclick=close; scrim.onclick=ev=>{ if(ev.target===scrim) close(); };
   q("#etSave").onclick=async()=>{ const title=q("#etTitle").value.trim(); if(!title){ toast("מה מגיע?"); return; }
     const doc={...e,title,date:q("#etDate").value||"",supplier:q("#etSup").value.trim(),ref:q("#etRef").value.trim(),source:q("#etSrc").value.trim()||"ידני",note:q("#etNote").value.trim(),updated:Date.now()};
     q("#etSave").disabled=true; if(await saveEta(doc)){ logAct("order",existing?"edit":"add",(existing?"עודכן":"נוסף")+" תאריך אספקה: "+doc.title+(doc.date?" · "+fmtIso(doc.date):""),doc.id); close(); } else q("#etSave").disabled=false; };
 }
 function openEtaItem(e){
-  e=ETA.find(x=>x.id===e.id)||e; const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="אספקה"><div class="grab"></div><h2>'+esc(e.title)+'</h2>'
+  e=ETA.find(x=>x.id===e.id)||e; const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="אספקה"><div class="grab"></div><h2>'+esc(e.title)+'</h2>'
     +'<div class="kv">'+(e.date?'<span>צפוי <b>'+esc(fmtIso(e.date))+'</b></span>':'<span>בלי תאריך</span>')+(e.supplier?'<span>'+esc(e.supplier)+'</span>':'')+(e.ref?'<span>'+esc(e.ref)+'</span>':'')+(e.source?'<span>מקור: '+esc(e.source)+'</span>':'')+(e.status==="arrived"?'<span style="color:var(--sage)">הגיע '+esc(fmtD(e.arrivedTs||0))+'</span>':'')+'</div>'
     +(e.note?'<div class="note-card">'+esc(e.note)+'</div>':'')
     +(ROLE!=="viewer"?'<div class="chips">'+(e.status!=="arrived"?'<button type="button" class="chip2" id="etArr" style="border-color:var(--sage)">הגיע לאתר</button>':'<button type="button" class="chip2" id="etUnarr">עדיין לא הגיע</button>')+'<button type="button" class="chip2" id="etEdit">ערוך</button>'+(ROLE==="owner"?'<button type="button" class="chip2" id="etDel" style="border-color:var(--clay)">מחק</button>':'')+'</div>':'')
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q(".cancel").onclick=close; scrim.onclick=ev=>{ if(ev.target===scrim) close(); };
   const arr=q("#etArr"); if(arr) arr.onclick=async()=>{ if(await saveEta({...e,status:"arrived",arrivedTs:Date.now(),arrivedBy:actorName()})){ logAct("order","edit","הגיע לאתר: "+e.title,e.id); close(); } };
   const un=q("#etUnarr"); if(un) un.onclick=async()=>{ const d={...e,status:"expected"}; delete d.arrivedTs; if(await saveEta(d)) close(); };
@@ -75,7 +71,6 @@ function renderPos(){
 }
 function openPoDetail(p){
   p=POS.find(x=>x.id===p.id)||p; const st=poStatus(p); const cat=catalog();
-  const scrim=document.createElement("div"); scrim.className="scrim";
   let html='<div class="sheet" role="dialog" aria-modal="true" aria-label="הזמנת רכש"><div class="grab"></div><h2>'+esc(p.no)+' <span class="role-badge" style="background:var(--line2);color:'+st.color+'">'+esc(st.label)+'</span></h2>'
     +'<div class="kv"><span>'+esc(fmtDT(p.dateText)||"")+'</span><span>'+esc(p.supplier||"")+'</span>'+(p.details?'<span>'+esc(p.details)+'</span>':'')+'</div>'
     +(p.note?'<div class="note-card">'+esc(p.note)+'</div>':'')
@@ -84,7 +79,7 @@ function openPoDetail(p){
       return '<div><span>'+esc(l.name)+(l.sku?' <small style="color:var(--ink3)">מק״ט '+esc(l.sku)+'</small>':'')+(item?'<br><small style="color:var(--ink3)">→ '+esc(item.name)+' · סעיף '+esc(l.boq)+(l.boqConf==="likely"?' ?':'')+'</small>':l.boq==="-"?'<br><small style="color:var(--ink3)">לא ב-EBOQ</small>':'<br><small style="color:var(--amber)">לא מקושר ל-EBOQ</small>')+(l.due?'<br><small style="color:var(--ink3)">אספקה '+esc(fmtDT(l.due.replace(/(\d\d)\/(\d\d)\/(\d\d)$/,"$1/$2/20$3")))+'</small>':'')+'</span><b>'+fmtN(l.qty)+' '+esc(l.unit||"")+'<br><small style="color:'+(rec>=need&&need?"var(--sage)":rec?"var(--amber)":"var(--clay)")+'">הגיעו '+fmtN(rec)+'</small></b></div>'; }).join("")+'</div>'
     +'<div class="row2" style="margin-top:8px">'+(ROLE!=="viewer"?'<button class="ghost" type="button" id="pdLink">קישור שורות ל-EBOQ</button>':'')+'<button class="ghost" type="button" id="pdCopy">העתק טקסט</button></div>'
     +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  scrim.innerHTML=html; document.body.appendChild(scrim);
+  const scrim=popup(html);
   const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const lk=scrim.querySelector("#pdLink"); if(lk) lk.onclick=()=>{ close(); openBoqLinker(p.no); };
   scrim.querySelector("#pdCopy").onclick=()=>copyText("*"+p.no+" · "+(p.supplier||"")+"*\n"+(fmtDT(p.dateText)||"")+(p.details?" · "+p.details:"")+"\n"+(p.lines||[]).filter(l=>!l.skip).map((l,i)=>(i+1)+". "+l.name+" — "+fmtN(l.qty)+" "+(l.unit||"")+" · הגיעו "+fmtN(receivedSince(p,l))).join("\n"));

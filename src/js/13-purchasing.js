@@ -143,9 +143,7 @@ async function linkAllNotesToBoq(force){
   if(!todo.length){ toast("אין שורות לא מקושרות."); return; }
   if(!SAMPLE){ toast("קישור אוטומטי לא זמין בתצוגה הזאת — אפשר לקשר ידנית."); return; }
   if(!(await ask("לעבור עם AI על "+todo.length+" תעודות ולקשר את השורות לפריטי EBOQ? קישור «כנראה» מסומן בסימן שאלה ואפשר לתקן ידנית.","קשר"))) return;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-EBOQ"><div class="grab"></div><h2>קישור תעודות ל-EBOQ</h2><div class="prog"><i id="lkBar" style="width:2%"></i></div><div class="prog-t"><span id="lkTxt">מתחיל…</span></div><div class="dlines" id="lkLog" style="max-height:40vh;overflow:auto"></div><div class="acts"><button class="cancel" type="button" id="lkStop">עצור</button></div></div>';
-  document.body.appendChild(scrim); let stop=false; scrim.querySelector("#lkStop").onclick=()=>{ stop=true; };
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-EBOQ"><div class="grab"></div><h2>קישור תעודות ל-EBOQ</h2><div class="prog"><i id="lkBar" style="width:2%"></i></div><div class="prog-t"><span id="lkTxt">מתחיל…</span></div><div class="dlines" id="lkLog" style="max-height:40vh;overflow:auto"></div><div class="acts"><button class="cancel" type="button" id="lkStop">עצור</button></div></div>'); let stop=false; scrim.querySelector("#lkStop").onclick=()=>{ stop=true; };
   let done=0, linked=0, failed=0; const max=Math.min(todo.length,80);
   for(const {rec,coll} of todo.slice(0,80)){ if(stop) break;
     scrim.querySelector("#lkTxt").textContent=(done+1)+"/"+max+" · "+(rec.supplier||"")+" · קושרו "+linked;
@@ -165,14 +163,12 @@ function openBoqLinker(prefill){
   if(!boq.length){ toast("אין EBOQ. ייבא קודם."); return; }
   const cat=catalog().filter(c=>c.codes.length); let mode="open", qtxt=(prefill||"").toLowerCase(), shown=40, onlySup=true;
   const boqSups=[...new Set(boq.map(l=>l.supplier).filter(Boolean))]; const isBoqSup=sup=>boqSups.some(x=>supMatch(sup,x));
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות ל-EBOQ"><div class="grab"></div><h2>תעודות משלוח ↔ EBOQ</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות ל-EBOQ"><div class="grab"></div><h2>תעודות משלוח ↔ EBOQ</h2>'
     +'<div class="note-card">שמות בתעודה הם של הספק, שמות ב-EBOQ של המתכנן. כל שורה שתקשר כאן נלמדת: בפעם הבאה שאותו פריט מגיע מאותו ספק הוא מתקשר לבד. «לא ב-EBOQ» = פריט שלא מופיע בכתב הכמויות (ציוד, סרטים, תופים).</div>'
     +(SAMPLE&&ROLE!=="viewer"?'<button class="ghost" type="button" id="lkAuto" style="width:100%;margin-bottom:8px">קישור אוטומטי עם AI לכל מה שלא מקושר</button>':'')
     +'<div class="chips" id="lkMode" style="margin-bottom:8px"><button type="button" class="chip2" data-m="open" aria-pressed="true">לא מקושר</button><button type="button" class="chip2" data-m="linked" aria-pressed="false">מקושר</button><button type="button" class="chip2" data-m="likely" aria-pressed="false">כנראה ?</button><button type="button" class="chip2" data-m="none" aria-pressed="false">לא ב-EBOQ</button><button type="button" class="chip2" id="lkSup" aria-pressed="true">רק ספקי EBOQ</button></div>'
     +'<div class="search" style="margin-bottom:8px"><input type="text" id="lkQ" placeholder="חפש שורה לפי שם או ספק" autocomplete="off"><span class="ico">⌕</span></div>'
-    +'<div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=s=>scrim.querySelector(s);
+    +'<div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=s=>scrim.querySelector(s);
   const close=()=>scrim.remove(); q(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const auto=q("#lkAuto"); if(auto) auto.onclick=async()=>{ await linkAllNotesToBoq(true); draw(); };
   q("#lkMode").onclick=e=>{ const b=e.target.closest("[data-m]"); if(!b) return; mode=b.dataset.m; shown=40; scrim.querySelectorAll("#lkMode .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); draw(); };
@@ -220,13 +216,11 @@ function openBoqLinker(prefill){
   draw();
 }
 function openBoqImport(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא EBOQ"><div class="grab"></div><h2>ייבוא EBOQ (כתב כמויות)</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא EBOQ"><div class="grab"></div><h2>ייבוא EBOQ (כתב כמויות)</h2>'
     +'<div class="note-card">כתב הכמויות של חשמל (EBOQ), סיביל או שטח ההתארגנות: xlsx או csv. גיליון EBOQ של הרכש נקרא ישירות, כולל מספרי PO, ספק ומק״ט ספק; קובץ אחר נקרא בעזרת AI, ואתה מאשר. ה-EBOQ הוא תכנון, לא מלאי: ממנו רואים מה עוד לא הוזמן ומה בדרך.</div>'
     +(boq.length?'<div class="legend">כרגע ב-EBOQ: <b>'+boq.length+'</b> פריטים ('+esc(boqSource||"")+'). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>':'')
     +'<div id="bqBody"><div class="pick">בחר קובץ EBOQ<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div>'
-    +'<div class="acts"><button class="save" id="bqGo" hidden type="button">שמור ל-EBOQ</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="bqGo" hidden type="button">שמור ל-EBOQ</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let out=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#bqFile").onchange=async e=>{

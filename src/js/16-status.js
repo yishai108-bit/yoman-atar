@@ -34,13 +34,11 @@ async function saveStatus(a){
 }
 function openStatusEntry(a){
   a=STATUS.find(x=>x.id===a.id)||a; const hol=statusHolidays(); const c=statusCalc(a,hol);
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="סטטוס פעילות"><div class="grab"></div><h2>'+esc(a.name)+'</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סטטוס פעילות"><div class="grab"></div><h2>'+esc(a.name)+'</h2>'
     +'<div class="kv"><span>בוצע <b>'+fmtN(c.done)+'</b> מתוך '+fmtN(a.total)+'</span><span>'+Math.round(c.pct*100)+'%</span><span>ימי עבודה: עברו <b>'+c.passed+'</b> · נותרו <b>'+c.left+'</b></span>'+(c.remaining?'<span>צריך <b>'+(c.reqNow===null?"—":fmtN(c.reqNow))+'</b> ליום (תכנון '+fmtN(c.reqOrig)+')</span>':'<span style="color:var(--sage)">הושלם</span>')+'</div>'
     +(ROLE!=="viewer"?'<div class="f"><label>כמות שבוצעה ביום</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="date" id="seDate" value="'+isoOf(Date.now())+'"><input type="text" id="seQty" inputmode="decimal" placeholder="כמות"></div><input type="text" id="seNote" placeholder="הערה (למשל: שדה 3, חג)" style="margin-top:8px"><button class="save" id="seSave" type="button" style="margin-top:8px;width:100%">שמור</button></div>':'')
     +'<div class="sechead"><span>רישומים אחרונים</span><span>'+c.daily.filter(d=>Number(d.actual)).length+' ימים</span></div><div class="dlines" id="seList">'+c.daily.slice().reverse().filter(d=>Number(d.actual)||d.note).slice(0,30).map(d=>'<div data-d="'+esc(d.date)+'"><span>'+esc(isoText(d.date))+(d.note?' <small style="color:var(--ink3)">'+esc(d.note)+'</small>':'')+'</span><b>'+(Number(d.actual)?fmtN(d.actual):'—')+'</b></div>').join("")+'</div>'
-    +'<div class="acts">'+(ROLE==="owner"?'<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>':'')+'<button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
+    +'<div class="acts">'+(ROLE==="owner"?'<button class="cancel danger" id="seDel" type="button">מחק פעילות</button>':'')+'<button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q(".cancel:not(.danger)").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("#seList [data-d]").forEach(r=>r.onclick=()=>{ if(!q("#seDate")) return; const d=(a.daily||[]).find(x=>x.date===r.dataset.d); q("#seDate").value=r.dataset.d; q("#seQty").value=d&&Number(d.actual)?d.actual:""; q("#seNote").value=d?(d.note||""):""; q("#seQty").focus(); });
   const sv=q("#seSave"); if(sv) sv.onclick=async()=>{ const date=q("#seDate").value, qty=Number(String(q("#seQty").value).replace(",","."))||0, note=q("#seNote").value.trim(); if(!date){ toast("תאריך?"); return; }
@@ -64,11 +62,9 @@ function parseStatusWorkbook(wb){
 }
 function openStatusImport(){
   if(ROLE!=="owner"){ toast("ייבוא סטטוס — בעלים בלבד."); return; }
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא סטטוס"><div class="grab"></div><h2>ייבוא קובץ סטטוס התקדמות</h2><div class="note-card">קובץ הסטטוס של החברה (xlsx): גיליון לכל פעילות עם "כמות כללית", "ימי עבודה לפעולה" והבלוקים השבועיים. נקרא ישירות. רישומים יומיים שהוזנו באפליקציה בתאריכים שאינם בקובץ נשמרים.</div>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא סטטוס"><div class="grab"></div><h2>ייבוא קובץ סטטוס התקדמות</h2><div class="note-card">קובץ הסטטוס של החברה (xlsx): גיליון לכל פעילות עם "כמות כללית", "ימי עבודה לפעולה" והבלוקים השבועיים. נקרא ישירות. רישומים יומיים שהוזנו באפליקציה בתאריכים שאינם בקובץ נשמרים.</div>'
     +'<div id="siBody"><div class="pick">בחר קובץ סטטוס<small>xlsx</small><input type="file" id="siFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div></div>'
-    +'<div class="acts"><button class="save" id="siGo" hidden type="button">שמור סטטוס</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); let out=null;
+    +'<div class="acts"><button class="save" id="siGo" hidden type="button">שמור סטטוס</button><button class="cancel" type="button">סגור</button></div></div>'); const q=x=>scrim.querySelector(x); let out=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#siFile").onchange=async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; q("#siBody").innerHTML='<div class="prog"><i style="width:40%"></i></div><div class="prog-t"><span>קורא את הקובץ…</span></div>';
     try{ await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"); const wb=XLSX.read(await f.arrayBuffer(),{type:"array",cellDates:true}); out=parseStatusWorkbook(wb); }catch(err){ out=null; }

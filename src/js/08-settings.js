@@ -15,10 +15,9 @@ async function saveSite(doc){
   if(DB) await DB.doc("settings/site").set(doc); else { ls.set("site",JSON.stringify(doc)); applySite(doc); }
 }
 function openSettings(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
   let types=kitTypes.map(t=>({...t}));
   const F=(id,l,v,hint,ph)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'" autocomplete="off">'+(hint?'<div class="hint">'+hint+'</div>':'')+'</div>';
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2>'
     +'<div class="setgrid">'
       +'<button class="ghost" type="button" id="stLog">יומן פעולות<small>מי שמר, מתי ומה</small></button>'
       +'<button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button>'
@@ -37,8 +36,7 @@ function openSettings(){
       +'<button class="ghost" type="button" id="stDemo">איפוס תצוגת דוגמה<small>מציג שוב נתוני דוגמה במכשיר הזה</small></button>'
     +'</div></div>'
     +'<div class="acts"><button class="save" id="stSave" type="button">שמור הגדרות</button><button class="cancel" id="stCancel" type="button">סגור</button></div>'
-    +'<div class="hint" style="text-align:center;margin-top:14px">יומן אתר · גרסה '+APP_VERSION+' · הנתונים נשמרים במרחב של האפליקציה ונגישים לכל מי שקיבל קישור'+(DB?'':' · <b>כרגע במכשיר הזה בלבד</b>')+'</div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="hint" style="text-align:center;margin-top:14px">יומן אתר · גרסה '+APP_VERSION+' · הנתונים נשמרים במרחב של האפליקציה ונגישים לכל מי שקיבל קישור'+(DB?'':' · <b>כרגע במכשיר הזה בלבד</b>')+'</div></div>');
   const q=s=>scrim.querySelector(s);
   function drawTypes(){
     const box=q("#stTypes"); box.innerHTML="";
@@ -117,12 +115,10 @@ async function exportAllCsv(){
   if(await saveFile("יומן-אתר-"+new Date().toISOString().slice(0,10)+".zip",blob)) toast("9 טבלאות ב-ZIP.");
 }
 function openRestore(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2>'
     +'<div class="note-card">בוחרים קובץ גיבוי (JSON) שיוצא מהאפליקציה. הרשומות שבקובץ ייכתבו <b>בנוסף</b> לקיימות: רשומה עם אותו מזהה תוחלף, אחרות לא יימחקו. כך מעבירים אתר למרחב חדש.</div>'
     +'<div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>yoman-atar · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div>'
-    +'<div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let obj=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#rsFile").onchange=async e=>{
@@ -194,13 +190,11 @@ async function hebrewNames(lines){ // תרגום קצר של שמות הפריט
   }catch(e){ return fallback(); }
 }
 function openBomImport(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא BOM"><div class="grab"></div><h2>ייבוא BOM מאקסל</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא BOM"><div class="grab"></div><h2>ייבוא BOM מאקסל</h2>'
     +'<div class="note-card">בוחרים את קובץ ה-BOM של היצרן (xlsx או csv). קובץ של שלטר (Customs bill of material) נקרא ישירות: פריטים, כמויות כוללות, ספייר וסוגי השולחנות. פורמט אחר נקרא בעזרת AI. בסוף <b>אתה מאשר או מתקן</b> בעורך הכמויות.</div>'
     +'<div class="legend">סוגי השולחנות היום: '+kitTypes.map(t=>esc(t.label)+" × "+fmtN(Number(t.count)||0)).join(" · ")+'.</div>'
     +'<div id="bomBody"><div class="pick">בחר קובץ BOM<small>xlsx / xls / csv</small><input type="file" id="bomFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div>'
-    +'<div class="acts"><button class="save" id="bomGo" hidden type="button">המשך לעורך</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="bomGo" hidden type="button">המשך לעורך</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let out=null, stockOn=true, typesOn=false;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   const prog=(pct,t)=>{ q("#bomBody").innerHTML='<div class="prog"><i style="width:'+pct+'%"></i></div><div class="prog-t"><span>'+esc(t)+'</span></div>'; };

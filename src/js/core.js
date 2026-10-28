@@ -27,15 +27,30 @@ function toast(msg){
   t.textContent=msg; t.hidden=false;
   clearTimeout(toastT); toastT=setTimeout(()=>{ t.hidden=true; },3200);
 }
+// חלון קופץ: יוצר את הרקע, שם בו את ה-HTML ומוסיף לדף. מחזיר את הרקע (scrim).
+// opts.z: שכבה מעל חלון אחר (למשל סורק מעל טופס).
+function popup(html,opts){
+  const scrim=document.createElement("div"); scrim.className="scrim";
+  if(opts&&opts.z) scrim.style.zIndex=String(opts.z);
+  scrim.innerHTML=html; document.body.appendChild(scrim);
+  return scrim;
+}
+// סגירה של חלון: מחזירה close(), ומחברת אותה ל-Escape (רק לחלון העליון) וללחיצה על הרקע.
+// after: מה לעשות אחרי הסגירה (למשל לעצור מצלמה).
+function closer(scrim,after){
+  const k=ev=>{ if(ev.key==="Escape"&&[...document.querySelectorAll(".scrim")].pop()===scrim) close(); };
+  function close(){ document.removeEventListener("keydown",k); scrim.remove(); if(after) after(); }
+  document.addEventListener("keydown",k);
+  scrim.addEventListener("click",e=>{ if(e.target===scrim) close(); });
+  return close;
+}
 function ask(msg, okLabel, color, sub){
   return new Promise(res=>{
-    const scrim=document.createElement("div"); scrim.className="scrim";
-    scrim.innerHTML='<div class="sheet" role="alertdialog" aria-modal="true">'
+    const scrim=popup('<div class="sheet" role="alertdialog" aria-modal="true">'
       +'<div class="grab"></div><h2>'+esc(msg)+'</h2>'
       +(sub?'<div class="note-card">'+esc(sub)+'</div>':'')
       +'<div class="acts"><button class="save" type="button" style="background:'+(color||"var(--clay)")+'">'+esc(okLabel||"מחק")+'</button>'
-      +'<button class="cancel" type="button">ביטול</button></div></div>';
-    document.body.appendChild(scrim);
+      +'<button class="cancel" type="button">ביטול</button></div></div>');
     const done=v=>{ scrim.remove(); res(v); };
     scrim.querySelector(".save").onclick=()=>done(true);
     scrim.querySelector(".cancel").onclick=()=>done(false);
@@ -78,17 +93,13 @@ async function mergeSettingsMap(name,patch){
 }
 function openLog(){
   let kind="all", max=60;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="יומן פעולות"><div class="grab"></div><h2>יומן פעולות</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="יומן פעולות"><div class="grab"></div><h2>יומן פעולות</h2>'
     +'<div class="note-card">כל שמירה, עדכון ומחיקה באפליקציה, עם השם שהוקלד, המכשיר והשעה. מחיקות שומרות עותק של מה שנמחק.</div>'
     +'<div class="chips" id="lgChips"></div><div class="stock" id="lgList"></div>'
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck);
-  q(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+  q(".cancel").onclick=close;
   async function draw(){
     const present=[...new Set(logs.map(l=>l.kind))];
     q("#lgChips").innerHTML='<button type="button" class="chip2" data-k="all" aria-pressed="'+(kind==="all")+'">הכל <span class="num">'+logs.length+'</span></button>'
@@ -114,10 +125,8 @@ function openLog(){
   draw();
 }
 function alertSheet(title,html){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>'+esc(title)+'</h2>'+html
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>'+esc(title)+'</h2>'+html
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
 }
 
@@ -199,9 +208,7 @@ let draft = null;
 function openSheet(){
   draft = {serial:"",blame:"",blameOther:"",note:"",
            labelBlob:null,damageBlob:null,labelUrl:"",damageUrl:""};
-  const scrim=document.createElement("div");
-  scrim.className="scrim";
-  scrim.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="רישום פאנל שבור">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="רישום פאנל שבור">'
   + '<div class="grab"></div><h2>רישום פאנל שבור</h2>'
   + '<div class="f"><label>תמונות</label><div class="shots">'
     + '<div class="shot" id="shotLabel"><i class="ic ic-cam big"></i>צלם את המדבקה<input type="file" accept="image/*" capture="environment" id="fLabel" aria-label="תמונת המדבקה"></div>'
@@ -215,8 +222,7 @@ function openSheet(){
   + '<div class="f"><label for="iNote">הערה / תיאור</label>'
     + '<textarea id="iNote" placeholder="מה קרה, איפה, מתי התגלה, סוג הנזק"></textarea></div>'
   + '<div class="acts"><button class="save" id="bSave" disabled>שמור רשומה</button>'
-    + '<button class="cancel" id="bCancel">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    + '<button class="cancel" id="bCancel">ביטול</button></div></div>');
 
   opts("#oBlame",BLAME,"blame");
   scrim.querySelector("#iSerial").oninput = e => {draft.serial=e.target.value.trim(); check();};

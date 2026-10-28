@@ -355,8 +355,7 @@ function openProgress(opt){
   const whos=[...new Set([...(demoStock?[]:issues).map(i=>i.who),...(demoStock?[]:progress).map(p=>p.who)].filter(Boolean))];
   let tables=5, ttype="", stage=opt&&opt.stage||"con";
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע">'
     +'<div class="grab"></div><h2>דיווח ביצוע</h2>'
     +'<div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.'+((demoStock?[]:progress).length?'':' <b>דיווח ראשון: המצב המצטבר עד היום.</b>')+'</div>'
     +'<div class="f"><label>שלב</label><div class="chips" id="pgStage" style="margin-bottom:0">'+STAGES.map(x=>'<button type="button" class="chip2" data-s="'+x[0]+'" aria-pressed="'+(x[0]===stage)+'">'+x[1]+'</button>').join("")+'</div><div class="hint" id="pgStageHint"></div></div>'
@@ -371,8 +370,8 @@ function openProgress(opt){
     +'<div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="'+iso+'"></div>'
     +'<div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="'+esc(ls.get("issuer")||"")+'"></div>'
     +'<div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שדה 2 שורות 15–16"></div>'
-    +'<div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   const setT=n=>{ n=Math.max(1,Math.round(Number(n)||0)); tables=n; q("#pgTables").value=n; };
   q("#pgMinus").onclick=()=>setT(tables-1); q("#pgPlus").onclick=()=>setT(tables+1); q("#pgTables").onchange=e=>setT(e.target.value);
@@ -380,8 +379,7 @@ function openProgress(opt){
   const stageHint=()=>{ const x=STAGES.find(y=>y[0]===stage); q("#pgStageHint").textContent=x[2]; q("#pgUnit").textContent=x[1]; };
   q("#pgStage").onclick=e=>{ const b=e.target.closest("[data-s]"); if(!b) return; stage=b.dataset.s; scrim.querySelectorAll("#pgStage .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); stageHint(); };
   stageHint();
-  q("#pgCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#pgCancel").onclick=close;
   q("#pgSave").onclick=async()=>{
     const who=q("#pgWho").value.trim();
     const by=q("#pgBy").value.trim(); if(!by){ toast("מי דיווח? צריך שם."); q("#pgBy").focus(); return; } ls.set("issuer",by);
@@ -396,16 +394,13 @@ function openProgress(opt){
     if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderOverview(); toast("הדיווח נשמר.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
 
 /* ---- מחירים ל-₪ ---- */
 function openPrices(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
   const pp=prices.parts||{};
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="מחירים">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מחירים">'
     +'<div class="grab"></div><h2>מחירים לחישוב ₪</h2>'
     +'<div class="note-card">המחירים נשמרים באפליקציה בלבד ומשמשים רק להמרת הכמויות לשקלים בכרטיס «איפה הכסף». אפשר להשאיר ריק.</div>'
     +'<div class="kitrows">'
@@ -414,8 +409,7 @@ function openPrices(){
     +'<div class="pricerow"><div class="nm">פאנל<small>₪ ליחידה</small></div><input type="text" inputmode="decimal" id="prP" value="'+(prices.panel||"")+'" placeholder="₪"></div>'
     +kit.filter(k=>k.def!==false).map(k=>'<div class="pricerow"><div class="nm">'+esc(shortName(k.name))+'<small>₪ ליחידה · מק״ט '+esc(k.code)+'</small></div><input type="text" inputmode="decimal" data-code="'+esc(k.code)+'" value="'+(pp[k.code]||"")+'" placeholder="₪"></div>').join("")
     +'</div>'
-    +'<div class="acts"><button class="save" id="prSave" type="button">שמור</button><button class="cancel" id="prCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="prSave" type="button">שמור</button><button class="cancel" id="prCancel" type="button">ביטול</button></div></div>');
   const q=s=>scrim.querySelector(s);
   q("#prCancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#prSave").onclick=async()=>{

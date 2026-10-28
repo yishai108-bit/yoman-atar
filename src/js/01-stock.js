@@ -228,8 +228,7 @@ function renderStock(){
 /* ---- קליטת תעודה ---- */
 function openNote(){
   let pages=[], lines=[], reading=0;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת משלוח">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת משלוח">'
   +'<div class="grab"></div><h2>קליטת תעודת משלוח</h2>'
   +'<div class="note-card">סורקים את התעודה כמו ב-CamScanner: הקצוות מזוהים לבד, התמונה מיושרת ומנוקה, ואפשר כמה עמודים. הספק, המספר והשורות ייקראו לבד. <b>אתה מאשר או מתקן לפני שמירה.</b></div>'
   +'<div class="f"><div class="pages" id="nPages"></div><button class="scanbtn" type="button" id="bScan"><i class="ic ic-cam"></i>סרוק את התעודה</button>'
@@ -241,8 +240,8 @@ function openNote(){
   +'<div class="row2" style="margin:8px 0 0"><button class="addline" id="bAddLine" type="button" style="flex:1">+ הוסף שורה</button><button class="addline" id="bLinesScan" type="button" style="flex:1"><i class="ic ic-scan"></i>סרוק קרטונים</button></div>'
   +'<div class="hint">כמות שלילית = הוחזר לספק. סריקת קרטונים: כל ברקוד = קרטון, הכמות = קרטונים × יחידות בקרטון.</div></div>'
   +'<div class="acts"><button class="save" id="bSaveNote" disabled>שמור תעודה</button>'
-  +'<button class="cancel" id="bCancelNote">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+  +'<button class="cancel" id="bCancelNote">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   { const dl=document.createElement("datalist"); dl.id="boqNames"; const names=[...new Set([...boq.map(l=>(l.name||"").trim()),...kit.map(k=>k.name)].filter(Boolean))]; dl.innerHTML=names.slice(0,400).map(n=>'<option value="'+esc(n)+'"></option>').join(""); scrim.appendChild(dl); }
 
@@ -329,8 +328,6 @@ function openNote(){
     }});
   };
   q("#bCancelNote").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esckey);
   q("#bSaveNote").onclick=async()=>{
     const b=q("#bSaveNote"); b.disabled=true; b.textContent="שומר…";
     const dt=parseDate(q("#iDate").value.trim());
@@ -349,8 +346,6 @@ function openNote(){
     close(); renderStock();
     linkNoteToBoq(rec).catch(()=>{});   // ברקע: קישור השורות לפריטי ה-EBOQ — כך "הגיע" נקבע לפי התעודה
   };
-  function esckey(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esckey); scrim.remove(); }
   drawLines(); drawPages();
 }
 
@@ -363,30 +358,24 @@ function moveSlipText(who,item,outs){
 }
 function openMoveSlip(who,item){
   const outs=moveOuts(who,item);
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>'+esc(item)+' · '+esc(who)+'</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>'+esc(item)+' · '+esc(who)+'</h2>'
     +outs.map(m=>{ const d=new Date(m.ts); const sig=m.sigAsset?"/_blob/"+m.sigAsset:(m.sigUrl||m.sigData||"");
       return '<div class="kv"><span>'+fmtD(d)+' '+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+'</span><span>כמות <b>'+fmtN(m.qty)+'</b></span>'
         +'<span>'+(moveSigned(m)?'<b style="color:var(--sage)">חתום</b>':'<b style="color:var(--clay)">ללא חתימה</b>')+'</span></div>'
         +(sig?'<img class="sigimg" src="'+sig+'" alt="חתימת המקבל">':'')
         +'<button class="ghost" type="button" data-mpdf="'+esc(m.id)+'" style="margin:8px 0 4px">PDF של הניפוק הזה</button>'; }).join("")
-    +'<div class="acts"><button class="save" type="button" id="msCopy">העתק לוואטסאפ</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck);
+    +'<div class="acts"><button class="save" type="button" id="msCopy">העתק לוואטסאפ</button><button class="cancel" type="button">סגור</button></div></div>');
+  const close=closer(scrim);
   scrim.querySelector(".cancel").onclick=close;
   scrim.querySelector("#msCopy").onclick=()=>copyText(moveSlipText(who,item,outs));
   scrim.querySelectorAll("[data-mpdf]").forEach(b=>b.onclick=()=>issuePdfById(b.dataset.mpdf,b));
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
 }
 
 /* ---- ניפוק: הוצאה / החזרה / ספירה ---- */
 function openMove(item){
   let dir="out";
   const names=[...new Set((demoStock?DEMO_MOVES:moves).map(m=>m.who).filter(Boolean))];
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק">'
   +'<div class="grab"></div><h2>'+esc(item)+'</h2>'
   +'<div class="f"><label>סוג הפעולה</label><div class="opts" id="oDir">'
   +'<button class="opt" type="button" data-d="out" aria-pressed="true">הוצאה<small>יוצא מהמלאי</small></button>'
@@ -402,8 +391,8 @@ function openMove(item){
   +'<div class="hint">השם נשמר, ואפשר לראות מי מחזיק מה.</div></div>'
   +'<div class="f" id="mSigF"><label>חתימת המקבל</label><div class="sig" id="mSig"><canvas></canvas><div class="hint2">חותמים כאן באצבע</div><button class="clr2" type="button">נקה</button></div></div>'
   +'<div class="acts"><button class="save" id="mSave" disabled>שמור</button>'
-  +'<button class="cancel" id="mCancel">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+  +'<button class="cancel" id="mCancel">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=x=>scrim.querySelector(x);
   const pad=sigPad(q("#mSig"));
   q("#oDir").onclick=e=>{
@@ -422,8 +411,6 @@ function openMove(item){
     q("#mSave").disabled = !(okQty && q("#mWho").value.trim()); };
   q("#mQty").oninput=check; q("#mWho").oninput=check;
   q("#mCancel").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esckey);
   q("#mSave").onclick=async()=>{
     const b=q("#mSave");
     if(dir==="out" && !pad.has()){
@@ -451,8 +438,6 @@ function openMove(item){
     if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock();
   };
-  function esckey(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esckey); scrim.remove(); }
   setTimeout(()=>q("#mQty").focus(),50);
 }
 
@@ -592,21 +577,17 @@ async function collectFiles(files){
 }
 function openImport(){
   let ctl=null, items=[], results=[], stage="pick";
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא מוואטסאפ">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא מוואטסאפ">'
   +'<div class="grab"></div><h2>ייבוא מוואטסאפ</h2>'
   +'<div class="note-card">בקבוצה: <b>⋮ → עוד → ייצוא צ׳אט → כולל מדיה</b>. תבחר כאן את קובץ ה-ZIP שנוצר, או תמונות מהגלריה. '
   +'צילומים כפולים ותעודות שכבר נקלטו ידולגו; חול, מנופים ויומני עבודה מסוננים לפי הכללים שלך.</div>'
   +'<div id="impBody"><div class="pick">בחר ZIP של הייצוא או תמונות<small>משתמש בשימוש ה-Claude שלך — כשנייה עד דקה לכל תעודה</small>'
   +'<input type="file" id="impFile" accept=".zip,application/zip,image/*" multiple></div></div>'
-  +'<div class="acts"><button class="save" id="impMain" hidden>שמור</button><button class="cancel" id="impCancel">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+  +'<div class="acts"><button class="save" id="impMain" hidden>שמור</button><button class="cancel" id="impCancel">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s), body=()=>q("#impBody");
   const setMain=(t,fn,show=true)=>{ const b=q("#impMain"); b.hidden=!show; b.disabled=false; b.textContent=t; b.onclick=fn; };
-  function close(){ if(ctl) ctl.abort(); document.removeEventListener("keydown",esckey); scrim.remove(); }
-  function esckey(ev){ if(ev.key==="Escape") close(); }
-  document.addEventListener("keydown",esckey);
-  q("#impCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+  const close=closer(scrim,()=>{ if(ctl) ctl.abort(); });
+  q("#impCancel").onclick=close;
   q("#impFile").onchange=e=>{ const fs=[...e.target.files]; if(fs.length) run(fs); };
 
   async function run(files){
@@ -750,8 +731,7 @@ function openConcreteNote(){
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   const sups=[...new Set(curConcrete().map(c=>c.supplier).filter(Boolean))];
   const F=(id,l,v,ph,mode)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'"'+(mode?' inputmode="'+mode+'"':'')+' autocomplete="off"></div>';
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת בטון">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת בטון">'
     +'<div class="grab"></div><h2>קליטת תעודת בטון</h2>'
     +'<div class="note-card">צלם את תעודת המשלוח של הערבל. הכמות, המספר, המצטבר ומיקום היציקה ייקראו לבד. <b>אתה מאשר או מתקן לפני שמירה.</b></div>'
     +'<div class="f"><div class="pages" id="cnPages"></div><button class="scanbtn" type="button" id="bScanCn"><i class="ic ic-cam"></i>סרוק את תעודת הבטון</button><div class="ai" id="aiCn"></div></div>'
@@ -762,8 +742,8 @@ function openConcreteNote(){
     +F("cnEl","איפה נוצק","","שדה / שורה / שולחן")
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+F("cnMix","סוג בטון","","ב-30")+F("cnTruck","ערבל / רישוי","","ערבל 54")+'</div>'
     +F("cnNote","הערה","","נהג, שעות, הזמנה חלקית")
-    +'<div class="acts"><button class="save" id="cnSave" type="button" disabled>שמור תעודה</button><button class="cancel" id="cnCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="cnSave" type="button" disabled>שמור תעודה</button><button class="cancel" id="cnCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   const check=()=>{ const m=Number(q("#cnM3").value); q("#cnSave").disabled=!(isFinite(m)&&m>0&&q("#cnNo").value.trim()); };
   q("#cnM3").oninput=check; q("#cnNo").oninput=check;
@@ -792,8 +772,7 @@ function openConcreteNote(){
       } else line.textContent="לא הצלחתי לקרוא — מלא ידנית";
     }catch(err){ line.textContent=err&&err.code==="not_granted"?"קריאה אוטומטית לא זמינה — מלא ידנית":"לא הצלחתי לקרוא — מלא ידנית"; }
   }
-  q("#cnCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#cnCancel").onclick=close;
   q("#cnSave").onclick=async()=>{
     const b=q("#cnSave"); b.disabled=true; b.textContent="שומר…";
     const dv=q("#cnDate").value; let ts=Date.now(); if(dv){ const d=new Date(dv+"T12:00:00"); if(!isNaN(d)) ts=d.getTime(); }
@@ -810,8 +789,6 @@ function openConcreteNote(){
     if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderConcrete(); renderOverview(); toast("תעודת הבטון נשמרה.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
 $("#btnConcreteNote").onclick=openConcreteNote;
@@ -978,25 +955,20 @@ if($("#ovFlags")) $("#ovFlags").onclick=e=>{ const b=e.target.closest(".flag[dat
 /* ---- פרטי תעודה ---- */
 function openNoteDetail(id){
   const n=curNotes().find(x=>x.id===id); if(!n) return;
-  const scrim=document.createElement("div"); scrim.className="scrim";
   const srcs=noteImages(n);
   const lines=(n.lines||[]).map(l=>{
     const c=CATS.find(x=>x.id===l.cat);
     return '<div class="'+(Number(l.qty)<0?"neg":"")+'"><span>'+esc(l.name)+(c?' <small style="color:var(--ink3)">· '+c.label+'</small>':'')+'</span><b>'+fmtN(l.qty)+' '+esc(l.unit||"")+'</b></div>';
   }).join("");
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת משלוח">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת משלוח">'
     +'<div class="grab"></div><h2>'+esc(n.supplier||"ספק לא ידוע")+'</h2>'
     +'<div class="kv"><span>תעודה <b>'+esc(n.noteNo||"—")+'</b></span><span>תאריך <b>'+esc(fmtDT(n.dateText)||fmtD(n.ts))+'</b></span><span><b>'+(n.lines||[]).length+'</b> שורות</span>'+(srcs.length>1?'<span><b>'+srcs.length+'</b> עמודים</span>':'')+(n.by?'<span>קלט <b>'+esc(n.by)+'</b></span>':'')+'</div>'
     +(n.note?'<div class="note-card">'+esc(n.note)+'</div>':'')
     +srcs.map((u,i)=>'<img class="dphoto" src="'+u+'" alt="צילום התעודה'+(srcs.length>1?' עמוד '+(i+1):'')+'">').join("")
     +'<div class="dlines">'+(lines||'<div><span>אין שורות</span><b></b></div>')+'</div>'
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>'+(srcs.length?'<button class="ghost" type="button" id="ndPdf" style="flex:1">PDF</button>':'')+'</div></div>';
-  document.body.appendChild(scrim);
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck);
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>'+(srcs.length?'<button class="ghost" type="button" id="ndPdf" style="flex:1">PDF</button>':'')+'</div></div>');
+  const close=closer(scrim);
   scrim.querySelector(".cancel").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const pdf=scrim.querySelector("#ndPdf");
   if(pdf) pdf.onclick=async()=>{ pdf.disabled=true; pdf.textContent="מכין…"; await exportNotePdf(srcs,"תעודה-"+(n.noteNo||n.id)+".pdf",(n.supplier||"")+" "+(n.noteNo||"")); pdf.disabled=false; pdf.textContent="PDF"; };
 }
@@ -1008,14 +980,13 @@ function noteImages(n){
 /* ---- כל התעודות ---- */
 function openAllNotes(){
   let q="", max=30;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="כל התעודות">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="כל התעודות">'
     +'<div class="grab"></div><h2>כל התעודות</h2>'
     +'<div class="search"><input type="text" id="anQ" placeholder="ספק, מספר תעודה או פריט" autocomplete="off" aria-label="חיפוש תעודה"><span class="ico">⌕</span></div>'
     +'<div class="sechead"><span id="anCount"></span></div>'
     +'<div class="stock" id="anList"></div>'
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close=closer(scrim);
   const list=scrim.querySelector("#anList");
   function draw(){
     const all=curNotes().slice().sort((a,b)=>b.ts-a.ts).filter(n=>!q||hit(n.supplier,q)||hit(n.noteNo,q)||hit(n.note,q)||(n.lines||[]).some(l=>hit(l.name,q)));
@@ -1033,11 +1004,7 @@ function openAllNotes(){
   }
   scrim.querySelector("#anQ").oninput=e=>{ q=e.target.value.trim().toLowerCase(); max=30; draw(); };
   list.onclick=e=>{ const c=e.target.closest(".dnote[data-id]"); if(c) openNoteDetail(c.dataset.id); };
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape" && document.querySelectorAll(".scrim").length===1) close(); };
-  document.addEventListener("keydown",esck);
   scrim.querySelector(".acts .cancel").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
   draw();
 }
 $("#btnAllNotes").onclick=openAllNotes;

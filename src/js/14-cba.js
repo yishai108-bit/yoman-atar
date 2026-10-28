@@ -11,24 +11,20 @@ async function saveCba(d){
 }
 function cbaPrice(en){ if(!en||!cba.prices.length) return null; const k=normName(en); const hits=cba.prices.filter(x=>normName(x.type)===k||k.includes(normName(x.type))||normName(x.type).includes(k)); if(!hits.length) return null; return hits.slice().sort((a,b)=>a.price-b.price)[0]; }
 function openImportChooser(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא"><div class="grab"></div><h2>איזה קובץ?</h2><div class="stock">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא"><div class="grab"></div><h2>איזה קובץ?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="bom"><b>BOM · שלטר</b><span>קיט הקונסטרוקציה של היצרן: כמויות לשולחן ומלאי הפתיחה</span></button>'
     +'<button type="button" class="slip" data-k="eboq"><b>EBOQ · חשמל</b><span>גיליון הרכש של חשמל: פריטים, כמויות, PO, ספק ומק״ט ספק. נקרא ישירות</span></button>'
     +(ROLE==="owner"?'<button type="button" class="slip" data-k="cba"><b>CBA · מסחרי</b><span>השוואת הצעות וחבילות רכש: ספק נבחר, PO, מחיר מול תקציב. נשמר לבעלים בלבד</span></button>':'')
-    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ scrim.remove(); ({bom:openBomImport,eboq:openBoqImport,cba:openCbaImport})[b.dataset.k](); });
 }
 function openCbaImport(){
   if(ROLE!=="owner"){ toast("CBA נשמר רק על ידי הבעלים."); return; }
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא CBA"><div class="grab"></div><h2>ייבוא CBA (מסחרי)</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא CBA"><div class="grab"></div><h2>ייבוא CBA (מסחרי)</h2>'
     +'<div class="note-card">קובץ ה-CBA של הפרויקט: גיליון לכל חבילת רכש עם ההצעות, התקציב ומספר ה-PO של ההצעה שנבחרה. נקרא בעזרת AI, ואתה מאשר. <b>מידע מסחרי: נשמר כך שרק הבעלים רואה אותו.</b></div>'
     +(cba.packages.length?'<div class="legend">כרגע: <b>'+cba.packages.length+'</b> חבילות ('+esc(cba.source||"")+'). קובץ חדש מחליף.</div>':'')
     +'<div id="cbBody"><div class="pick">בחר קובץ CBA<small>xlsx</small><input type="file" id="cbFile" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div>'
-    +'<div class="acts"><button class="save" id="cbGo" hidden type="button">שמור CBA</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="cbGo" hidden type="button">שמור CBA</button><button class="cancel" type="button">סגור</button></div></div>');
   const q=s=>scrim.querySelector(s); let out=null;
   q(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#cbFile").onchange=async e=>{
@@ -78,8 +74,7 @@ function openOrder(existing){
   const sups=[...new Set([...cat.map(c=>c.supplier),...Object.values(SUPPLIERS)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he"));
   const tasks=[...new Set(orders.map(x=>x.task).filter(Boolean))];
   let filter=cat.some(c=>c.planned>0&&c.toOrder>0)?"toorder":"all", qtxt="";
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="בקשת רכש"><div class="grab"></div><h2>'+(edit?"עריכת ":"")+'בקשת רכש · '+esc(o.no)+'</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="בקשת רכש"><div class="grab"></div><h2>'+(edit?"עריכת ":"")+'בקשת רכש · '+esc(o.no)+'</h2>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="orDate">תאריך הבקשה</label><input type="date" id="orDate" value="'+esc(isoOf(o.ts||Date.now()))+'"></div>'
       +'<div class="f"><label for="orSent">מצב</label><select id="orSent" style="width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13px;border-radius:var(--r);border:1px solid var(--line);background:var(--card,#fff);color:var(--ink)">'+(o.status==="draft"||o.status==="sent"?'<option value="sent"'+(o.status!=="draft"?' selected':'')+'>נשלח לרכש</option><option value="draft"'+(o.status==="draft"?' selected':'')+'>טיוטה, עוד לא נשלח</option>':'<option value="'+esc(o.status)+'" selected>'+esc((ORDER_ST[o.status]||ORDER_ST.draft)[0])+'</option>')+'</select></div></div>'
     +'<div class="f"><label for="orTask">לטובת איזו משימה</label><input type="text" id="orTask" list="orTasks" placeholder="למשל: חיבורי DC שדה 3 · ריכוז כבלים" autocomplete="off" value="'+esc(o.task)+'"><datalist id="orTasks">'+tasks.map(t=>'<option value="'+esc(t)+'"></option>').join("")+'</datalist></div>'
@@ -90,8 +85,8 @@ function openOrder(existing){
       +'<div class="stock" id="orSug"></div>'
       +'<button class="addline" type="button" id="orNew" style="margin-top:8px">+ פריט שלא ברשימה</button></div>'
     +'<div class="f"><label>ההזמנה <span id="orCount" style="font-weight:500;color:var(--ink3)"></span></label><div id="orLines"></div></div>'
-    +'<div class="acts"><button class="save" id="orSave" type="button" disabled>שמור</button><button class="cancel" id="orCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="orSave" type="button" disabled>שמור</button><button class="cancel" id="orCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   const catLabel=id=>(CATS.find(c=>c.id===id)||{}).label||id;
   function drawSug(){
@@ -144,8 +139,7 @@ function openOrder(existing){
   q("#orTask").oninput=check;
   q("#orNew").onclick=()=>{ const nm=qtxt||""; o.lines.push({name:nm||"פריט חדש",code:"",qty:1,unit:"יח'",cat:filter==="all"||filter==="missing"||filter==="partial"?"electrical":filter,supplier:"",note:""}); drawLines();
     const last=q("#orLines").querySelectorAll(".dline"); const el=last[last.length-1]; if(el&&!nm){ const b=el.querySelector("b"); b.contentEditable="true"; b.focus(); b.oninput=()=>{ o.lines[o.lines.length-1].name=b.textContent.trim(); }; } };
-  q("#orCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#orCancel").onclick=close;
   q("#orSave").onclick=async()=>{
     const b=q("#orSave"); b.disabled=true; b.textContent="שומר…";
     const dv=q("#orDate").value; let ts=o.ts||Date.now(); if(dv&&dv!==isoOf(ts)) ts=dv===isoOf(Date.now())?Date.now():new Date(dv+"T12:00:00").getTime();
@@ -158,8 +152,6 @@ function openOrder(existing){
     logAct("order",edit?"edit":"add",(edit?"עודכנה":"נוצרה")+" בקשת רכש "+doc.no+" · "+doc.lines.length+" פריטים · "+new Set(doc.lines.map(l=>l.supplier||"ללא ספק")).size+" ספקים · "+doc.task,id);
     close(); renderOrders(); openOrderDetail(doc);
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   drawSug(); drawLines();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a&&scrim.contains(a)) a.blur(); });
 }
@@ -237,11 +229,9 @@ function reqMissingText(){ const M=REQM||requestMatch(); const pick=k=>M.rows.fi
   ].filter(Boolean).join("\n\n"); }
 function openPoLinkPicker(o,li,done){
   const l=o.lines[li]; const P=(demoStock?[]:POS).filter(p=>p.status!=="cancelled"&&p.ts>=o.ts-45*864e5).slice().sort((a,b)=>b.ts-a.ts);
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-PO"><div class="grab"></div><h2>קישור ל-PO</h2><div class="note-card">'+esc(l.name)+' · ביקשתי '+fmtN(l.qty)+' '+esc(l.unit||"")+'</div>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור ל-PO"><div class="grab"></div><h2>קישור ל-PO</h2><div class="note-card">'+esc(l.name)+' · ביקשתי '+fmtN(l.qty)+' '+esc(l.unit||"")+'</div>'
     +'<div class="search" style="margin-bottom:8px"><input type="text" id="plQ" placeholder="חפש PO, ספק או פריט" autocomplete="off"><span class="ico">⌕</span></div><div class="stock" id="plList"></div>'
-    +'<div class="acts">'+(l.po?'<button class="ghost" type="button" id="plClear">בטל קישור ידני</button>':'')+'<button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=s=>scrim.querySelector(s); const close=()=>scrim.remove();
+    +'<div class="acts">'+(l.po?'<button class="ghost" type="button" id="plClear">בטל קישור ידני</button>':'')+'<button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=s=>scrim.querySelector(s); const close=()=>scrim.remove();
   q(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const draw=t=>{ const box=q("#plList"); box.innerHTML=""; t=(t||"").toLowerCase(); let n=0;
     P.forEach(p=>(p.lines||[]).forEach((pl,i)=>{ if(pl.skip||n>=40) return; if(t&&!(p.no.toLowerCase().includes(t)||(p.supplier||"").toLowerCase().includes(t)||(pl.name||"").toLowerCase().includes(t)||String(pl.boq||"").startsWith(t))) return; n++;
@@ -311,7 +301,7 @@ async function setOrderStatus(o,st){
 }
 function openOrderDetail(o){
   o=orders.find(x=>x.id===o.id)||o;
-  const g=orderGroups(o); const scrim=document.createElement("div"); scrim.className="scrim";
+  const g=orderGroups(o);
   const st=ORDER_ST[o.status]||ORDER_ST.draft;
   let html='<div class="sheet" role="dialog" aria-modal="true" aria-label="בקשת רכש"><div class="grab"></div><h2>'+esc(o.no)+' <span class="role-badge" style="background:var(--line2);color:'+st[1]+'">'+st[0]+'</span></h2>'
     +'<div class="kv"><span>'+fmtD(o.ts)+'</span>'+(o.need?'<span>נדרש עד <b>'+esc(fmtDT(o.need.split("-").reverse().join("/")))+'</b></span>':'')+'<span>מבקש <b>'+esc(o.by||"")+'</b></span></div>'
@@ -323,7 +313,7 @@ function openOrderDetail(o){
   html+='<div class="row2" style="margin-top:4px">'+(g.size>1?'<button class="ghost" type="button" id="odPdfAll">PDF לכל הספקים</button>':'')+'<button class="ghost" type="button" id="odCsv">אקסל</button>'+(ROLE!=="viewer"?'<button class="ghost" type="button" id="odEdit">ערוך</button>':'')+'</div>'
     +(acts.length?'<div class="chips">'+acts.map(a=>'<button type="button" class="chip2" data-st="'+a[0]+'" style="border-color:'+a[2]+'">'+a[1]+'</button>').join("")+'</div>':'')
     +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  scrim.innerHTML=html; document.body.appendChild(scrim);
+  const scrim=popup(html);
   const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("[data-pdf]").forEach(b=>b.onclick=async()=>{ b.disabled=true; b.textContent="מכין…"; await orderPdf(o,b.dataset.pdf); b.disabled=false; b.textContent="PDF לספק"; });
   scrim.querySelectorAll("[data-txt]").forEach(b=>b.onclick=()=>copyText(orderText(o,b.dataset.txt)));

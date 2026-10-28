@@ -52,8 +52,7 @@ function openWorker(w){
   const names=[...new Set([...CREW.filter(c=>c.active!==false).map(c=>c.name),...daylog.map(x=>x.name)].filter(Boolean))], machs=[...new Set([...CREW.map(c=>c.machine),...daylog.map(x=>x.machine)].filter(Boolean))], cons=[...new Set([...CREW.map(c=>c.contractor),...daylog.map(x=>x.contractor)].filter(Boolean))], jobs=[...new Set([...CREW.map(c=>c.job),...daylog.map(x=>x.job)].filter(Boolean))];
   const dl=(id,a)=>'<datalist id="'+id+'">'+a.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
   let arrive=w.arrive||"ontime", leave=w.leave||"ontime", isOp=!!w.machine;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>'+(edit?"עדכון":"עובד / מפעיל")+' · '+isoText(w.date)+'</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>'+(edit?"עדכון":"עובד / מפעיל")+' · '+isoText(w.date)+'</h2>'
     +'<div class="f"><label>סוג</label><div class="opts" id="wkKind"><button class="opt" type="button" data-k="w" aria-pressed="'+!isOp+'">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="'+isOp+'">מפעיל צמ״ה</button></div></div>'
     +'<div class="f"><label for="wkName">שם</label><input type="text" id="wkName" list="wkNames" autocomplete="off" placeholder="שם מלא">'+dl("wkNames",names)+'</div>'
     +'<div class="f" id="wkMachF"'+(isOp?'':' hidden')+'><label for="wkMach">כלי צמ״ה</label><input type="text" id="wkMach" list="wkMachs" autocomplete="off" placeholder="למשל: בובקט, מלגזה טלסקופית, מחפרון">'+dl("wkMachs",machs)+'</div>'
@@ -64,8 +63,7 @@ function openWorker(w){
     +'<div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px"><div class="f"><label for="wkHours">שעות בפועל</label><input type="text" id="wkHours" inputmode="decimal" placeholder="ריק = יום מלא"></div><div class="f"><label for="wkArea">עבודה / אזור</label><input type="text" id="wkArea" list="wkAreas" autocomplete="off" placeholder="תעלות · הידוק · דרכים · שדה 3">'+dl("wkAreas",[...new Set([...daylog.map(x=>x.area),"תעלות","חפירה","מילוי והידוק","דרכים","ניקוז","יסודות","פיזור חצץ","הרכבת פאנלים","קונסטרוקציה","חשמל"].filter(Boolean))])+'</div></div>'
     +'<div class="f"><label for="wkTasks">משימות שבוצעו</label><textarea id="wkTasks" placeholder="למשל: הרכבת פאנלים שדה 2 שורות 15–16"></textarea></div>'
     +'<div class="f"><label for="wkNote">הערות על העובד</label><textarea id="wkNote" placeholder="תפקוד, בטיחות, ציוד"></textarea></div>'
-    +'<div class="acts"><button class="save" id="wkSave" type="button">שמור</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="wkDel" type="button">מחק</button>':'')+'<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="wkSave" type="button">שמור</button>'+(edit&&ROLE==="owner"?'<button class="cancel danger" id="wkDel" type="button">מחק</button>':'')+'<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>');
   const q=x=>scrim.querySelector(x);
   q("#wkName").value=w.name||""; q("#wkMach").value=w.machine||""; q("#wkCon").value=w.contractor||""; q("#wkJob").value=w.job||""; q("#wkHours").value=w.hours||""; q("#wkArea").value=w.area||""; q("#wkTasks").value=w.tasks||""; q("#wkNote").value=w.note||""; q("#wkLate").value=w.lateMin||""; q("#wkEarly").value=w.earlyMin||"";
   q("#wkName").onchange=()=>{ const c=CREW.find(x=>x.name===q("#wkName").value.trim()); if(!c) return;   // מילוי אוטומטי מהצוות
@@ -124,8 +122,7 @@ function openCrewForm(existing){
   const c=existing?{...existing}:{id:"cw"+Date.now().toString(36),name:"",kind:"w",job:"",machine:"",contractor:"",phone:"",note:"",active:true,since:isoOf(Date.now()),ts:Date.now()};
   let isOp=!!c.machine||c.kind==="o";
   const dl=(id,a)=>'<datalist id="'+id+'">'+[...new Set(a.filter(Boolean))].map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist>';
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>'+(existing?"עדכון עובד":"עובד חדש לצוות")+'</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>'+(existing?"עדכון עובד":"עובד חדש לצוות")+'</h2>'
     +'<div class="f"><label>סוג</label><div class="opts" id="cwKind"><button class="opt" type="button" data-k="w" aria-pressed="'+!isOp+'">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="'+isOp+'">מפעיל צמ״ה</button></div></div>'
     +'<div class="f"><label for="cwName">שם מלא</label><input type="text" id="cwName" autocomplete="off" value="'+esc(c.name)+'"></div>'
     +'<div class="f"><label for="cwJob">תפקיד / עבודה</label><input type="text" id="cwJob" list="cwJobs" autocomplete="off" placeholder="הרכבת פאנלים · קונסטרוקציה · חשמלאי · עוזר · ראש צוות" value="'+esc(c.job||"")+'">'+dl("cwJobs",[...CREW.map(x=>x.job),...daylog.map(x=>x.job),"הרכבת פאנלים","קונסטרוקציה","חשמלאי","עוזר חשמלאי","ראש צוות","עובד כללי","נהג","שומר"])+'</div>'
@@ -134,8 +131,7 @@ function openCrewForm(existing){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="cwPhone">טלפון (לא חובה)</label><input type="tel" id="cwPhone" value="'+esc(c.phone||"")+'"></div><div class="f"><label for="cwSince">באתר מאז</label><input type="date" id="cwSince" value="'+esc(c.since||"")+'"></div></div>'
     +'<div class="f"><label for="cwNote">הערה (עובדות בלבד: הסמכות, ציוד, שפה)</label><input type="text" id="cwNote" value="'+esc(c.note||"")+'"></div>'
     +(existing?'<div class="f"><label>סטטוס</label><div class="opts" id="cwAct"><button class="opt" type="button" data-v="1" aria-pressed="'+(c.active!==false)+'">פעיל</button><button class="opt" type="button" data-v="0" aria-pressed="'+(c.active===false)+'">לא פעיל (עזב)</button></div></div>':'')
-    +'<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>'+(existing&&ROLE==="owner"?'<button class="cancel danger" id="cwDel" type="button">מחק</button>':'')+'<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
+    +'<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>'+(existing&&ROLE==="owner"?'<button class="cancel danger" id="cwDel" type="button">מחק</button>':'')+'<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q("#cwCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   q("#cwKind").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; isOp=b.dataset.k==="o"; q("#cwKind").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); q("#cwMachF").hidden=!isOp; };
   let active=c.active!==false; const ac=q("#cwAct"); if(ac) ac.onclick=e=>{ const b=e.target.closest("[data-v]"); if(!b) return; active=b.dataset.v==="1"; ac.querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); };

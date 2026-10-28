@@ -10,9 +10,7 @@ function tidyUI(){
     rows[0].replaceWith(more); rows.slice(1).forEach(r=>r.remove()); v.appendChild(hold);
     more.onclick=()=>{
       const ok=btns.filter(b=>{ const w=b.dataset.w; return !w||(w==="edit"&&ROLE!=="viewer")||(w==="owner"&&ROLE==="owner"); });
-      const scrim=document.createElement("div"); scrim.className="scrim";
-      scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>פעולות</h2><div class="stock" id="mList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-      document.body.appendChild(scrim);
+      const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>פעולות</h2><div class="stock" id="mList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
       const L=scrim.querySelector("#mList");
       ok.forEach(b=>{ const it=document.createElement("button"); it.type="button"; it.className="slip"; it.innerHTML='<b></b>'; it.querySelector("b").textContent=b.textContent.replace(/\s+/g," ").trim(); it.onclick=()=>{ scrim.remove(); b.click(); }; L.appendChild(it); });
       scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };

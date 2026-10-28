@@ -75,22 +75,17 @@ function renderConcrete(){
 }
 function openConcreteDetail(id){
   const c=curConcrete().find(x=>x.id===id); if(!c) return;
-  const scrim=document.createElement("div"); scrim.className="scrim";
   const psrc=c.photoAsset?"/_blob/"+c.photoAsset:c.photoUrl;
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת בטון">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת בטון">'
     +'<div class="grab"></div><h2>'+esc(c.supplier||"בטון")+' · '+esc(c.noteNo||"—")+'</h2>'
     +'<div class="kv"><span>תאריך <b>'+esc(fmtDT(c.dateText)||"")+'</b></span><span>כמות <b>'+fmtM3(Number(c.m3)||0)+' מ״ק</b></span>'
     +(c.mix?'<span>סוג <b>'+esc(c.mix)+'</b></span>':'')+(c.truck?'<span>משאית <b>'+esc(c.truck)+'</b></span>':'')+'</div>'
     +(c.element?'<div class="note-card">נוצק ב: <b>'+esc(c.element)+'</b></div>':'')
     +(c.note?'<div class="legend">'+esc(c.note)+'</div>':'')
     +(psrc?'<img class="dphoto" src="'+psrc+'" alt="צילום התעודה">':'')
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>'+(psrc?'<button class="ghost" type="button" id="cnPdf" style="flex:1">PDF</button>':'')+(c.demo?'':'<button class="del" type="button" id="cnDel" style="flex:0 0 auto">מחק</button>')+'</div></div>';
-  document.body.appendChild(scrim);
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck);
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>'+(psrc?'<button class="ghost" type="button" id="cnPdf" style="flex:1">PDF</button>':'')+(c.demo?'':'<button class="del" type="button" id="cnDel" style="flex:0 0 auto">מחק</button>')+'</div></div>');
+  const close=closer(scrim);
   scrim.querySelector(".cancel").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const cpdf=scrim.querySelector("#cnPdf");
   if(cpdf) cpdf.onclick=async()=>{ cpdf.disabled=true; cpdf.textContent="מכין…"; await exportNotePdf([psrc],"בטון-"+(c.noteNo||c.id)+".pdf","בטון "+(c.noteNo||"")); cpdf.disabled=false; cpdf.textContent="PDF"; };
   const del=scrim.querySelector("#cnDel");

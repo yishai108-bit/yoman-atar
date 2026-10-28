@@ -20,14 +20,12 @@ async function loadIdentity(){
   render(); renderStock(); renderConcrete();
 }
 function openWho(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
   const rows=[["owner","בעלים","הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"],["editor","עריכה (מפקחים)","ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"],["viewer","צפייה (מנהלים)","רואה הכל בזמן אמת, לא משנה כלום"]];
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
     +'<div class="kv" style="align-items:center"><img src="'+(ME?ME.avatarUrl:"")+'" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-'+ROLE+'">'+ROLE_LABEL[ROLE]+'</span></span></div>'
     +'<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>'
     +'<div class="stock">'+rows.map(r=>'<div class="slip" style="cursor:default'+(r[0]===ROLE?';border-color:var(--pv)':'')+'"><b>'+r[1]+'</b><span>'+r[2]+'</span></div>').join("")+'</div>'
-    +'<div class="acts"><button class="save" type="button" id="wPin">'+(ls.get("pin")?"שינוי / ביטול קוד PIN":"נעילה בקוד PIN בטלפון הזה")+'</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" type="button" id="wPin">'+(ls.get("pin")?"שינוי / ביטול קוד PIN":"נעילה בקוד PIN בטלפון הזה")+'</button><button class="cancel" type="button">סגור</button></div></div>');
   scrim.querySelector("#wName").textContent=ME&&ME.name||"משתמש";
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#wPin").onclick=()=>{ scrim.remove(); if(ls.get("pin")) pinMenu(); else setPin(); };
@@ -58,10 +56,8 @@ function setPin(){
   pinScreen("קוד PIN חדש","4 ספרות. נשמר רק בטלפון הזה",f);
 }
 function pinMenu(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div>'
-    +'<div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>';
-  document.body.appendChild(scrim); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>קוד PIN</h2><div class="note-card">האפליקציה ננעלת בפתיחה ואחרי 5 דקות ברקע. הקוד שמור רק בטלפון הזה.</div>'
+    +'<div class="acts"><button class="save" type="button" id="pChange">שנה קוד</button><button class="cancel danger" type="button" id="pOff">בטל נעילה</button></div></div>'); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#pChange").onclick=()=>{ scrim.remove(); setPin(); };
   scrim.querySelector("#pOff").onclick=()=>{ scrim.remove(); const h=async p=>{ if(await pinHash(p)!==ls.get("pin")) return false; try{ localStorage.removeItem("pin"); }catch(e){} toast("הנעילה בוטלה."); return true; }; h.cancel=()=>{}; pinScreen("הקש את הקוד הנוכחי","כדי לבטל את הנעילה",h); };
 }

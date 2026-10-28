@@ -63,21 +63,17 @@ function openBarcodeScanner(opts){
     drawBot();
   }
   function assign(text){
-    const scrim=document.createElement("div"); scrim.className="scrim"; scrim.style.zIndex="80";
-    scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>איזה פריט זה?</h2><div class="note-card">ברקוד: <b>'+esc(text)+'</b>. בחר פעם אחת, והאפליקציה תזכור.</div><div class="stock" id="asList">'
+    const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>איזה פריט זה?</h2><div class="note-card">ברקוד: <b>'+esc(text)+'</b>. בחר פעם אחת, והאפליקציה תזכור.</div><div class="stock" id="asList">'
       +kit.map(k=>'<button type="button" class="slip" data-code="'+esc(k.code)+'"><b>'+esc(shortName(k.name))+'</b><span>מק״ט '+esc(k.code)+(k.no?' · '+esc(k.no):'')+'</span></button>').join("")+'</div>'
-      +'<div class="acts"><button class="cancel" type="button" style="flex:1">ביטול</button></div></div>';
-    document.body.appendChild(scrim);
+      +'<div class="acts"><button class="cancel" type="button" style="flex:1">ביטול</button></div></div>',{z:80});
     scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
     scrim.querySelector("#asList").onclick=async e=>{ const b=e.target.closest("[data-code]"); if(!b) return; const k=kit.find(x=>x.code===b.dataset.code); if(!k) return;
       await saveBarcode(text,k.code); const h=hits.get(text); if(h){ h.item=k; if(!h.per&&Number(k.carton)>0) h.per=k.carton; } scrim.remove(); drawBot(); toast("נשמר: "+shortName(k.name)); };
   }
   function manual(){
-    const scrim=document.createElement("div"); scrim.className="scrim"; scrim.style.zIndex="80";
-    scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>הוסף פריט ידנית</h2><div class="stock" id="mnList">'
+    const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>הוסף פריט ידנית</h2><div class="stock" id="mnList">'
       +kit.map(k=>'<button type="button" class="slip" data-code="'+esc(k.code)+'"><b>'+esc(shortName(k.name))+'</b><span>מק״ט '+esc(k.code)+'</span></button>').join("")+'</div>'
-      +'<div class="acts"><button class="cancel" type="button" style="flex:1">ביטול</button></div></div>';
-    document.body.appendChild(scrim);
+      +'<div class="acts"><button class="cancel" type="button" style="flex:1">ביטול</button></div></div>',{z:80});
     scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
     scrim.querySelector("#mnList").onclick=e=>{ const b=e.target.closest("[data-code]"); if(!b) return; const k=kit.find(x=>x.code===b.dataset.code); if(!k) return;
       const key="manual:"+k.code; const h=hits.get(key)||{text:key,item:k,n:0,per:Number(k.carton)>0?k.carton:""}; h.n++; hits.set(key,h); scrim.remove(); drawBot(); };

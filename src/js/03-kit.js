@@ -45,16 +45,14 @@ async function saveKitCartons(patch,why){
   if(changed) await saveKit(lines,kitSource,why);
 }
 function openKitEditor(preset){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ברגים לשולחן">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ברגים לשולחן">'
     +'<div class="grab"></div><h2>כמויות לשולחן אחד</h2>'
     +'<div class="note-card">לכל סוג שולחן כמות משלו. ניפוק = שולחנות × הכמות של הסוג שנבחר. <b>מקור: '+esc(kitSource)+'</b></div>'
     +'<div class="kitrow ed hd"><div></div>'+kitTypes.map(t=>'<div class="th">'+esc(t.label.replace("שולחן ","").replace(" (IN)","").replace(" (EX)","")+(t.label.includes("(IN)")?" IN":" EX"))+'</div>').join("")+'<div></div></div>'
     +'<div class="kitrows" id="kitEd"></div>'
     +'<button class="addline" id="kitAdd" type="button" style="margin-top:8px">+ הוסף פריט</button>'
     +'<div class="f" style="margin-top:14px"><label for="kitSrc">מקור הכמויות</label><input type="text" id="kitSrc" placeholder="למשל: BOM שלטר" value="'+esc(kitSource)+'"></div>'
-    +'<div class="acts"><button class="save" id="kitSave" type="button">שמור</button><button class="cancel" id="kitCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="kitSave" type="button">שמור</button><button class="cancel" id="kitCancel" type="button">ביטול</button></div></div>');
   const q=s=>scrim.querySelector(s);
   let lines=(preset&&preset.lines?preset.lines:kit).map(k=>({...k,per:(typeof k.per==="number")?Object.fromEntries(kitTypes.map(t=>[t.id,k.per])):{...(k.per||{})}}));
   if(preset&&preset.source) q("#kitSrc").value=preset.source;
@@ -109,8 +107,7 @@ function openIssue(){
   const whos=[...new Set((demoStock?DEMO_MOVES:moves).map(m=>m.who).filter(Boolean))];
   let tables=TABLE_STEP, ttype=(ls.get("ttype")&&kitTypes.some(t=>t.id===ls.get("ttype")))?ls.get("ttype"):kitTypes[0].id;
   let lines=kit.map(k=>({...k,qty:perOf(k,ttype)*tables,on:k.def!==false}));
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ברגים לקבלן">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ברגים לקבלן">'
     +'<div class="grab"></div><h2>ניפוק ברגים לקבלן</h2>'
     +'<div class="f"><label>סוג שולחן</label><div class="chips" id="isTypes" style="margin-bottom:0">'+kitTypes.map(t=>'<button type="button" class="chip2" data-t="'+t.id+'" aria-pressed="'+(t.id===ttype)+'">'+esc(t.label)+'</button>').join("")+'</div></div>'
     +'<div class="f"><label>כמה שולחנות</label><div class="stepper">'
@@ -125,8 +122,8 @@ function openIssue(){
     +'<div class="f"><label for="isBy">מנפיק</label><input type="text" id="isBy" placeholder="השם שלך" autocomplete="off" value="'+esc(ls.get("issuer")||"")+'"></div>'
     +'<div class="f"><label>חתימת המקבל</label><div class="sig" id="isSig"><canvas></canvas><div class="hint2">חותמים כאן באצבע</div><button class="clr2" type="button">נקה</button></div></div>'
     +'<div class="f"><label for="isNote">הערה</label><input type="text" id="isNote" placeholder="למשל: שדה 2 שורות 15–16"></div>'
-    +'<div class="acts"><button class="save" id="isSave" type="button" disabled>שמור ניפוק</button><button class="cancel" id="isCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="isSave" type="button" disabled>שמור ניפוק</button><button class="cancel" id="isCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   const pad=sigPad(q("#isSig"));
   if(ROLE!=="owner"){ const k=q("#isKit"); if(k) k.hidden=true; }
@@ -164,8 +161,6 @@ function openIssue(){
   q("#isKit").onclick=()=>{ openKitEditor(); };
   q("#isToggle").onclick=()=>{ const r=q("#isRows"); r.hidden=!r.hidden; q("#isHint").hidden=r.hidden; };
   q("#isCancel").onclick=close;
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
   q("#isSave").onclick=async()=>{
     const b=q("#isSave");
     if(!pad.has()){
@@ -193,8 +188,6 @@ function openIssue(){
     close(); renderStock(); toast("הניפוק נשמר.");
     openSlip(slip);
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   drawRows(); check();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
@@ -215,10 +208,9 @@ async function copyText(t){
   }
 }
 function openSlip(s){
-  const scrim=document.createElement("div"); scrim.className="scrim";
   const sig=s.sigAsset?"/_blob/"+s.sigAsset:(s.sigUrl||s.sigData||"");
   const d=new Date(s.ts);
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת ניפוק">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת ניפוק">'
     +'<div class="grab"></div><h2>ניפוק · '+esc(s.who||"")+'</h2>'
     +'<div class="kv"><span>'+fmtD(d)+' '+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+'</span>'
       +(s.tables?'<span><b>'+fmtN(s.tables)+'</b> שולחנות'+(s.typeLabel?' · '+esc(s.typeLabel):'')+'</span>':'')+(s.by?'<span>מנפיק <b>'+esc(s.by)+'</b></span>':'')
@@ -226,15 +218,11 @@ function openSlip(s){
     +(s.note?'<div class="note-card">'+esc(s.note)+'</div>':'')
     +'<div class="dlines">'+(s.lines||[]).map(l=>'<div><span>'+esc(l.name)+'</span><b>'+fmtN(l.qty)+'</b></div>').join("")+'</div>'
     +(sig?'<img class="sigimg" src="'+sig+'" alt="חתימת המקבל" style="margin-top:14px">':'')
-    +'<div class="acts"><button class="save" type="button" id="slCopy">העתק לוואטסאפ</button><button class="ghost" type="button" id="slPdf">PDF</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
-  const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
-  const esck=ev=>{ if(ev.key==="Escape") close(); };
-  document.addEventListener("keydown",esck);
+    +'<div class="acts"><button class="save" type="button" id="slCopy">העתק לוואטסאפ</button><button class="ghost" type="button" id="slPdf">PDF</button><button class="cancel" type="button">סגור</button></div></div>');
+  const close=closer(scrim);
   scrim.querySelector(".cancel").onclick=close;
   scrim.querySelector("#slCopy").onclick=()=>copyText(slipText(s));
   scrim.querySelector("#slPdf").onclick=e=>issuePdfById(s.id,e.currentTarget);
-  scrim.onclick=e=>{ if(e.target===scrim) close(); };
 }
 function renderSlips(){
   const list=(demoStock?[]:issues).slice().sort((a,b)=>b.ts-a.ts);
@@ -254,10 +242,8 @@ function renderSlips(){
   if(list.length){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent=(list.length>5?"כל הניפוקים ("+list.length+")":"כל הניפוקים")+" · PDF לתקופה"; m.onclick=()=>openAllSlips(list); box.appendChild(m); }
 }
 function openAllSlips(list){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="כל הניפוקים"><div class="grab"></div><h2>כל הניפוקים</h2><div id="asRange"></div><div class="stock" id="asList"></div>'
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="כל הניפוקים"><div class="grab"></div><h2>כל הניפוקים</h2><div id="asRange"></div><div class="stock" id="asList"></div>'
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   issueRangeBox(scrim.querySelector("#asRange"));
   const box=scrim.querySelector("#asList");
   list.forEach(s=>{ const b=document.createElement("button"); b.type="button"; b.className="slip"; const d=new Date(s.ts);
@@ -349,8 +335,7 @@ function openQuickCount(){
   const total=n=>{ const loose=Number(vals[n]); const bx=Number(boxes[n]); const pb=Number(perBox[n]);
     const hasLoose=String(vals[n]??"").trim()!==""&&isFinite(loose); const hasBox=String(boxes[n]??"").trim()!==""&&isFinite(bx)&&bx>0&&pb>0;
     if(!hasLoose&&!hasBox) return null; return (hasLoose?loose:0)+(hasBox?bx*pb:0); };
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ספירה מהירה">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ספירה מהירה">'
     +'<div class="grab"></div><h2>ספירה מהירה</h2>'
     +'<div class="note-card">סופרים קרטונים סגורים, לא ברגים: <b>קרטונים × כמות בקרטון + יחידות בודדות</b>. הפער מול התיאורטי מחושב תוך כדי. שורה ריקה לא נשמרת.</div>'
     +'<button class="scanbtn" type="button" id="qcScan" style="margin-bottom:10px"><i class="ic ic-scan"></i>ספירה בסריקת ברקודים</button>'
@@ -358,8 +343,8 @@ function openQuickCount(){
     +'<div class="stock" id="qcSug" style="margin-bottom:10px"></div>'
     +'<div class="kitrows" id="qcRows"></div>'
     +'<div class="f" style="margin-top:14px"><label for="qcWho">מי ספר</label><input type="text" id="qcWho" placeholder="השם שלך" value="'+esc(ls.get("issuer")||"")+'"></div>'
-    +'<div class="acts"><button class="save" id="qcSave" type="button" disabled>שמור ספירה</button><button class="cancel" id="qcCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="qcSave" type="button" disabled>שמור ספירה</button><button class="cancel" id="qcCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   function gapText(n){
     const r=byName.get(n); const t=total(n); if(t==null||!r||r.noIn) return "";
@@ -401,8 +386,7 @@ function openQuickCount(){
     res.forEach(h=>{ if(!h.item) return; const n=h.item.name; if(!items.includes(n)) items.unshift(n); boxes[n]=(Number(boxes[n])||0)+h.n; if(!perBox[n]&&Number(h.per)>0) perBox[n]=Number(h.per); });
     draw(); check(); if(res.some(h=>!h.item)) toast("ברקודים לא מזוהים לא נספרו. הצמד אותם לפריט בסריקה הבאה.");
   }});
-  q("#qcCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#qcCancel").onclick=close;
   q("#qcSave").onclick=async()=>{
     const b=q("#qcSave"); b.disabled=true; b.textContent="שומר…";
     const who=q("#qcWho").value.trim(); if(!who){ b.disabled=false; b.textContent="שמור ספירה"; toast("מי ספר? צריך שם."); return; } ls.set("issuer",who);
@@ -423,8 +407,6 @@ function openQuickCount(){
     if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock(); toast("נשמרו "+recs.length+" ספירות.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   draw();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
@@ -487,13 +469,11 @@ function periodSummary(days){
 }
 function openWa(){
   let days=7;
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="סיכום לוואטסאפ"><div class="grab"></div><h2>סיכום לוואטסאפ</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סיכום לוואטסאפ"><div class="grab"></div><h2>סיכום לוואטסאפ</h2>'
     +'<div class="chips" id="waChips">'+[7,14,30].map(d=>'<button type="button" class="chip2" data-d="'+d+'" aria-pressed="'+(d===days)+'">'+d+' ימים</button>').join("")+'</div>'
     +'<textarea class="watext" id="waText" readonly></textarea>'
     +'<div class="hint" style="margin-top:6px">אפשר לערוך את הטקסט לפני ההעתקה.</div>'
-    +'<div class="acts"><button class="save" type="button" id="waCopy">העתק</button><button class="cancel" type="button">סגור</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" type="button" id="waCopy">העתק</button><button class="cancel" type="button">סגור</button></div></div>');
   const ta=scrim.querySelector("#waText"); ta.readOnly=false;
   const gen=()=>{ ta.value=periodSummary(days); };
   scrim.querySelector("#waChips").onclick=e=>{ const b=e.target.closest("[data-d]"); if(!b) return; days=Number(b.dataset.d);

@@ -106,8 +106,7 @@ function openPanelBal(){
   let taken=(cur.takenOut||[]).map(t=>({...t})); if(!taken.length) taken=[{site:"",pallets:"",qty:""}];
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   const F=(id,l,v,hint)=>'<div class="pricerow"><div class="nm">'+l+(hint?'<small>'+hint+'</small>':'')+'</div><input type="text" inputmode="numeric" id="'+id+'" value="'+esc(v??"")+'"></div>';
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="עדכון מאזן פאנלים">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עדכון מאזן פאנלים">'
     +'<div class="grab"></div><h2>מאזן פאנלים</h2>'
     +'<div class="note-card">מספרים מהספירה בשטח. באתר = ריכוז + בודדים + מותקנים + מפוזרים + שבורים. הספייר מחושב לבד.</div>'
     +'<div class="f"><label for="pbD">נכון לתאריך</label><input type="date" id="pbD" value="'+iso+'"></div>'
@@ -125,8 +124,8 @@ function openPanelBal(){
     +'<div class="f"><label>יצאו לאתרים אחרים</label><div class="dl" id="pbTaken"></div><button class="addline" type="button" id="pbAddT" style="margin-top:8px">+ אתר</button></div>'
     +'<div class="f"><label for="pbNote">הערה</label><input type="text" id="pbNote" value="'+esc(cur.note||"")+'" placeholder="למשל: ספירה של ישי ויותם"></div>'
     +'<div class="f"><label for="pbBy">מי ספר</label><input type="text" id="pbBy" value="'+esc(ls.get("issuer")||"")+'" placeholder="השם שלך"></div>'
-    +'<div class="acts"><button class="save" id="pbSave" type="button">שמור מאזן</button><button class="cancel" id="pbCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="pbSave" type="button">שמור מאזן</button><button class="cancel" id="pbCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   function drawR(){ const box=q("#pbReasons"); box.innerHTML=""; reasons.forEach((r,i)=>{ const d=document.createElement("div"); d.className="dline";
       d.innerHTML='<input type="text" placeholder="סיבה (למשל: נפל משטח על הצד)" value="'+esc(r.reason||"")+'"><button class="x" type="button" aria-label="הסר">×</button><div class="r2"><input type="text" inputmode="numeric" placeholder="כמות" value="'+esc(r.qty??"")+'"></div>';
@@ -137,8 +136,7 @@ function openPanelBal(){
       const ins=d.querySelectorAll(".r2 input"); ins[0].oninput=e=>{taken[i].pallets=e.target.value;}; ins[1].oninput=e=>{taken[i].qty=e.target.value;}; box.appendChild(d); }); }
   q("#pbAddR").onclick=()=>{ reasons.push({reason:"",qty:""}); drawR(); };
   q("#pbAddT").onclick=()=>{ taken.push({site:"",pallets:"",qty:""}); drawT(); };
-  q("#pbCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#pbCancel").onclick=close;
   q("#pbSave").onclick=async()=>{
     const num=id=>{ const v=Number(String(q("#"+id).value).replace(/[^\d.\-]/g,"")); return isFinite(v)?v:0; };
     const by=q("#pbBy").value.trim(); if(!by){ toast("מי ספר? צריך שם."); q("#pbBy").focus(); return; } ls.set("issuer",by);
@@ -160,8 +158,6 @@ function openPanelBal(){
     logAct("panelbal","add","מאזן פאנלים "+dateText+": באתר "+fmtN(c.onSite)+" · מותקנים "+fmtN(doc.installed)+" · שבורים "+fmtN(doc.broken)+" · ספייר "+(c.usable<0?"−":"+")+fmtN(Math.abs(c.usable)),id,by);
     close(); renderPanelBal(); renderStock(); toast("המאזן נשמר.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   drawR(); drawT();
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
@@ -171,8 +167,7 @@ function openPanelMove(){
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
   const sites=[...new Set([...panelMoves.map(m=>m.site),...panelBal.flatMap(b=>(b.takenOut||[]).map(t=>t.site))].filter(Boolean))];
   const F=(id,l,v,ph,mode)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'"'+(mode?' inputmode="'+mode+'"':'')+' autocomplete="off"></div>';
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="פאנלים בין אתרים"><div class="grab"></div><h2>פאנלים: הגיעו / יצאו</h2>'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פאנלים בין אתרים"><div class="grab"></div><h2>פאנלים: הגיעו / יצאו</h2>'
     +'<div class="note-card">תנועת פאנלים בין אתרים, בלי לספור מחדש: המאזן מתעדכן לבד. ספירה מלאה עושים ב«עדכון מאזן».</div>'
     +'<div class="f"><label>כיוון</label><div class="opts" id="pmDir"><button class="opt" type="button" data-d="in" aria-pressed="true">הגיעו לאתר<small>מאתר אחר</small></button><button class="opt" type="button" data-d="out" aria-pressed="false">יצאו מהאתר<small>לאתר אחר</small></button></div></div>'
     +'<div class="f"><label for="pmSite">איזה אתר</label><input type="text" id="pmSite" list="pmSites" placeholder="למשל: אשלים" autocomplete="off"><datalist id="pmSites">'+sites.map(x=>'<option value="'+esc(x)+'"></option>').join("")+'</datalist></div>'
@@ -180,15 +175,14 @@ function openPanelMove(){
     +F("pmBroken","שבורים בהגעה","","0","numeric")
     +'<div class="f"><label for="pmDate">תאריך</label><input type="date" id="pmDate" value="'+iso+'"></div>'
     +F("pmBy","מי קלט",ls.get("issuer")||"","השם שלך")+F("pmNote","הערה","","מספר תעודה, נהג, מי פרק")
-    +'<div class="acts"><button class="save" id="pmSave" type="button" disabled>שמור</button><button class="cancel" id="pmCancel" type="button">ביטול</button></div></div>';
-  document.body.appendChild(scrim);
+    +'<div class="acts"><button class="save" id="pmSave" type="button" disabled>שמור</button><button class="cancel" id="pmCancel" type="button">ביטול</button></div></div>');
+  const close=closer(scrim);
   const q=x=>scrim.querySelector(x);
   q("#pmDir").onclick=e=>{ const b=e.target.closest("[data-d]"); if(!b) return; dir=b.dataset.d; q("#pmDir").querySelectorAll(".opt").forEach(o=>o.setAttribute("aria-pressed",String(o===b))); q("#pmBroken").parentElement.hidden=dir==="out"; };
   const check=()=>{ const qn=Number(q("#pmQty").value); q("#pmSave").disabled=!(isFinite(qn)&&qn>0&&q("#pmSite").value.trim()&&q("#pmBy").value.trim()); };
   q("#pmQty").oninput=check; q("#pmSite").oninput=check; q("#pmBy").oninput=check;
   q("#pmPal").oninput=e=>{ const pl=Number(e.target.value); const per=N((curPb()||{}).perPallet)||33; if(pl>0&&!q("#pmQty").value){ q("#pmQty").value=pl*per; check(); } };
-  q("#pmCancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
-  document.addEventListener("keydown",esck);
+  q("#pmCancel").onclick=close;
   q("#pmSave").onclick=async()=>{
     const b=q("#pmSave"); b.disabled=true; b.textContent="שומר…";
     const by=q("#pmBy").value.trim(); ls.set("issuer",by);
@@ -203,8 +197,6 @@ function openPanelMove(){
     if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderPanelBal(); renderOverview(); toast("נשמר. המאזן עודכן.");
   };
-  function esck(ev){ if(ev.key==="Escape") close(); }
-  function close(){ document.removeEventListener("keydown",esck); scrim.remove(); }
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
 }
 $("#btnPbMove").onclick=openPanelMove;
@@ -220,25 +212,22 @@ const FAB_LABEL="פעולה";
 let fabTab="over";
 $("#fab").onclick=()=>openFabMenu();
 function openFabMenu(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="order"><b>בקשת רכש</b><span>מה ביקשתי מהרכש, מה-BOM / EBOQ או פריט חופשי, ונסגר מול ה-PO</span></button>'
     +'<button type="button" class="slip" data-k="equip"><b>ניפוק ציוד</b><span>כלי עבודה או חומר שיוצא מהמלאי — מי לקח וכמה</span></button>'
     +'<button type="button" class="slip" data-k="bolts"><b>ניפוק ברגים</b><span>ברגים לקבלן לפי שולחנות, עם חתימת המקבל</span></button>'
-    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="order") openOrder(); else if(k==="equip") openEquipIssue(); else openIssue(); });
 }
 /* ניפוק ציוד: בוחרים פריט מהמלאי (כלי עבודה וחומרים קודם) ואז הוצאה עם «מי לקח» */
 function openEquipIssue(){
   const rows=(demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
   rows.sort((a,b)=>(pri[a.cat]??9)-(pri[b.cat]??9)||String(a.name).localeCompare(String(b.name),"he"));
-  const scrim=document.createElement("div"); scrim.className="scrim"; let qtxt="";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>ניפוק ציוד</h2>'
+  let qtxt="";
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>ניפוק ציוד</h2>'
     +'<div class="search" style="margin-bottom:8px"><input type="text" id="eqQ" placeholder="חפש כלי או חומר במלאי" autocomplete="off"><span class="ico">⌕</span></div>'
     +'<div class="stock" id="eqList"></div><button class="addline" type="button" id="eqNew" style="margin-top:8px">+ פריט שלא רשום במלאי</button>'
-    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
+    +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const q=x=>scrim.querySelector(x); const close=()=>scrim.remove();
   q(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   const draw=()=>{ const box=q("#eqList"); box.innerHTML=""; const t=qtxt.toLowerCase();
     const list=(t?rows.filter(r=>String(r.name).toLowerCase().includes(t)):rows).slice(0,20);
@@ -251,13 +240,11 @@ function openEquipIssue(){
   draw(); setTimeout(()=>q("#eqQ").focus(),60);
 }
 function openStockActions(){
-  const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מלאי"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
     +'<button type="button" class="slip" data-k="note"><b><i class="ic ic-cam"></i> קליטת תעודת משלוח</b><span>סריקה או צילום של התעודה, השורות נקראות לבד</span></button>'
     +'<button type="button" class="slip" data-k="issue"><b>ניפוק לקבלן</b><span>ברגים וחומרים שיוצאים מהמלאי לקבלן, עם חתימה</span></button>'
     +'<button type="button" class="slip" data-k="count"><b>ספירה מהירה</b><span>מה יש בפועל במלאי, פריט אחרי פריט</span></button>'
-    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
-  document.body.appendChild(scrim); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
+    +'</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>'); const close=()=>scrim.remove(); scrim.querySelector(".cancel").onclick=close; scrim.onclick=e=>{ if(e.target===scrim) close(); };
   scrim.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ close(); const k=b.dataset.k; if(k==="note") openNote(); else if(k==="issue") openIssue(); else openQuickCount(); });
 }
 
