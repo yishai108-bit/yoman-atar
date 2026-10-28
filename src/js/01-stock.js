@@ -39,8 +39,8 @@ function stockRows(){
   const map = new Map();
   notes.forEach(n=>(n.lines||[]).forEach(l=>{
     const k=(l.name||"").trim(); if(!k) return;
-    const e=map.get(k)||{name:k,unit:l.unit||"",cat:l.cat||"staging",catTs:-1,in:0,out:0,sups:new Set()};
-    e.in+=Number(l.qty)||0; if(!e.unit&&l.unit) e.unit=l.unit;
+    const e=map.get(k)||{name:k,unit:unitOf(l.unit),cat:l.cat||"staging",catTs:-1,in:0,out:0,sups:new Set()};
+    e.in+=(Number(l.qty)||0)*unitMult(l.unit); if(!e.unit&&l.unit) e.unit=unitOf(l.unit);
     if(l.cat && (n.ts||0)>=e.catTs){ e.cat=l.cat; e.catTs=n.ts||0; }
     if(n.supplier) e.sups.add(n.supplier);
     map.set(k,e);

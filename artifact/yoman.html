@@ -1019,6 +1019,9 @@ body.net-off .tabs{top:var(--netH,0px)}
 <script>
 // מצב משותף: משתנים שקובץ אחד מגדיר וקובץ אחר משנה. מרוכזים כאן כדי שהמעבר למודולים יהיה אפשרי.
 const shared={};
+// תעודות ברגים נרשמות ב"אלף" או ב"מאה" (0.5 אלף = 500 יחידות). כל חישוב כמויות עובר דרך המכפיל.
+const unitMult=u=>/אלף/.test(String(u||""))?1000:/^\s*מאה\s*$/.test(String(u||""))?100:1;
+const unitOf=u=>unitMult(u)>1?"יח'":(u||"");
 const BLAME = [
   {id:"supplier",   label:"ספק / יצרן",   cls:"c-supplier",   color:"var(--sage-fill)",  claim:true},
   {id:"carrier",    label:"מוביל",        cls:"c-carrier",    color:"var(--info-fill)",    claim:true},
@@ -1421,8 +1424,8 @@ function stockRows(){
   const map = new Map();
   notes.forEach(n=>(n.lines||[]).forEach(l=>{
     const k=(l.name||"").trim(); if(!k) return;
-    const e=map.get(k)||{name:k,unit:l.unit||"",cat:l.cat||"staging",catTs:-1,in:0,out:0,sups:new Set()};
-    e.in+=Number(l.qty)||0; if(!e.unit&&l.unit) e.unit=l.unit;
+    const e=map.get(k)||{name:k,unit:unitOf(l.unit),cat:l.cat||"staging",catTs:-1,in:0,out:0,sups:new Set()};
+    e.in+=(Number(l.qty)||0)*unitMult(l.unit); if(!e.unit&&l.unit) e.unit=unitOf(l.unit);
     if(l.cat && (n.ts||0)>=e.catTs){ e.cat=l.cat; e.catTs=n.ts||0; }
     if(n.supplier) e.sups.add(n.supplier);
     map.set(k,e);
@@ -4680,7 +4683,6 @@ function renderTodayTip(){
 shared.boq=[];shared.boqSource="";shared.orders=[];shared.POS=[];shared.ETA=[];shared.STATUS=[];shared.SUPPLIERS={};shared.orderMax=20;shared.posMax=8;
 const ORDER_ST={draft:["טיוטה","var(--ink3)"],sent:["נשלח לרכש","var(--info)"],partial:["הגיע חלקית","var(--amber)"],received:["התקבל","var(--sage)"],cancelled:["בוטל","var(--clay)"]};
 const supNorm=s=>{ s=shortSup(s); if(/schletter|שלטר/i.test(s)) return "שלטר (Schletter)"; return s; };
-const unitMult=u=>/אלף/.test(String(u||""))?1000:1;            // תעודות ברגים נרשמות ב"אלף"
 const boqName=code=>{ const l=shared.boq.find(x=>String(x.code)===String(code)); return l?(l.name||"").trim():""; };
 const sameItem=(x,l)=>(x.boq&&l.boq&&(String(x.boq)===String(l.boq)||boqName(x.boq)===boqName(l.boq)))||((x.name||"").trim()===(l.name||"").trim());
 /* הקטלוג: לכל פריט — תוכנן (EBOQ + קיט), ביקשתי (בקשות רכש שנשלחו), הוזמן (PO של הרכש), הגיע (תעודות משלוח בלבד).

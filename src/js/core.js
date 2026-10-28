@@ -1,5 +1,8 @@
 // מצב משותף: משתנים שקובץ אחד מגדיר וקובץ אחר משנה. מרוכזים כאן כדי שהמעבר למודולים יהיה אפשרי.
 const shared={};
+// תעודות ברגים נרשמות ב"אלף" או ב"מאה" (0.5 אלף = 500 יחידות). כל חישוב כמויות עובר דרך המכפיל.
+const unitMult=u=>/אלף/.test(String(u||""))?1000:/^\s*מאה\s*$/.test(String(u||""))?100:1;
+const unitOf=u=>unitMult(u)>1?"יח'":(u||"");
 const BLAME = [
   {id:"supplier",   label:"ספק / יצרן",   cls:"c-supplier",   color:"var(--sage-fill)",  claim:true},
   {id:"carrier",    label:"מוביל",        cls:"c-carrier",    color:"var(--info-fill)",    claim:true},

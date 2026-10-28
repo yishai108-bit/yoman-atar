@@ -2,7 +2,6 @@
 shared.boq=[];shared.boqSource="";shared.orders=[];shared.POS=[];shared.ETA=[];shared.STATUS=[];shared.SUPPLIERS={};shared.orderMax=20;shared.posMax=8;
 const ORDER_ST={draft:["טיוטה","var(--ink3)"],sent:["נשלח לרכש","var(--info)"],partial:["הגיע חלקית","var(--amber)"],received:["התקבל","var(--sage)"],cancelled:["בוטל","var(--clay)"]};
 const supNorm=s=>{ s=shortSup(s); if(/schletter|שלטר/i.test(s)) return "שלטר (Schletter)"; return s; };
-const unitMult=u=>/אלף/.test(String(u||""))?1000:1;            // תעודות ברגים נרשמות ב"אלף"
 const boqName=code=>{ const l=shared.boq.find(x=>String(x.code)===String(code)); return l?(l.name||"").trim():""; };
 const sameItem=(x,l)=>(x.boq&&l.boq&&(String(x.boq)===String(l.boq)||boqName(x.boq)===boqName(l.boq)))||((x.name||"").trim()===(l.name||"").trim());
 /* הקטלוג: לכל פריט — תוכנן (EBOQ + קיט), ביקשתי (בקשות רכש שנשלחו), הוזמן (PO של הרכש), הגיע (תעודות משלוח בלבד).
