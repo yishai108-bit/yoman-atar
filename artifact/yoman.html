@@ -375,14 +375,14 @@ input[type=text].sn{font-weight:700;letter-spacing:.02em;font-variant-numeric:ta
 .stepper .val input{width:100%;text-align:center;font-family:var(--display);font-weight:700;font-size:2rem;line-height:1;border:0;background:transparent;color:var(--ink);padding:0}
 .stepper .val small{font-size:.74rem;font-weight:700;color:var(--ink2)}
 .kitrows{display:flex;flex-direction:column;gap:6px}
-.kitrow{display:grid;grid-template-columns:minmax(0,1fr) 96px 36px;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
+.kitrow{display:grid;grid-template-columns:minmax(0,1fr) 96px 44px;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
 .kitrow .nm{font-weight:700;font-size:.88rem;overflow-wrap:anywhere}
 .kitrow .per{font-size:.74rem;color:var(--ink3);font-variant-numeric:tabular-nums}
 .kitrow input{padding:9px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
 .kitrow .x{background:none;border:0;color:var(--ink3);font-size:1.2rem;font-weight:700;min-height:40px}
 .kitrow .x:hover{color:var(--clay)}
 .kitrow.off{opacity:.4}
-.kitrow.ed{grid-template-columns:minmax(0,1fr) 58px 58px 58px 32px;gap:6px;padding:8px}
+.kitrow.ed{grid-template-columns:minmax(0,1fr) 58px 58px 58px 44px;gap:6px;padding:8px}
 .kitrow.ed input[data-t]{padding:8px 4px;font-size:.86rem}
 .kitrow.ed.hd{background:transparent;border:0;padding:0 8px;margin-bottom:-2px}
 .kitrow.ed .th{font-size:.68rem;font-weight:700;color:var(--ink3);text-align:center;line-height:1.2}
@@ -498,7 +498,7 @@ input[type=date]{width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13
 .setgrid .ghost small{display:block;font-weight:500;font-size:.72rem;color:var(--ink3)}
 .onb .step .s{line-height:1.4}
 .danger{border-color:var(--clay)!important;color:var(--clay)!important}
-.typerow{display:grid;grid-template-columns:minmax(0,1fr) 84px 36px;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
+.typerow{display:grid;grid-template-columns:minmax(0,1fr) 84px 44px;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
 .typerow input{padding:9px}
 .typerow input[data-c]{text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
 .typerow .x{background:none;border:0;color:var(--ink3);font-size:1.2rem;font-weight:700;min-height:40px}
@@ -614,6 +614,15 @@ body.r-viewer .ro-bar{display:block}
 .lock .pad button:active{background:var(--line2)}
 .lock .pad .ghostk{border:0;background:transparent;font-size:.95rem;font-family:var(--ui)}
 .lock .brand{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));font-weight:700;letter-spacing:.14em;color:var(--pv);font-size:.85rem}
+/* מטרות מגע: לפחות 44px, כדי שאפשר ללחוץ עם כפפות עבודה */
+.ghost,.chip2,.tgl,.who-chip,.tip-today button,.sig .clr2,.kitrow .x,.typerow .x{min-height:44px}
+.who-chip,.tip-today button{min-width:44px}
+.bc-row .n button{width:44px;height:44px}
+button.grouphead{min-height:44px;margin:6px 2px 2px}
+.foot details summary{padding:12px 0}
+.card h3 .info,.linkbtn,.scan-pages .pg button,.pages .pg button{position:relative}
+.card h3 .info::after,.linkbtn::after{content:"";position:absolute;inset:-12px -10px}
+.scan-pages .pg button::after,.pages .pg button::after{content:"";position:absolute;inset:0 -11px -22px 0}
 /* פס חיבור: כשהמאגר לא זמין, שהעובד לא יחשוב שהמספרים עדכניים */
 .netbar{position:fixed;top:0;inset-inline:0;z-index:85;direction:rtl;display:flex;align-items:center;gap:10px;
   background:var(--clay);color:#fff;padding:calc(6px + env(safe-area-inset-top,0px)) 14px 6px;font-weight:700;font-size:.86rem;line-height:1.35;box-shadow:var(--shadow)}
@@ -2809,7 +2818,7 @@ function openQuickCount(){
   function draw(){
     const box=q("#qcRows"); box.innerHTML="";
     items.forEach((n,i)=>{
-      const r=byName.get(n); const r0=document.createElement("div"); r0.className="kitrow"; r0.style.gridTemplateColumns="minmax(0,1fr) 36px";
+      const r=byName.get(n); const r0=document.createElement("div"); r0.className="kitrow"; r0.style.gridTemplateColumns="minmax(0,1fr) 44px";
       const cur = !r ? "לא במלאי" : r.counted!==null ? "נספר "+fmtN(r.counted)+" ב-"+fmtD(r.countedTs)+(r.noIn?"":" · תיאורטי "+fmtN(r.derived))
         : r.noIn ? "יצא "+fmtN(r.out)+" · ללא קליטה" : "תיאורטי "+fmtN(r.derived);
       r0.innerHTML='<div><div class="nm">'+esc(n)+'</div><div class="per">'+cur+'</div>'
@@ -5061,7 +5070,7 @@ function openOrder(existing){
     const groups=new Map(); o.lines.forEach((l,i)=>{ const k=l.supplier||"ללא ספק"; (groups.get(k)||groups.set(k,[]).get(k)).push(i); });
     groups.forEach((idx,sup)=>{
       const h=document.createElement("div"); h.className="grouphead"; h.innerHTML='<i style="background:var(--pv)"></i>'+esc(sup)+'<span>'+idx.length+'</span>'; box.appendChild(h);
-      idx.forEach(i=>{ const l=o.lines[i]; const r=document.createElement("div"); r.className="dline"; r.style.gridTemplateColumns="1fr 36px";
+      idx.forEach(i=>{ const l=o.lines[i]; const r=document.createElement("div"); r.className="dline"; r.style.gridTemplateColumns="1fr 44px";
         r.innerHTML='<div><b style="font-size:.9rem">'+esc(l.name)+'</b>'+(l.boq||l.code?' <small style="color:var(--ink3)">'+esc(l.boq?'סעיף '+l.boq:l.code)+'</small>':'')+(l.sku?' <small style="color:var(--ink3)">· מק״ט ספק '+esc(l.sku)+'</small>':'')+'</div><button class="x" type="button" aria-label="הסר">×</button>'
           +'<div class="r2" style="grid-template-columns:80px 70px 1fr"><input type="text" inputmode="decimal" value="'+esc(l.qty)+'" aria-label="כמות" placeholder="כמות"><input type="text" value="'+esc(l.unit)+'" aria-label="יחידה" placeholder="יח׳"><select aria-label="קטגוריה">'+["civil","construction","electrical","staging","safety","panels","tools","containers"].map(c=>'<option value="'+c+'"'+(l.cat===c?' selected':'')+'>'+catLabel(c)+'</option>').join("")+'</select></div>'
           +'<div class="r2" style="grid-template-columns:1fr 1fr"><input type="text" list="orSups" value="'+esc(l.supplier)+'" placeholder="ספק" aria-label="ספק"><input type="text" value="'+esc(l.note||"")+'" placeholder="הערה לשורה" aria-label="הערה"></div>';
