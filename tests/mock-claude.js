@@ -5,6 +5,7 @@
 //   noClaude: true      → אין window.claude בכלל (תצוגה מקומית)
 //   noDb: true          → use("db") מחזיר null
 //   killListeners: ms   → אחרי ms כל ההאזנות מקבלות שגיאה סופנית (unavailable)
+// קבצים שהאפליקציה שומרת דרך downloads נאספים ב-window.__MOCK_SAVED__ ({filename, data})
 (function(){
   const M = window.__MOCK__ || {};
   if (M.noClaude) return;
@@ -12,7 +13,8 @@
   const store = new Map();               // path -> body
   const subs = new Set();                // {kind, path, next, error, q}
   const writes = [];                     // יומן כתיבות לבדיקות
-  window.__MOCK_STORE__ = store; window.__MOCK_WRITES__ = writes;
+  const saved = [];                      // קבצים שנשמרו דרך downloads
+  window.__MOCK_STORE__ = store; window.__MOCK_WRITES__ = writes; window.__MOCK_SAVED__ = saved;
   for (const [coll, docs] of Object.entries(M.seed || {}))
     for (const [id, body] of Object.entries(docs)) store.set(coll + "/" + id, JSON.parse(JSON.stringify(body)));
 
@@ -81,6 +83,7 @@
   window.claude = { use: async name => {
     if (name === "db") return M.noDb ? null : db;
     if (name === "user") return user;
-    return null;   // assets, sample, downloads: לא בבדיקות
+    if (name === "downloads") return { save: async f => { saved.push(f); } };
+    return null;   // assets, sample: לא בבדיקות
   } };
 })();

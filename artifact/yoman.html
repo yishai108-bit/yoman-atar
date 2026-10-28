@@ -1735,7 +1735,8 @@ function openMoveSlip(who,item){
     +outs.map(m=>{ const d=new Date(m.ts); const sig=m.sigAsset?"/_blob/"+m.sigAsset:(m.sigUrl||m.sigData||"");
       return '<div class="kv"><span>'+fmtD(d)+' '+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+'</span><span>כמות <b>'+fmtN(m.qty)+'</b></span>'
         +'<span>'+(moveSigned(m)?'<b style="color:var(--sage)">חתום</b>':'<b style="color:var(--clay)">ללא חתימה</b>')+'</span></div>'
-        +(sig?'<img class="sigimg" src="'+sig+'" alt="חתימת המקבל">':''); }).join("")
+        +(sig?'<img class="sigimg" src="'+sig+'" alt="חתימת המקבל">':'')
+        +'<button class="ghost" type="button" data-mpdf="'+esc(m.id)+'" style="margin:8px 0 4px">PDF של הניפוק הזה</button>'; }).join("")
     +'<div class="acts"><button class="save" type="button" id="msCopy">העתק לוואטסאפ</button><button class="cancel" type="button">סגור</button></div></div>';
   document.body.appendChild(scrim);
   const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
@@ -1743,6 +1744,7 @@ function openMoveSlip(who,item){
   document.addEventListener("keydown",esck);
   scrim.querySelector(".cancel").onclick=close;
   scrim.querySelector("#msCopy").onclick=()=>copyText(moveSlipText(who,item,outs));
+  scrim.querySelectorAll("[data-mpdf]").forEach(b=>b.onclick=()=>issuePdfById(b.dataset.mpdf,b));
   scrim.onclick=e=>{ if(e.target===scrim) close(); };
 }
 
@@ -1801,6 +1803,7 @@ function openMove(item){
     const rec={id:(isC?"c":"m")+Date.now()+Math.random().toString(36).slice(2,6),
       item:item, qty:Number(q("#mQty").value), who:q("#mWho").value.trim(), ts:Date.now()};
     if(!isC) rec.dir=dir;
+    if(dir==="out"&&actorName()) rec.by=actorName();
     if(dir==="out" && pad.has()){
       let up=false;
       try{ if(ASSETS){ const bl=await pad.blob(); const a=await ASSETS.upload(bl); rec.sigAsset=a.id; rec.sigUrl=a.url; up=true; } }catch(e){}
@@ -2748,13 +2751,14 @@ function openSlip(s){
     +(s.note?'<div class="note-card">'+esc(s.note)+'</div>':'')
     +'<div class="dlines">'+(s.lines||[]).map(l=>'<div><span>'+esc(l.name)+'</span><b>'+fmtN(l.qty)+'</b></div>').join("")+'</div>'
     +(sig?'<img class="sigimg" src="'+sig+'" alt="חתימת המקבל" style="margin-top:14px">':'')
-    +'<div class="acts"><button class="save" type="button" id="slCopy">העתק לוואטסאפ</button><button class="cancel" type="button">סגור</button></div></div>';
+    +'<div class="acts"><button class="save" type="button" id="slCopy">העתק לוואטסאפ</button><button class="ghost" type="button" id="slPdf">PDF</button><button class="cancel" type="button">סגור</button></div></div>';
   document.body.appendChild(scrim);
   const close=()=>{ document.removeEventListener("keydown",esck); scrim.remove(); };
   const esck=ev=>{ if(ev.key==="Escape") close(); };
   document.addEventListener("keydown",esck);
   scrim.querySelector(".cancel").onclick=close;
   scrim.querySelector("#slCopy").onclick=()=>copyText(slipText(s));
+  scrim.querySelector("#slPdf").onclick=e=>issuePdfById(s.id,e.currentTarget);
   scrim.onclick=e=>{ if(e.target===scrim) close(); };
 }
 function renderSlips(){
@@ -2772,18 +2776,89 @@ function renderSlips(){
     b.onclick=()=>openSlip(s);
     box.appendChild(b);
   });
-  if(list.length>5){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent="כל הניפוקים ("+list.length+")"; m.onclick=()=>openAllSlips(list); box.appendChild(m); }
+  if(list.length){ const m=document.createElement("button"); m.className="more"; m.type="button"; m.textContent=(list.length>5?"כל הניפוקים ("+list.length+")":"כל הניפוקים")+" · PDF לתקופה"; m.onclick=()=>openAllSlips(list); box.appendChild(m); }
 }
 function openAllSlips(list){
   const scrim=document.createElement("div"); scrim.className="scrim";
-  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="כל הניפוקים"><div class="grab"></div><h2>כל הניפוקים</h2><div class="stock" id="asList"></div>'
+  scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="כל הניפוקים"><div class="grab"></div><h2>כל הניפוקים</h2><div id="asRange"></div><div class="stock" id="asList"></div>'
     +'<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>';
   document.body.appendChild(scrim);
+  issueRangeBox(scrim.querySelector("#asRange"));
   const box=scrim.querySelector("#asList");
   list.forEach(s=>{ const b=document.createElement("button"); b.type="button"; b.className="slip"; const d=new Date(s.ts);
     b.innerHTML='<b>'+esc(s.who||"")+(s.tables?' · '+fmtN(s.tables)+' שולחנות':'')+'</b><span class="sigok" style="'+((s.sigAsset||s.sigUrl||s.sigData)?'background:var(--sage-soft);color:var(--sage)':'background:var(--clay-soft);color:var(--clay)')+'">'+((s.sigAsset||s.sigUrl||s.sigData)?'חתום':'ללא חתימה')+'</span><span>'+fmtD(d)+' · '+(s.lines||[]).length+' פריטים'+(s.by?' · '+esc(s.by):'')+'</span>';
     b.onclick=()=>openSlip(s); box.appendChild(b); });
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
+}
+/* ---- PDF לניפוק: עמוד לכל ניפוק (ברגים או ציוד) עם החתימה. בלי ת.ז. ובלי מחירים ---- */
+const recSig=r=>r.sigAsset?"/_blob/"+r.sigAsset:(r.sigUrl||r.sigData||"");
+const recSigned=r=>!!(r.sigAsset||r.sigUrl||r.sigData);
+function issueRecs(){
+  const a=(demoStock?[]:issues).map(s=>({kind:"bolts",id:s.id,ts:s.ts,who:s.who||"",by:s.by||"",tables:s.tables,typeLabel:s.typeLabel||"",lines:(s.lines||[]).map(l=>({name:l.name,qty:l.qty})),note:s.note||"",sig:recSig(s),signed:recSigned(s)}));
+  const b=(demoStock?[]:moves).filter(m=>m.dir==="out"&&m.source!=="issue").map(m=>({kind:"tool",id:m.id,ts:m.ts,who:m.who||"",by:m.by||"",lines:[{name:m.item,qty:m.qty}],note:m.note||"",sig:recSig(m),signed:recSigned(m)}));
+  const all=a.concat(b).sort((x,y)=>x.ts-y.ts||String(x.id).localeCompare(String(y.id))); all.forEach((r,i)=>r.no=i+1); return all;
+}
+const isoDay=t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const fileSafe=t=>String(t||"").replace(/[\\/:*?"<>|]/g,"").trim().replace(/\s+/g,"-");
+const siteShort=()=>fileSafe(String(SITE.name||"").replace(/^אתר הקמה\s*/,""))||"אתר";
+const issueFileName=r=>[siteShort(),isoDay(r.ts),fileSafe(r.who)||"ללא-שם",r.no].join("_")+".pdf";
+async function sigImg(src){ if(!src) return null; try{ const res=await fetch(src); if(!res.ok) return null; return await loadImg(await res.blob()); }catch(e){ return null; } }
+async function issuePage(r){
+  const W=1240,H=1754; const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d");
+  x.fillStyle="#fff"; x.fillRect(0,0,W,H); x.direction="rtl"; x.textAlign="right"; const R=W-80, Lx=80;
+  const d=new Date(r.ts); const dt=d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear()+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+  x.fillStyle="#E40033"; x.fillRect(0,0,W,14); x.font="700 30px Alef, Arial"; x.fillText(SITE.company||"BELECTRIC",R,80);
+  x.fillStyle="#121212"; x.font="700 44px Alef, Arial"; x.fillText((r.kind==="tool"?"ניפוק ציוד":"ניפוק ברגים")+" · מס׳ "+r.no,R,140);
+  x.fillStyle="#666B6E"; x.font="400 26px Alef, Arial"; x.fillText(SITE.name+" · "+dt,R,185);
+  x.fillStyle="#121212"; x.font="700 34px Alef, Arial"; x.fillText("מקבל: "+(r.who||"—"),R,250);
+  let y=292; x.font="400 26px Alef, Arial"; x.fillStyle="#3F4447";
+  if(r.tables){ x.fillText(fmtN(r.tables)+" שולחנות"+(r.typeLabel?" ("+r.typeLabel+")":""),R,y); y+=38; }
+  if(r.by){ x.fillText("מנפיק: "+r.by,R,y); y+=38; }
+  y+=40; const SIG=H-520;
+  x.fillStyle="#F2F2F2"; x.fillRect(Lx,y-36,W-160,50); x.fillStyle="#121212"; x.font="700 24px Alef, Arial";
+  x.fillText("#",R-10,y); x.fillText("פריט",R-80,y); x.textAlign="left"; x.fillText("כמות",Lx+20,y); x.textAlign="right";
+  y+=44; const L=r.lines||[];
+  for(let i=0;i<L.length;i++){
+    if(y>SIG-40){ x.fillStyle="#666B6E"; x.font="400 22px Alef, Arial"; x.fillText("ועוד "+(L.length-i)+" פריטים (ברשימה ביומן)",R,y); y+=36; break; }
+    if(i%2){ x.fillStyle="#FAFAFA"; x.fillRect(Lx,y-30,W-160,42); }
+    x.fillStyle="#121212"; x.font="400 24px Alef, Arial"; x.fillText(String(i+1),R-10,y);
+    let nm=String(L[i].name||""); while(nm.length>4&&x.measureText(nm).width>820) nm=nm.slice(0,-2); if(nm!==String(L[i].name||"")) nm+="…";
+    x.fillText(nm,R-80,y); x.textAlign="left"; x.font="700 24px Alef, Arial"; x.fillText(fmtN(L[i].qty),Lx+20,y); x.textAlign="right";
+    y+=42;
+  }
+  x.fillStyle="#121212"; x.font="700 26px Alef, Arial"; x.fillText("סה״כ "+L.length+" פריטים · "+fmtN(L.reduce((t,l)=>t+(Number(l.qty)||0),0))+" יחידות",R,y+10);
+  if(r.note){ x.font="400 24px Alef, Arial"; x.fillStyle="#3F4447"; let n="הערה: "+r.note; while(n.length>8&&x.measureText(n).width>W-160) n=n.slice(0,-2); x.fillText(n,R,y+54); }
+  x.fillStyle="#121212"; x.font="700 28px Alef, Arial"; x.fillText("חתימת המקבל",R,SIG);
+  x.strokeStyle="#B5B8BA"; x.lineWidth=2; x.strokeRect(Lx,SIG+20,W-160,280);
+  const im=r.signed?await sigImg(r.sig):null;
+  if(im){ const bw=W-200, bh=250; const k=Math.min(bw/im.naturalWidth,bh/im.naturalHeight); const w=im.naturalWidth*k, h=im.naturalHeight*k; x.drawImage(im,Lx+20+(bw-w)/2,SIG+35+(bh-h)/2,w,h); }
+  else { x.fillStyle="#C8442C"; x.font="700 30px Alef, Arial"; x.textAlign="center"; x.fillText(r.signed?"החתימה לא נטענה":"ללא חתימה",W/2,SIG+170); x.textAlign="right"; }
+  x.fillStyle="#666B6E"; x.font="400 20px Alef, Arial"; x.fillText("הופק מיומן אתר · "+fmtD(Date.now()),R,H-70);
+  const jb=await canvasBlob(c,0.85); return {bytes:new Uint8Array(await jb.arrayBuffer()),w:W,h:H};
+}
+async function issuesPdf(list,name,title){
+  try{ await document.fonts.load("700 28px Alef"); await document.fonts.load("400 24px Alef"); }catch(e){}
+  try{ const pages=[]; for(const r of list) pages.push(await issuePage(r)); return await saveFile(name,await buildPdf(pages,title)); }
+  catch(e){ toast("יצירת ה-PDF נכשלה."); return false; }
+}
+async function issuePdfById(id,btn){
+  const r=issueRecs().find(x=>x.id===id); if(!r){ toast("הניפוק לא נמצא."); return; }
+  const t=btn&&btn.textContent; if(btn){ btn.disabled=true; btn.textContent="מכין…"; }
+  await issuesPdf([r],issueFileName(r),"ניפוק "+r.no);
+  if(btn){ btn.disabled=false; btn.textContent=t; }
+}
+function issueRangeBox(host){
+  const now=new Date(), wk=new Date(now); wk.setDate(now.getDate()-6);
+  host.innerHTML='<div class="card" style="padding:12px;margin-bottom:12px"><h3 style="font-size:.95rem">PDF של הניפוקים החתומים לתקופה</h3>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><input type="date" id="irFrom" aria-label="מתאריך" value="'+isoDay(wk)+'"><input type="date" id="irTo" aria-label="עד תאריך" value="'+isoDay(now)+'"></div>'
+    +'<div class="hint" id="irHint" style="margin-top:6px"></div><button class="ghost" type="button" id="irGo" style="width:100%;margin-top:8px">הורד PDF לתקופה</button></div>';
+  const q=s=>host.querySelector(s);
+  const pick=()=>{ const f=q("#irFrom").value, t=q("#irTo").value; const all=issueRecs().filter(r=>{ const k=isoDay(r.ts); return (!f||k>=f)&&(!t||k<=t); }); return {f,t,all,sig:all.filter(r=>r.signed)}; };
+  const hint=()=>{ const p=pick(); q("#irHint").textContent=p.sig.length+" ניפוקים חתומים (ברגים וציוד), עמוד לכל ניפוק"+(p.all.length>p.sig.length?" · "+(p.all.length-p.sig.length)+" ללא חתימה לא נכללים":""); q("#irGo").disabled=!p.sig.length; };
+  q("#irFrom").onchange=hint; q("#irTo").onchange=hint; hint();
+  q("#irGo").onclick=async()=>{ const p=pick(); if(!p.sig.length) return; const b=q("#irGo"); b.disabled=true; b.textContent="מכין "+p.sig.length+" עמודים…";
+    const ok=await issuesPdf(p.sig,[siteShort(),"ניפוקים-חתומים",p.f||"התחלה","עד",p.t||isoDay(Date.now())].join("_")+".pdf","ניפוקים חתומים");
+    b.textContent="הורד PDF לתקופה"; hint(); if(ok) logAct("issue","add","PDF ניפוקים חתומים · "+p.sig.length+" עמודים",""); };
 }
 $("#btnIssue").onclick=openIssue;
 if($("#ovNewIssue")) $("#ovNewIssue").onclick=openIssue;
