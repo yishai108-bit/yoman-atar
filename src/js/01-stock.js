@@ -272,12 +272,12 @@ function openNote(){
   }
   q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"construction"}); drawLines(); check();};
   q("#bLinesScan").onclick=()=>openBarcodeScanner({mode:"lines",onDone:async res=>{
-    let kitChanged=false; const kl=kit.map(k=>({...k}));
+    const cartons={};
     res.forEach(h=>{ if(!h.item) return; const per=Number(h.per)||0; const qty=per>0?h.n*per:h.n;
       const ex=lines.find(l=>l.name===h.item.name); if(ex){ ex.qty=(Number(ex.qty)||0)+qty; } else lines.push({name:h.item.name,qty,unit:per>0?"יח'":"קרטון",cat:"construction"});
-      if(per>0){ const k=kl.find(x=>x.code===h.item.code); if(k&&Number(k.carton)!==per){ k.carton=per; kitChanged=true; } } });
+      if(per>0&&h.item.code) cartons[h.item.code]=per; });
     lines=lines.filter(l=>String(l.name||"").trim()||lines.length===1); drawLines(); check();
-    if(kitChanged){ try{ await saveKit(kl,kitSource,"נלמדה כמות בקרטון מסריקת תעודה"); }catch(e){} }
+    if(Object.keys(cartons).length){ try{ await saveKitCartons(cartons,"נלמדה כמות בקרטון מסריקת תעודה"); }catch(e){} }
     if(res.some(h=>h.item&&!(Number(h.per)>0))) toast("לקרטון בלי «יחידות בקרטון» נרשמה כמות בקרטונים. עדיף למלא יחידות.");
   }});
   function drawPages(){

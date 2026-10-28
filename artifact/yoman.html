@@ -1646,12 +1646,12 @@ function openNote(){
   }
   q("#bAddLine").onclick=()=>{lines.push({name:"",qty:"",unit:"",cat:"construction"}); drawLines(); check();};
   q("#bLinesScan").onclick=()=>openBarcodeScanner({mode:"lines",onDone:async res=>{
-    let kitChanged=false; const kl=kit.map(k=>({...k}));
+    const cartons={};
     res.forEach(h=>{ if(!h.item) return; const per=Number(h.per)||0; const qty=per>0?h.n*per:h.n;
       const ex=lines.find(l=>l.name===h.item.name); if(ex){ ex.qty=(Number(ex.qty)||0)+qty; } else lines.push({name:h.item.name,qty,unit:per>0?"יח'":"קרטון",cat:"construction"});
-      if(per>0){ const k=kl.find(x=>x.code===h.item.code); if(k&&Number(k.carton)!==per){ k.carton=per; kitChanged=true; } } });
+      if(per>0&&h.item.code) cartons[h.item.code]=per; });
     lines=lines.filter(l=>String(l.name||"").trim()||lines.length===1); drawLines(); check();
-    if(kitChanged){ try{ await saveKit(kl,kitSource,"נלמדה כמות בקרטון מסריקת תעודה"); }catch(e){} }
+    if(Object.keys(cartons).length){ try{ await saveKitCartons(cartons,"נלמדה כמות בקרטון מסריקת תעודה"); }catch(e){} }
     if(res.some(h=>h.item&&!(Number(h.per)>0))) toast("לקרטון בלי «יחידות בקרטון» נרשמה כמות בקרטונים. עדיף למלא יחידות.");
   }});
   function drawPages(){
@@ -2576,6 +2576,15 @@ async function saveKit(lines,source,why){
   else { kit=doc.lines; kitSource=doc.source; ls.set("bom",JSON.stringify(doc)); }
   logAct("kit","edit",why||("כמויות לשולחן עודכנו · "+doc.lines.length+" פריטים · "+doc.source),"settings/bom");
 }
+// למידת «כמות בקרטון» משנה רק את שדה carton של הפריטים שנספרו, על הגרסה העדכנית במאגר,
+// כדי לא לדרוס עריכה של הכמויות לשולחן שנשמרה בינתיים במכשיר אחר. patch: {code: יחידות בקרטון}
+async function saveKitCartons(patch,why){
+  if(DB){ try{ const s=await DB.doc("settings/bom").get(); const d=s&&s.exists?s.data():null;
+    if(d&&Array.isArray(d.lines)&&d.lines.length){ kit=d.lines; kitSource=d.source||kitSource; if(Array.isArray(d.types)&&d.types.length) kitTypes=d.types; } }catch(e){} }
+  let changed=false;
+  const lines=kit.map(k=>{ const pb=Number(patch[k.code]); if(pb>0&&Number(k.carton)!==pb){ changed=true; return {...k,carton:pb}; } return k; });
+  if(changed) await saveKit(lines,kitSource,why);
+}
 function openKitEditor(preset){
   const scrim=document.createElement("div"); scrim.className="scrim";
   scrim.innerHTML='<div class="sheet" role="dialog" aria-modal="true" aria-label="ברגים לשולחן">'
@@ -2944,11 +2953,11 @@ function openQuickCount(){
       recs.push({id:"c"+ts+"_"+i,item:n,qty:t,who,ts,cat:r?r.cat:"construction",unit:r?r.unit:"יח'",source:"app",
         note:(bx&&pb?bx+" קרטונים × "+pb+(Number(vals[n])?" + "+Number(vals[n])+" בודדים":""):"")}); });
     // זכירת כמות בקרטון בקיט
-    let kitChanged=false; const lines=kit.map(k=>{ const pb=Number(perBox[k.name]); if(pb>0&&Number(k.carton)!==pb){ kitChanged=true; return {...k,carton:pb}; } return k; });
+    const cartons={}; kit.forEach(k=>{ const pb=Number(perBox[k.name]); if(pb>0&&Number(k.carton)!==pb) cartons[k.code]=pb; });
     try{
       if(DB){ for(const c of recs) await DB.doc("counts/"+c.id).set(c); }
       else { counts.push(...recs); ls.set("counts",JSON.stringify(counts)); }
-      if(kitChanged){ try{ await saveKit(lines,kitSource,"נלמדה כמות בקרטון מספירה"); }catch(e){} }
+      if(Object.keys(cartons).length){ try{ await saveKitCartons(cartons,"נלמדה כמות בקרטון מספירה"); }catch(e){} }
     }catch(e){ b.disabled=false; b.textContent="שמור ספירה"; toast("השמירה נכשלה."); return; }
     const gaps=recs.map(r=>{ const row=byName.get(r.item); return row&&!row.noIn?{n:shortName(r.item),g:r.qty-row.derived}:null; }).filter(x=>x&&x.g!==0);
     logAct("count","add","ספירה: "+recs.length+" פריטים"+(gaps.length?" · פערים: "+gaps.slice(0,4).map(x=>x.n+" "+(x.g>0?"+":"−")+fmtN(Math.abs(x.g))).join(", "):" · הכל תואם"),"c"+ts,who);
