@@ -5357,9 +5357,9 @@ const WR_CSS='*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#12
  +'.ring i{width:104px;height:104px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:1.9rem;font-weight:700}'
  +'.hero h2{margin:0;font-size:1.25rem}.hero p{margin:4px 0 0;color:#3F4447}.lead{margin:12px 0 0;padding:10px 14px;background:#EEF5DE;border-radius:6px;font-weight:700}'
  +'.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}.tile{border:1px solid #D9DADA;border-radius:6px;padding:10px}'
- +'.tile b{display:block;font-size:1.6rem;line-height:1.2}.tile span{font-size:.8rem;color:#666B6E}'
+ +'.tile b{display:block;font-size:1.6rem;line-height:1.2}.tile>span{font-size:.8rem;color:#666B6E}'
  +'h3{margin:22px 0 8px;font-size:1.05rem;border-right:4px solid #E40033;padding-right:8px}'
- +'.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}'
+ +'.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ph{margin:0;border-radius:6px;overflow:hidden;background:#ECEDED}.ph img{display:block;width:100%;height:auto}.ph figcaption{padding:6px 10px;font-size:.82rem;color:#3F4447;background:#ECEDED}'
  +'.empty{border:2px dashed #D9DADA;border-radius:6px;padding:16px;text-align:center;color:#666B6E;font-size:.9rem}'
  +'.act{padding:8px 0;border-bottom:1px solid #ECEDED;break-inside:avoid}.act .t{display:flex;justify-content:space-between;gap:10px;font-weight:700}'
  +'.bar{height:9px;border-radius:5px;background:#ECEDED;margin:6px 0 3px;overflow:hidden;position:relative}.bar i{display:block;height:100%;border-radius:5px}'
@@ -5368,7 +5368,7 @@ const WR_CSS='*{box-sizing:border-box}body{margin:0;background:#F2F2F2;color:#12
  +'table{width:100%;border-collapse:collapse;font-size:.86rem}th,td{text-align:right;padding:6px 6px;border-bottom:1px solid #ECEDED;vertical-align:top}th{color:#666B6E;font-weight:700;font-size:.78rem}'
  +'.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.flags{margin:0;padding:0 18px 0 0}.flags li{margin:4px 0}'
  +'.ft{margin-top:24px;padding-top:10px;border-top:1px solid #D9DADA;color:#666B6E;font-size:.76rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}'
- +'@media (max-width:560px){.pg{padding:20px 16px}.tiles{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.hero{gap:14px}.ring{width:104px;height:104px}.ring i{width:82px;height:82px;font-size:1.5rem}.hd{flex-direction:column}}'
+ +'@media (max-width:560px){.pg{padding:20px 16px}.cmp{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.hero{gap:14px}.ring{width:104px;height:104px}.ring i{width:82px;height:82px;font-size:1.5rem}.hd{flex-direction:column}}'
  +'@media print{body{background:#fff}.pg{max-width:none;padding:0;border-top:0}@page{size:A4;margin:14mm}h3{break-after:avoid}}';
 function wrHtml(mode,D,o){
   o=o||{}; const C=mode==="client", e=esc, N=v=>'<span class="n">'+fmtN(v)+'</span>', NP=v=>'<span class="n">+'+fmtN(v)+'</span>', P=x=>'<span class="n">'+wrPct(x)+'%</span>';
@@ -5389,8 +5389,10 @@ function wrHtml(mode,D,o){
   if(C){ if(act3.length) h+='<div class="tiles">'+act3.map(a=>tile(P(a.pct),a.name)).join("")+'</div>'; }
   else h+='<div class="tiles">'+tile(D.panA?NP(D.panA.week):'—','פאנלים השבוע')+tile(N(D.con.wn)+' <small style="font-size:.8rem">תעודות</small>','בטון השבוע · '+fmtN(D.con.wm3)+' מ״ק')
     +tile(N(D.iss.wt),'שולחנות נופקו השבוע')+tile(N(D.notes.length),'תעודות משלוח השבוע')+'</div>';
-  if(o.img||!C) h+='<h3>האתר השבוע</h3>'+(o.img?'<figure class="ph"><img src="'+e(o.img)+'" alt="תמונת רחפן של האתר"><figcaption>תמונת רחפן'+(o.imgDate?' · <span class="n">'+e(isoText(o.imgDate))+'</span>':'')+'</figcaption></figure>'
-    :'<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>');
+  const fig=(src,cap)=>'<figure class="ph"><img src="'+e(src)+'" alt="תמונת רחפן של האתר"><figcaption>'+cap+'</figcaption></figure>', dt=x=>'<span class="n">'+e(isoText(x))+'</span>';
+  if(o.img||!C) h+='<h3>האתר מהאוויר</h3>'+(!o.img?'<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>'
+    :o.prev?'<div class="cmp">'+fig(o.prev,'אז · '+dt(o.prevDate))+fig(o.img,'עכשיו · '+dt(o.imgDate))+'</div>'
+    :fig(o.img,'תמונת רחפן · '+dt(o.imgDate)+(o.imgDate<D.startIso?' · הצילום האחרון':'')));
   h+='<h3>התקדמות לפי פעילות</h3>';
   if(!D.acts.length) h+='<div class="empty">אין עדיין סטטוס התקדמות באפליקציה.</div>';
   D.acts.forEach(a=>{ h+='<div class="act"><div class="t"><span>'+e(a.name)+'</span><span>'+P(a.pct)+'</span></div>'
@@ -5454,19 +5456,22 @@ function openWeekly(){
   document.body.appendChild(scrim); const q=s=>scrim.querySelector(s);
   const close=()=>{ wrRedraw=null; document.removeEventListener("keydown",esck); scrim.remove(); }; const esck=ev=>{ if(ev.key==="Escape") close(); };
   document.addEventListener("keydown",esck); q(".cancel").onclick=close; scrim.onclick=ev=>{ if(ev.target===scrim) close(); };
-  const photo=()=>{ const D0=isoOf(new Date(endIso+"T12:00:00").getTime()-6*864e5); const d=DRONE.filter(x=>x.date>=D0&&x.date<=endIso).sort((a,b)=>a.date<b.date?1:-1)[0];
-    if(d) return {src:d.asset?"/_blob/"+d.asset:d.url,date:d.date}; if(localImg&&localImg.date>=D0&&localImg.date<=endIso) return localImg; return null; };
+  // התמונה האחרונה עד סוף השבוע, ולהשוואה הצילום הראשון שקדם לה בחודש לפחות
+  const shots=()=>DRONE.map(d=>({src:d.asset?"/_blob/"+d.asset:d.url,date:d.date})).concat(localImg?[localImg]:[]).filter(x=>x.date&&x.date<=endIso).sort((a,b)=>a.date<b.date?-1:1);
+  const photo=()=>{ const L=shots(); return L[L.length-1]||null; };
+  const prevShot=p=>p?shots().find(x=>x.date<=isoOf(new Date(p.date+"T12:00:00").getTime()-28*864e5))||null:null;
+  const imgOpts=(p,pv)=>({img:p&&p.src,imgDate:p&&p.date,prev:pv&&pv.src,prevDate:pv&&pv.date,lead});
   const drawDrone=()=>{ const p=photo(), can=ROLE!=="viewer";
-    q("#wrDrone").innerHTML='<label>תמונת רחפן לשבוע</label>'+(p?'<div class="wr-thumb"><img src="'+esc(p.src)+'" alt=""><span>'+esc(isoText(p.date))+'</span></div>':'<div class="note">'+(can?'אין עדיין תמונה לשבוע הזה.':'לא הועלתה תמונה לשבוע הזה.')+'</div>')
-      +(can?'<div class="pick">'+(p?'החלף תמונה':'העלאת תמונת רחפן')+'<small>תישמר לשבוע הזה ותיכנס לדוח</small><input type="file" id="wrImg" accept="image/*"></div>':'');
+    q("#wrDrone").innerHTML='<label>תמונת רחפן</label>'+(p?'<div class="wr-thumb"><img src="'+esc(p.src)+'" alt=""><span>בדוח: צילום מ-'+esc(isoText(p.date))+(prevShot(p)?' · להשוואה: '+esc(isoText(prevShot(p).date)):'')+'</span></div>':'<div class="note">אין עדיין תמונה עד התאריך הזה.</div>')
+      +(can?'<div class="wr-prow"><span>תאריך הצילום</span><input type="date" id="wrImgDate" value="'+endIso+'"></div><div class="pick">העלאת תמונת רחפן<small>תמונה אחת לכל תאריך צילום · הדוח מציג את האחרונה ומשווה לצילום מלפני חודש ומעלה</small><input type="file" id="wrImg" accept="image/*"></div>':'');
     const f=q("#wrImg"); if(f) f.onchange=async ev=>{ const file=ev.target.files&&ev.target.files[0]; if(!file) return; toast("מעלה תמונה…");
-      try{ const bl=await wrShrink(file); if(ASSETS&&DB){ const a=await ASSETS.upload(bl); const doc={id:"dr_"+endIso,date:endIso,asset:a.id,url:a.url,ts:Date.now(),by:actorName()};
-          await DB.doc("drone/"+doc.id).set(doc); DRONE=DRONE.filter(x=>x.id!==doc.id).concat(doc); logAct("progress","add","תמונת רחפן לשבוע "+isoText(endIso),doc.id); toast("התמונה נשמרה."); }
-        else { localImg={src:URL.createObjectURL(bl),date:endIso,blob:bl}; toast("התמונה נכנסה לדוח (לא נשמרה, אין חיבור למאגר)."); } }catch(e){ toast("ההעלאה נכשלה."); }
+      try{ const bl=await wrShrink(file); if(ASSETS&&DB){ const a=await ASSETS.upload(bl); const date=q("#wrImgDate").value||endIso; const doc={id:"dr_"+date,date,asset:a.id,url:a.url,ts:Date.now(),by:actorName()};
+          await DB.doc("drone/"+doc.id).set(doc); DRONE=DRONE.filter(x=>x.id!==doc.id).concat(doc); logAct("progress","add","תמונת רחפן מ-"+isoText(date),doc.id); toast("התמונה נשמרה."); }
+        else { localImg={src:URL.createObjectURL(bl),date:q("#wrImgDate").value||endIso,blob:bl}; toast("התמונה נכנסה לדוח (לא נשמרה, אין חיבור למאגר)."); } }catch(e){ toast("ההעלאה נכשלה."); }
       draw(); }; };
   const drawPlan=()=>{ const el=q("#wrPlan"); if(!el) return; const A=STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0));
     el.innerHTML=A.length?A.map(a=>'<div class="wr-prow"><span>'+esc(a.name)+'</span><input type="date" data-id="'+esc(a.id)+'" value="'+esc(a.planEnd||"")+'"></div>').join(""):'<div class="note">אין פעילויות בסטטוס.</div>'; };
-  const draw=()=>{ const D=wrData(endIso), p=photo(); q("#wrFrame").srcdoc=wrHtml(mode,D,{img:p&&p.src,imgDate:p&&p.date,lead}); drawDrone(); };
+  const draw=()=>{ const D=wrData(endIso), p=photo(); q("#wrFrame").srcdoc=wrHtml(mode,D,imgOpts(p,prevShot(p))); drawDrone(); };
   wrRedraw=draw;
   scrim.querySelectorAll("#wrMode [data-m]").forEach(b=>b.onclick=()=>{ mode=b.dataset.m; scrim.querySelectorAll("#wrMode [data-m]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); draw(); });
   q("#wrEnd").onchange=ev=>{ if(ev.target.value){ endIso=ev.target.value; draw(); } };
@@ -5475,10 +5480,10 @@ function openWeekly(){
     for(const inp of scrim.querySelectorAll("#wrPlan input[data-id]")){ const a=STATUS.find(x=>x.id===inp.dataset.id); if(!a||(a.planEnd||"")===inp.value) continue;
       if(await saveStatus({...a,planEnd:inp.value,updated:Date.now()})){ n++; logAct("progress","edit","תאריך יעד "+a.name+": "+(inp.value?isoText(inp.value):"נמחק"),a.id); } }
     ps.disabled=false; toast(n?"נשמרו "+n+" תאריכי יעד.":"לא היה שינוי."); draw(); };
-  q("#wrDl").onclick=async()=>{ const b=q("#wrDl"); b.disabled=true; const D=wrData(endIso), p=photo(); let img=null;
-    try{ if(p){ const bl=p.blob||await (await fetch(p.src)).blob(); img=await wrDataUrl(bl); } }catch(e){ img=null; toast("התמונה לא נכנסה לקובץ."); }
+  q("#wrDl").onclick=async()=>{ const b=q("#wrDl"); b.disabled=true; const D=wrData(endIso), p=photo(), pv=prevShot(p); const emb=async x=>x?{...x,src:await wrDataUrl(x.blob||await (await fetch(x.src)).blob())}:null; let ep=null, epv=null;
+    try{ ep=await emb(p); epv=await emb(pv); }catch(e){ toast("התמונה לא נכנסה לקובץ."); }
     const name="דוח-שבועי-"+(mode==="client"?"יזם":"מנהלים")+"-"+(SITE.name||"אתר").replace(/^אתר הקמה\s*/,"").replace(/\s+/g,"-")+"-"+endIso+".html";
-    if(await saveFile(name,new Blob([wrHtml(mode,D,{img,imgDate:p&&p.date,lead})],{type:"text/html"}))) logAct("progress","add","דוח שבועי "+(mode==="client"?"ליזם":"למנהלים")+" · "+wrRange(D.startIso,D.endIso),"weekly");
+    if(await saveFile(name,new Blob([wrHtml(mode,D,imgOpts(ep,ep&&epv))],{type:"text/html"}))) logAct("progress","add","דוח שבועי "+(mode==="client"?"ליזם":"למנהלים")+" · "+wrRange(D.startIso,D.endIso),"weekly");
     b.disabled=false; };
   q("#wrPrint").onclick=()=>{ try{ q("#wrFrame").contentWindow.print(); }catch(e){ toast("ההדפסה לא זמינה כאן. הורד את הקובץ והדפס ממנו."); } };
   q("#wrMail").onclick=async()=>{ const t=wrText(mode,wrData(endIso),{lead}); try{ await navigator.clipboard.writeText(t); toast("הטקסט הועתק. להדביק במייל ולצרף את הקובץ."); }catch(e){ await ask("העתק את הטקסט למייל","סגור","var(--ink)",t); } };
