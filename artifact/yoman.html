@@ -1064,6 +1064,21 @@ async function logAct(kind,action,summary,ref,who,data){
     else { logs.unshift(rec); if(logs.length>1500) logs=logs.slice(0,1500); ls.set("log",JSON.stringify(logs)); }
   }catch(e){ /* היומן לא חוסם את העבודה */ }
 }
+/* ---------- הגדרות שהן מפה (ספקים, ברקודים, כינויים) ---------- */
+// שומרים רק את המפתחות שהשתנו, על גבי מה שיש במאגר עכשיו, ולא את כל המפה מהזיכרון:
+// כך שתי שמירות כמעט בו זמנית (שני מכשירים) לא מוחקות זו לזו ספק או ברקוד.
+// לפי כללי הגישה רק הבעלים כותב ל-settings; למי שאינו בעלים השינוי נשאר בזיכרון בלבד,
+// במקום שמירה שנכשלת (עד גרסה 51 זה הפיל את שמירת בקשת הרכש של עורך: «השמירה נכשלה» אחרי שהבקשה כבר נשמרה).
+async function mergeSettingsMap(name,patch){
+  if(!patch||!Object.keys(patch).length) return;
+  if(!DB){ let cur={}; try{ cur=JSON.parse(ls.get(name)||"{}")||{}; }catch(e){} ls.set(name,JSON.stringify({...cur,...patch})); return; }
+  if(ROLE!=="owner") return;
+  const ref=DB.doc("settings/"+name);
+  const snap=await ref.get();
+  const d=snap&&snap.exists?snap.data():null;
+  const cur=d&&d.map&&typeof d.map==="object"?d.map:{};
+  await ref.set({map:{...cur,...patch},ts:Date.now()});
+}
 function openLog(){
   let kind="all", max=60;
   const scrim=document.createElement("div"); scrim.className="scrim";
@@ -4269,7 +4284,7 @@ function matchBarcode(text){
 }
 async function saveBarcode(text,code){
   BARCODES[text]=code;
-  try{ if(DB) await DB.doc("settings/barcodes").set({map:BARCODES,ts:Date.now()}); else ls.set("barcodes",JSON.stringify(BARCODES)); }catch(e){}
+  try{ await mergeSettingsMap("barcodes",{[text]:code}); }catch(e){}
   logAct("settings","edit","ברקוד הוצמד לפריט: "+text+" → "+code,"settings/barcodes");
 }
 function beep(){
@@ -4744,9 +4759,9 @@ const supKey=s=>String(s||"").toLowerCase().replace(/[.\-'"״׳()]/g,"").replace
 const supMatch=(noteSup,eboqSup)=>{ const a=supKey(noteSup), b=supKey(eboqSup); if(!a||!b||b.length<3) return false; if(a.includes(b)) return true; const w=b.split(" ")[0]; return w.length>=3&&a.includes(w); };
 let ALIASES={};
 const aliasKey=(sup,name)=>supKey(shortSup(sup||""))+"|"+normName(name);
-let aliasTimer=null;
-function learnAlias(sup,name,code){ const k=aliasKey(sup,name); if(!normName(name)||ALIASES[k]===code) return; ALIASES[k]=code;
-  clearTimeout(aliasTimer); aliasTimer=setTimeout(async()=>{ try{ if(DB){ if(ROLE==="owner") await DB.doc("settings/aliases").set({map:ALIASES,ts:Date.now()}); } else ls.set("aliases",JSON.stringify(ALIASES)); }catch(e){} },1500); }
+let aliasTimer=null, aliasPending={};
+function learnAlias(sup,name,code){ const k=aliasKey(sup,name); if(!normName(name)||ALIASES[k]===code) return; ALIASES[k]=code; aliasPending[k]=code;
+  clearTimeout(aliasTimer); aliasTimer=setTimeout(async()=>{ const p=aliasPending; aliasPending={}; try{ await mergeSettingsMap("aliases",p); }catch(e){} },1500); }
 async function mapLinesToBoq(supplier,lines){
   const res={n:0,err:""}; if(!boq.length||!lines||!lines.length) return res;
   const codes=new Set(boq.map(l=>String(l.code)));
@@ -5073,8 +5088,9 @@ function openOrder(existing){
     const id=o.id||("or"+Date.now());
     const doc={...o,id,no:o.no,ts,dateText:fmtD(ts),task:q("#orTask").value.trim(),need:q("#orNeed").value||"",note:q("#orNote").value.trim(),status:q("#orSent").value||o.status||"draft",by:o.by||actorName(),
       lines:o.lines.map(l=>{ const x={name:l.name,code:l.code||"",sku:l.sku||"",boq:l.boq||"",qty:Number(l.qty)||0,unit:l.unit||"יח'",cat:l.cat,supplier:l.supplier||"",note:l.note||""}; if(l.po){ x.po=l.po; if(l.poLine!=null) x.poLine=l.poLine; } return x; }),updated:Date.now()};
-    try{ if(DB){ await DB.doc("orders/"+id).set(doc); await DB.doc("settings/suppliers").set({map:SUPPLIERS,ts:Date.now()}); } else { orders=orders.filter(x=>x.id!==id); orders.push(doc); ls.set("orders",JSON.stringify(orders)); ls.set("suppliers",JSON.stringify(SUPPLIERS)); } }
+    try{ if(DB) await DB.doc("orders/"+id).set(doc); else { orders=orders.filter(x=>x.id!==id); orders.push(doc); ls.set("orders",JSON.stringify(orders)); } }
     catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
+    { const sp={}; doc.lines.forEach(l=>{ if(l.name&&l.supplier) sp[l.name]=l.supplier; }); mergeSettingsMap("suppliers",sp).catch(()=>{}); }   // הספק של כל פריט נזכר לבקשה הבאה
     logAct("order",edit?"edit":"add",(edit?"עודכנה":"נוצרה")+" בקשת רכש "+doc.no+" · "+doc.lines.length+" פריטים · "+new Set(doc.lines.map(l=>l.supplier||"ללא ספק")).size+" ספקים · "+doc.task,id);
     close(); renderOrders(); openOrderDetail(doc);
   };
