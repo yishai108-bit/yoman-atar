@@ -5412,7 +5412,7 @@ function poStatus(p){
    ליזם: אחוזים, אבני דרך ותמונה בלבד. בלי ספקים, נהגים, קבלנים, מחירים וכמויות קטנות. הערות מתעודות לא נכנסות לאף גרסה. */
 let DRONE=[], droneSub=false;
 function droneWatch(){ if(droneSub||!DB) return; droneSub=true;
-  try{ DB.collection("drone").onSnapshot(snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); },()=>{}); }catch(e){} }
+  try{ watch(DB.collection("drone"),snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); }); }catch(e){} }
 let wrRedraw=null;
 const wrPct=x=>Math.round(Math.max(0,Math.min(1,x))*100);
 const wrRange=(a,b)=>{ const [ya,ma,da]=a.split("-"), [yb,mb,db]=b.split("-"); return (+da)+"."+(+ma)+(ya!==yb?"."+ya:"")+"–"+(+db)+"."+(+mb)+"."+yb; };
