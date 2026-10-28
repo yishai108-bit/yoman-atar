@@ -6,7 +6,7 @@ const { launch, openApp } = require("./helpers");
 const fixture = require("./fixture");
 
 const OPENERS = [
-  "openNote()", "openImport()", "openConcreteNote()", "openAllNotes()", "openNoteDetail(deliveries[0].id)",
+  "openNote()", "openImport()", "openConcreteNote()", "openAllNotes()", "openNoteDetail(shared.deliveries[0].id)",
   "openMove('בורג M8')", "openMoveSlip('צוות 2','מקדחה')",
   "openKitEditor()", "openIssue()", "openAllSlips([])", "openQuickCount()", "openWa()",
   "openProgress()", "openPrices()", "openPanelBal()", "openPanelMove()", "openFabMenu()", "openEquipIssue()", "openStockActions()",
@@ -40,7 +40,7 @@ test("כל החלונות הקופצים נפתחים ונסגרים", async () 
 test("Escape סוגר רק את החלון העליון, ולחיצה על הרקע סוגרת", async () => {
   const { page, ctx, errors } = await openApp(browser, { mock: { seed: fixture } });
   const count = () => page.evaluate(() => document.querySelectorAll(".scrim").length);
-  await page.evaluate(() => { openNoteDetail(deliveries[0].id); openLog(); });
+  await page.evaluate(() => { openNoteDetail(shared.deliveries[0].id); openLog(); });
   assert.strictEqual(await count(), 2);
   await page.keyboard.press("Escape");
   assert.strictEqual(await count(), 1);

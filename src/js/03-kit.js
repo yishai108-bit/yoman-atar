@@ -21,47 +21,46 @@ const KIT_DEFAULT=[
   {code:"189",no:"800000-189",name:"אדפטר קלאמפ 60/65 (שלטר מק״ט 189)",per:{in27:168,ex27:168,ex9:60},def:false},
   {code:"926",no:"943755-926",name:"בורג קודח 5.5x25 (שלטר מק״ט 926)",per:{in27:168,ex27:168,ex9:60},def:false},
 ];
-let kit=KIT_DEFAULT.map(k=>({...k,per:{...k.per}})), kitTypes=KIT_TYPES.map(t=>({...t})),
-    kitSource="BOM שלטר 21.4.2026 ומדריך התקנה FS Duo", issues=[];
+shared.kit=KIT_DEFAULT.map(k=>({...k,per:{...k.per}}));shared.kitTypes=KIT_TYPES.map(t=>({...t}));shared.kitSource="BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";shared.issues=[];
 const TABLE_STEP=5;
 const perOf=(l,t)=> (typeof l.per==="number") ? l.per : (Number((l.per||{})[t])||0);
-const typeLabel=t=>{ const x=kitTypes.find(k=>k.id===t); return x?x.label:t; };
+const typeLabel=t=>{ const x=shared.kitTypes.find(k=>k.id===t); return x?x.label:t; };
 const nowText=()=>fmtD()+" "+new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
 const newId=p=>p+Date.now()+Math.random().toString(36).slice(2,6);
 
 async function saveKit(lines,source,why){
-  const doc={types:kitTypes,lines:lines.map(l=>({code:l.code,name:l.name,per:l.per,def:l.def!==false,carton:Number(l.carton)||0,no:l.no||(KIT_DEFAULT.find(k=>k.code===l.code)||{}).no||""})),source:source||kitSource,ts:Date.now()};
-  if(DB){ await DB.doc("settings/bom").set(doc); }
-  else { kit=doc.lines; kitSource=doc.source; ls.set("bom",JSON.stringify(doc)); }
+  const doc={types:shared.kitTypes,lines:lines.map(l=>({code:l.code,name:l.name,per:l.per,def:l.def!==false,carton:Number(l.carton)||0,no:l.no||(KIT_DEFAULT.find(k=>k.code===l.code)||{}).no||""})),source:source||shared.kitSource,ts:Date.now()};
+  if(shared.DB){ await shared.DB.doc("settings/bom").set(doc); }
+  else { shared.kit=doc.lines; shared.kitSource=doc.source; ls.set("bom",JSON.stringify(doc)); }
   logAct("kit","edit",why||("כמויות לשולחן עודכנו · "+doc.lines.length+" פריטים · "+doc.source),"settings/bom");
 }
 // למידת «כמות בקרטון» משנה רק את שדה carton של הפריטים שנספרו, על הגרסה העדכנית במאגר,
 // כדי לא לדרוס עריכה של הכמויות לשולחן שנשמרה בינתיים במכשיר אחר. patch: {code: יחידות בקרטון}
 async function saveKitCartons(patch,why){
-  if(DB){ try{ const s=await DB.doc("settings/bom").get(); const d=s&&s.exists?s.data():null;
-    if(d&&Array.isArray(d.lines)&&d.lines.length){ kit=d.lines; kitSource=d.source||kitSource; if(Array.isArray(d.types)&&d.types.length) kitTypes=d.types; } }catch(e){} }
+  if(shared.DB){ try{ const s=await shared.DB.doc("settings/bom").get(); const d=s&&s.exists?s.data():null;
+    if(d&&Array.isArray(d.lines)&&d.lines.length){ shared.kit=d.lines; shared.kitSource=d.source||shared.kitSource; if(Array.isArray(d.types)&&d.types.length) shared.kitTypes=d.types; } }catch(e){} }
   let changed=false;
-  const lines=kit.map(k=>{ const pb=Number(patch[k.code]); if(pb>0&&Number(k.carton)!==pb){ changed=true; return {...k,carton:pb}; } return k; });
-  if(changed) await saveKit(lines,kitSource,why);
+  const lines=shared.kit.map(k=>{ const pb=Number(patch[k.code]); if(pb>0&&Number(k.carton)!==pb){ changed=true; return {...k,carton:pb}; } return k; });
+  if(changed) await saveKit(lines,shared.kitSource,why);
 }
 function openKitEditor(preset){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ברגים לשולחן">'
     +'<div class="grab"></div><h2>כמויות לשולחן אחד</h2>'
-    +'<div class="note-card">לכל סוג שולחן כמות משלו. ניפוק = שולחנות × הכמות של הסוג שנבחר. <b>מקור: '+esc(kitSource)+'</b></div>'
-    +'<div class="kitrow ed hd"><div></div>'+kitTypes.map(t=>'<div class="th">'+esc(t.label.replace("שולחן ","").replace(" (IN)","").replace(" (EX)","")+(t.label.includes("(IN)")?" IN":" EX"))+'</div>').join("")+'<div></div></div>'
+    +'<div class="note-card">לכל סוג שולחן כמות משלו. ניפוק = שולחנות × הכמות של הסוג שנבחר. <b>מקור: '+esc(shared.kitSource)+'</b></div>'
+    +'<div class="kitrow ed hd"><div></div>'+shared.kitTypes.map(t=>'<div class="th">'+esc(t.label.replace("שולחן ","").replace(" (IN)","").replace(" (EX)","")+(t.label.includes("(IN)")?" IN":" EX"))+'</div>').join("")+'<div></div></div>'
     +'<div class="kitrows" id="kitEd"></div>'
     +'<button class="addline" id="kitAdd" type="button" style="margin-top:8px">+ הוסף פריט</button>'
-    +'<div class="f" style="margin-top:14px"><label for="kitSrc">מקור הכמויות</label><input type="text" id="kitSrc" placeholder="למשל: BOM שלטר" value="'+esc(kitSource)+'"></div>'
+    +'<div class="f" style="margin-top:14px"><label for="kitSrc">מקור הכמויות</label><input type="text" id="kitSrc" placeholder="למשל: BOM שלטר" value="'+esc(shared.kitSource)+'"></div>'
     +'<div class="acts"><button class="save" id="kitSave" type="button">שמור</button><button class="cancel" id="kitCancel" type="button">ביטול</button></div></div>');
   const q=s=>scrim.querySelector(s);
-  let lines=(preset&&preset.lines?preset.lines:kit).map(k=>({...k,per:(typeof k.per==="number")?Object.fromEntries(kitTypes.map(t=>[t.id,k.per])):{...(k.per||{})}}));
+  let lines=(preset&&preset.lines?preset.lines:shared.kit).map(k=>({...k,per:(typeof k.per==="number")?Object.fromEntries(shared.kitTypes.map(t=>[t.id,k.per])):{...(k.per||{})}}));
   if(preset&&preset.source) q("#kitSrc").value=preset.source;
   function draw(){
     const box=q("#kitEd"); box.innerHTML="";
     lines.forEach((l,i)=>{
       const r=document.createElement("div"); r.className="kitrow ed";
       r.innerHTML='<div><input type="text" value="'+esc(l.name)+'" placeholder="שם הפריט" aria-label="שם" style="padding:8px;font-weight:700;font-size:.84rem"></div>'
-        +kitTypes.map(t=>'<input type="text" inputmode="numeric" data-t="'+t.id+'" value="'+esc(l.per[t.id]??"")+'" aria-label="'+esc(t.label)+'">').join("")
+        +shared.kitTypes.map(t=>'<input type="text" inputmode="numeric" data-t="'+t.id+'" value="'+esc(l.per[t.id]??"")+'" aria-label="'+esc(t.label)+'">').join("")
         +'<button class="x" type="button" aria-label="הסר">×</button>';
       r.children[0].firstChild.oninput=e=>{ lines[i].name=e.target.value; };
       r.querySelectorAll("input[data-t]").forEach(inp=>{ inp.oninput=e=>{ lines[i].per[e.target.dataset.t]=e.target.value; }; });
@@ -74,13 +73,13 @@ function openKitEditor(preset){
   scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#kitSave").onclick=async()=>{
     const ok=lines.filter(l=>String(l.name).trim()).map(l=>({code:l.code,name:String(l.name).trim(),def:l.def!==false,
-      per:Object.fromEntries(kitTypes.map(t=>[t.id,Math.max(0,Number(l.per[t.id])||0)]))}))
+      per:Object.fromEntries(shared.kitTypes.map(t=>[t.id,Math.max(0,Number(l.per[t.id])||0)]))}))
       .filter(l=>Object.values(l.per).some(v=>v>0));
     if(!ok.length){ toast("צריך לפחות פריט אחד עם כמות."); return; }
     // שומרים כמות בקרטון שכבר נלמדה
-    ok.forEach(l=>{ const old=kit.find(k=>k.code===l.code); if(old&&Number(old.carton)>0) l.carton=Number(old.carton); const src=(preset&&preset.lines||[]).find(x=>x.code===l.code); if(src&&src.no) l.no=src.no; else if(old&&old.no) l.no=old.no; });
-    const changed=ok.filter(l=>{ const old=kit.find(k=>k.code===l.code); return !old||kitTypes.some(t=>perOf(old,t.id)!==l.per[t.id]); }).map(l=>shortName(l.name));
-    try{ await saveKit(ok,q("#kitSrc").value.trim()||kitSource,"כמויות לשולחן"+(preset?" יובאו מ-BOM":" עודכנו")+(changed.length?": "+changed.slice(0,5).join(", ")+(changed.length>5?" ועוד "+(changed.length-5):""):"")); }catch(e){ toast("השמירה נכשלה."); return; }
+    ok.forEach(l=>{ const old=shared.kit.find(k=>k.code===l.code); if(old&&Number(old.carton)>0) l.carton=Number(old.carton); const src=(preset&&preset.lines||[]).find(x=>x.code===l.code); if(src&&src.no) l.no=src.no; else if(old&&old.no) l.no=old.no; });
+    const changed=ok.filter(l=>{ const old=shared.kit.find(k=>k.code===l.code); return !old||shared.kitTypes.some(t=>perOf(old,t.id)!==l.per[t.id]); }).map(l=>shortName(l.name));
+    try{ await saveKit(ok,q("#kitSrc").value.trim()||shared.kitSource,"כמויות לשולחן"+(preset?" יובאו מ-BOM":" עודכנו")+(changed.length?": "+changed.slice(0,5).join(", ")+(changed.length>5?" ועוד "+(changed.length-5):""):"")); }catch(e){ toast("השמירה נכשלה."); return; }
     scrim.remove(); toast("הכמויות לשולחן נשמרו."); renderStock();
   };
   draw();
@@ -104,12 +103,12 @@ function sigPad(box){
 
 /* ---- ניפוק לפי שולחנות ---- */
 function openIssue(){
-  const whos=[...new Set((demoStock?DEMO_MOVES:moves).map(m=>m.who).filter(Boolean))];
-  let tables=TABLE_STEP, ttype=(ls.get("ttype")&&kitTypes.some(t=>t.id===ls.get("ttype")))?ls.get("ttype"):kitTypes[0].id;
-  let lines=kit.map(k=>({...k,qty:perOf(k,ttype)*tables,on:k.def!==false}));
+  const whos=[...new Set((shared.demoStock?DEMO_MOVES:shared.moves).map(m=>m.who).filter(Boolean))];
+  let tables=TABLE_STEP, ttype=(ls.get("ttype")&&shared.kitTypes.some(t=>t.id===ls.get("ttype")))?ls.get("ttype"):shared.kitTypes[0].id;
+  let lines=shared.kit.map(k=>({...k,qty:perOf(k,ttype)*tables,on:k.def!==false}));
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ברגים לקבלן">'
     +'<div class="grab"></div><h2>ניפוק ברגים לקבלן</h2>'
-    +'<div class="f"><label>סוג שולחן</label><div class="chips" id="isTypes" style="margin-bottom:0">'+kitTypes.map(t=>'<button type="button" class="chip2" data-t="'+t.id+'" aria-pressed="'+(t.id===ttype)+'">'+esc(t.label)+'</button>').join("")+'</div></div>'
+    +'<div class="f"><label>סוג שולחן</label><div class="chips" id="isTypes" style="margin-bottom:0">'+shared.kitTypes.map(t=>'<button type="button" class="chip2" data-t="'+t.id+'" aria-pressed="'+(t.id===ttype)+'">'+esc(t.label)+'</button>').join("")+'</div></div>'
     +'<div class="f"><label>כמה שולחנות</label><div class="stepper">'
       +'<button type="button" id="isMinus" aria-label="פחות">−</button>'
       +'<div class="val"><input type="text" inputmode="numeric" id="isTables" value="'+tables+'" aria-label="מספר שולחנות"><small>שולחנות · קפיצות של '+TABLE_STEP+'</small></div>'
@@ -175,16 +174,16 @@ function openIssue(){
     const slip={id,ts,tables,ttype,typeLabel:typeLabel(ttype),who,by,note,lines:chosen,sigAsset:"",sigUrl:"",source:"app"};
     if(pad.has()){
       let up=false;
-      try{ if(ASSETS){ const bl=await pad.blob(); const a=await ASSETS.upload(bl); slip.sigAsset=a.id; slip.sigUrl=a.url; up=true; } }catch(e){}
+      try{ if(shared.ASSETS){ const bl=await pad.blob(); const a=await shared.ASSETS.upload(bl); slip.sigAsset=a.id; slip.sigUrl=a.url; up=true; } }catch(e){}
       if(!up){ try{ slip.sigData=pad.dataUrl(); }catch(e){} }
     }
     const mv=chosen.map(l=>({id:id+"_"+l.code,item:l.name,qty:l.qty,dir:"out",who,by,ts,unit:"יח'",cat:"construction",source:"issue",issueId:id,tables,ttype,note}));
     try{
-      if(DB){ await DB.doc("issues/"+id).set(slip); for(const m of mv) await DB.doc("moves/"+m.id).set(m); }
-      else { issues.push(slip); ls.set("issues",JSON.stringify(issues)); moves.push(...mv); ls.set("moves",JSON.stringify(moves)); }
+      if(shared.DB){ await shared.DB.doc("issues/"+id).set(slip); for(const m of mv) await shared.DB.doc("moves/"+m.id).set(m); }
+      else { shared.issues.push(slip); ls.set("issues",JSON.stringify(shared.issues)); shared.moves.push(...mv); ls.set("moves",JSON.stringify(shared.moves)); }
     }catch(e){ b.disabled=false; b.textContent="שמור ניפוק"; toast("השמירה נכשלה. נסה שוב."); return; }
     logAct("issue","add","ניפוק ל"+who+" · "+fmtN(tables)+" שולחנות ("+typeLabel(ttype)+") · "+chosen.length+" פריטים · "+(pad.has()?"חתום":"ללא חתימה"),id,by);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock(); toast("הניפוק נשמר.");
     openSlip(slip);
   };
@@ -225,7 +224,7 @@ function openSlip(s){
   scrim.querySelector("#slPdf").onclick=e=>issuePdfById(s.id,e.currentTarget);
 }
 function renderSlips(){
-  const list=(demoStock?[]:issues).slice().sort((a,b)=>b.ts-a.ts);
+  const list=(shared.demoStock?[]:shared.issues).slice().sort((a,b)=>b.ts-a.ts);
   $("#slipWrap").hidden=!list.length;
   $("#slipCount").textContent=list.length?list.length+" ניפוקים":"";
   foldSum("slips",list.length?list.length+" ניפוקים · "+list.filter(x=>!(x.sigAsset||x.sigUrl||x.sigData)).length+" ללא חתימה":"");
@@ -255,8 +254,8 @@ function openAllSlips(list){
 const recSig=r=>r.sigAsset?"/_blob/"+r.sigAsset:(r.sigUrl||r.sigData||"");
 const recSigned=r=>!!(r.sigAsset||r.sigUrl||r.sigData);
 function issueRecs(){
-  const a=(demoStock?[]:issues).map(s=>({kind:"bolts",id:s.id,ts:s.ts,who:s.who||"",by:s.by||"",tables:s.tables,typeLabel:s.typeLabel||"",lines:(s.lines||[]).map(l=>({name:l.name,qty:l.qty})),note:s.note||"",sig:recSig(s),signed:recSigned(s)}));
-  const b=(demoStock?[]:moves).filter(m=>m.dir==="out"&&m.source!=="issue").map(m=>({kind:"tool",id:m.id,ts:m.ts,who:m.who||"",by:m.by||"",lines:[{name:m.item,qty:m.qty}],note:m.note||"",sig:recSig(m),signed:recSigned(m)}));
+  const a=(shared.demoStock?[]:shared.issues).map(s=>({kind:"bolts",id:s.id,ts:s.ts,who:s.who||"",by:s.by||"",tables:s.tables,typeLabel:s.typeLabel||"",lines:(s.lines||[]).map(l=>({name:l.name,qty:l.qty})),note:s.note||"",sig:recSig(s),signed:recSigned(s)}));
+  const b=(shared.demoStock?[]:shared.moves).filter(m=>m.dir==="out"&&m.source!=="issue").map(m=>({kind:"tool",id:m.id,ts:m.ts,who:m.who||"",by:m.by||"",lines:[{name:m.item,qty:m.qty}],note:m.note||"",sig:recSig(m),signed:recSigned(m)}));
   const all=a.concat(b).sort((x,y)=>x.ts-y.ts||String(x.id).localeCompare(String(y.id))); all.forEach((r,i)=>r.no=i+1); return all;
 }
 const isoDay=t=>{ const d=new Date(t); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
@@ -327,11 +326,11 @@ if($("#ovNewIssue")) $("#ovNewIssue").onclick=openIssue;
 /* ---- ספירה מהירה ---- */
 function openQuickCount(){
   const rows=stockRows(); const byName=new Map(rows.map(r=>[r.name,r]));
-  let items=kit.map(k=>k.name);
+  let items=shared.kit.map(k=>k.name);
   const vals={};      // יחידות בודדות
   const boxes={};     // קרטונים
   const perBox={};    // יחידות בקרטון (נזכר בקיט)
-  kit.forEach(k=>{ if(Number(k.carton)>0) perBox[k.name]=Number(k.carton); });
+  shared.kit.forEach(k=>{ if(Number(k.carton)>0) perBox[k.name]=Number(k.carton); });
   const total=n=>{ const loose=Number(vals[n]); const bx=Number(boxes[n]); const pb=Number(perBox[n]);
     const hasLoose=String(vals[n]??"").trim()!==""&&isFinite(loose); const hasBox=String(boxes[n]??"").trim()!==""&&isFinite(bx)&&bx>0&&pb>0;
     if(!hasLoose&&!hasBox) return null; return (hasLoose?loose:0)+(hasBox?bx*pb:0); };
@@ -396,15 +395,15 @@ function openQuickCount(){
       recs.push({id:"c"+ts+"_"+i,item:n,qty:t,who,ts,cat:r?r.cat:"construction",unit:r?r.unit:"יח'",source:"app",
         note:(bx&&pb?bx+" קרטונים × "+pb+(Number(vals[n])?" + "+Number(vals[n])+" בודדים":""):"")}); });
     // זכירת כמות בקרטון בקיט
-    const cartons={}; kit.forEach(k=>{ const pb=Number(perBox[k.name]); if(pb>0&&Number(k.carton)!==pb) cartons[k.code]=pb; });
+    const cartons={}; shared.kit.forEach(k=>{ const pb=Number(perBox[k.name]); if(pb>0&&Number(k.carton)!==pb) cartons[k.code]=pb; });
     try{
-      if(DB){ for(const c of recs) await DB.doc("counts/"+c.id).set(c); }
-      else { counts.push(...recs); ls.set("counts",JSON.stringify(counts)); }
+      if(shared.DB){ for(const c of recs) await shared.DB.doc("counts/"+c.id).set(c); }
+      else { shared.counts.push(...recs); ls.set("counts",JSON.stringify(shared.counts)); }
       if(Object.keys(cartons).length){ try{ await saveKitCartons(cartons,"נלמדה כמות בקרטון מספירה"); }catch(e){} }
     }catch(e){ b.disabled=false; b.textContent="שמור ספירה"; toast("השמירה נכשלה."); return; }
     const gaps=recs.map(r=>{ const row=byName.get(r.item); return row&&!row.noIn?{n:shortName(r.item),g:r.qty-row.derived}:null; }).filter(x=>x&&x.g!==0);
     logAct("count","add","ספירה: "+recs.length+" פריטים"+(gaps.length?" · פערים: "+gaps.slice(0,4).map(x=>x.n+" "+(x.g>0?"+":"−")+fmtN(Math.abs(x.g))).join(", "):" · הכל תואם"),"c"+ts,who);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock(); toast("נשמרו "+recs.length+" ספירות.");
   };
   draw();
@@ -416,10 +415,10 @@ $("#btnCount").onclick=openQuickCount;
 function periodSummary(days){
   const to=Date.now(), from=to-days*86400000;
   const inP=x=>x.ts>=from&&x.ts<=to;
-  const notes=(demoStock?DEMO_NOTES:deliveries).filter(n=>n.source!=="bom").filter(inP);
+  const notes=(shared.demoStock?DEMO_NOTES:shared.deliveries).filter(n=>n.source!=="bom").filter(inP);
   const cons=curConcrete(); const consP=cons.filter(inP);
-  const mv=(demoStock?DEMO_MOVES:moves).filter(inP);
-  const iss=(demoStock?[]:issues).filter(inP);
+  const mv=(shared.demoStock?DEMO_MOVES:shared.moves).filter(inP);
+  const iss=(shared.demoStock?[]:shared.issues).filter(inP);
   
   const L=[];
   L.push("*יומן אתר · "+SITE.name.replace(/^אתר הקמה\s*/,"")+"* · סיכום "+days+" ימים ("+fmtD(from)+" – "+fmtD(to)+")");
@@ -444,12 +443,12 @@ function periodSummary(days){
   L.push(""); L.push("*דורש בדיקה:* "+(fl.length?fl.length+" תעודות":"אין"));
   fl.slice(0,6).forEach(n=>{ const f=noteFlags(n); L.push("  - "+(n.supplier||"")+" · "+(n.noteNo||"")+" · "+(f.issue?"חוסר/פגום":"החזרה לספק")+(n.note?" · "+n.note.slice(0,60):"")); });
   // counts
-  const cnt=(demoStock?DEMO_COUNTS:counts).filter(inP);
+  const cnt=(shared.demoStock?DEMO_COUNTS:shared.counts).filter(inP);
   if(cnt.length) L.push("", "*ספירות:* "+cnt.length+" פריטים נספרו");
   // contractors + money
-  if(!demoStock){
+  if(!shared.demoStock){
     const K=kitStats();
-    const prog=progress.filter(inP).filter(p=>stageOf(p)==="con").reduce((s,p)=>s+(Number(p.tables)||0),0);
+    const prog=shared.progress.filter(inP).filter(p=>stageOf(p)==="con").reduce((s,p)=>s+(Number(p.tables)||0),0);
     if(K.declTables||!K.doneProxy){
       L.push("", "*שולחנות:* "+(K.doneProxy?"אף שולחן גמור לא דווח":"קונסטרוקציה "+fmtN(K.done)+(prog?" (+"+fmtN(prog)+" בתקופה)":"")+" · פאנלים "+fmtN(K.donePan)+" · אושרו "+fmtN(K.doneOk))+" מתוך "+fmtN(K.total)
         +" · נופקו ברגים ל-"+fmtN(K.declTables)+" ברישום"+(K.pace?" · קצב ניפוק "+fmtN(Math.round(K.pace))+" לשבוע":""));
@@ -460,7 +459,7 @@ function periodSummary(days){
       if(short.length) L.push("  - ייגמר לפני הסוף בקצב הנוכחי: "+short.map(p=>shortName(p.name)+" (מספיק ל-"+fmtN(Math.floor(p.worthAct))+" מתוך "+fmtN(Math.round(p.remaining))+")").join(", "));
     }
     const pb=curPb();
-    const pmP=panelMoves.filter(inP); if(pmP.length) L.push("", "*פאנלים בין אתרים:* "+pmP.map(m=>(m.dir==="in"?"הגיעו ":"יצאו ")+fmtN(m.qty)+(m.dir==="in"?" מ":" ל")+m.site+(m.broken?" ("+m.broken+" שבור בהגעה)":"")).join(" · "));
+    const pmP=shared.panelMoves.filter(inP); if(pmP.length) L.push("", "*פאנלים בין אתרים:* "+pmP.map(m=>(m.dir==="in"?"הגיעו ":"יצאו ")+fmtN(m.qty)+(m.dir==="in"?" מ":" ל")+m.site+(m.broken?" ("+m.broken+" שבור בהגעה)":"")).join(" · "));
     if(pb){ const c=pbCalc(pb,prevPb()); L.push("", "*פאנלים* (נכון ל-"+fmtDT(pb.dateText||"")+"): באתר "+fmtN(c.onSite)+" מול "+fmtN(N(pb.required))+" נדרש · מותקנים "+fmtN(N(pb.installed))+(c.perDay?" ("+fmtN(Math.round(c.perDay))+" ליום)":"")+" · שבורים "+fmtN(N(pb.broken))+" · ספייר "+(c.spare<0?"חסרים "+fmtN(-c.spare):fmtN(c.spare))+(N(pb.broken)?" (בלי השבורים: "+(c.usable<0?"חסרים "+fmtN(-c.usable):fmtN(c.usable))+")":"")+(c.projected!=null&&c.projected<0?" · צפי בסוף: חסרים "+fmtN(Math.round(-c.projected)):"")); }
     const P=moneyPoints().slice(0,4);
     if(P.length){ L.push("", "*איפה הכסף:*"); P.forEach(p=>L.push("  - "+p.b+": "+p.n+" "+p.u+(p.ils?" ("+p.ils+")":""))); }

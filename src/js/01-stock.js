@@ -28,14 +28,14 @@ const CATS=[
   {id:"civil",       label:"סיביל",       color:"var(--clay)"},
 ];
 const CATLIST = CATS.map(c=>c.id+' = '+c.label).join(', ');
-let deliveries=[], moves=[], counts=[], demoStock=true, catFilter="all";
+shared.deliveries=[];shared.moves=[];shared.counts=[];shared.demoStock=true;let catFilter="all";
 let openCats=new Set((()=>{ try{ return JSON.parse(localStorage.getItem("openCats")||"[]"); }catch(e){ return []; } })());
-let stockQ="", stockMax=40, holdMax=6, panelQ="", panelMax=40, supFilter="all";
+shared.panelMax=40;let stockQ="",stockMax=40,holdMax=6,panelQ="",supFilter="all";
 const hit=(t,q)=>!q||String(t||"").toLowerCase().includes(q);
 
 function stockRows(){
-  const notes = demoStock?DEMO_NOTES:deliveries;
-  const mvs   = demoStock?DEMO_MOVES:moves;
+  const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
+  const mvs   = shared.demoStock?DEMO_MOVES:shared.moves;
   const map = new Map();
   notes.forEach(n=>(n.lines||[]).forEach(l=>{
     const k=(l.name||"").trim(); if(!k) return;
@@ -52,7 +52,7 @@ function stockRows(){
     if(o.dir==="in") e.out-=q; else e.out+=q;
     map.set(k,e);
   });
-  const cnts = demoStock?DEMO_COUNTS:counts;
+  const cnts = shared.demoStock?DEMO_COUNTS:shared.counts;
   const last=new Map();
   cnts.forEach(c=>{
     const k=(c.item||"").trim(); if(!k) return;
@@ -72,7 +72,7 @@ function stockRows(){
 }
 
 function holders(){
-  const mvs = demoStock?DEMO_MOVES:moves;
+  const mvs = shared.demoStock?DEMO_MOVES:shared.moves;
   const catOf = new Map(stockRows().map(r=>[r.name,r.cat]));
   const m=new Map();
   mvs.forEach(o=>{
@@ -89,9 +89,9 @@ function holders(){
 }
 
 function renderStock(){
-  const notes = demoStock?DEMO_NOTES:deliveries;
+  const notes = shared.demoStock?DEMO_NOTES:shared.deliveries;
   const rows = stockRows();
-  $("#demoBarS").hidden = !demoStock;
+  $("#demoBarS").hidden = !shared.demoStock;
   const weekAgo=Date.now()-7*86400000;
   const never = rows.filter(r=>r.counted===null).length;
   const gaps  = rows.filter(r=>r.counted!==null && !r.noIn && r.counted!==r.derived).length;
@@ -243,7 +243,7 @@ function openNote(){
   +'<button class="cancel" id="bCancelNote">ביטול</button></div></div>');
   const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
-  { const dl=document.createElement("datalist"); dl.id="boqNames"; const names=[...new Set([...boq.map(l=>(l.name||"").trim()),...kit.map(k=>k.name)].filter(Boolean))]; dl.innerHTML=names.slice(0,400).map(n=>'<option value="'+esc(n)+'"></option>').join(""); scrim.appendChild(dl); }
+  { const dl=document.createElement("datalist"); dl.id="boqNames"; const names=[...new Set([...shared.boq.map(l=>(l.name||"").trim()),...shared.kit.map(k=>k.name)].filter(Boolean))]; dl.innerHTML=names.slice(0,400).map(n=>'<option value="'+esc(n)+'"></option>').join(""); scrim.appendChild(dl); }
 
   function drawLines(){
     const box=q("#dl"); box.innerHTML="";
@@ -287,10 +287,10 @@ function openNote(){
   }
   async function readPage(pg,first){
     const line=q("#aiNoteLine");
-    if(!SAMPLE){ line.textContent="מלא את הפרטים ידנית."; return; }
+    if(!shared.SAMPLE){ line.textContent="מלא את הפרטים ידנית."; return; }
     reading++; line.textContent="קורא את התעודה…"+(pages.length>1?" (עמוד "+(pages.indexOf(pg)+1)+")":"");
     try{
-      const out=await SAMPLE.json(
+      const out=await shared.SAMPLE.json(
         "בתמונה תעודת משלוח (ישראלית, בעברית), סרוקה"+(first?"":", עמוד המשך של אותה תעודה")+". החזר רק JSON: "
         +'{"supplier":"<שם הספק או null>","noteNo":"<מספר התעודה או null>",'
         +'"date":"<תאריך כפי שמופיע או null>",'
@@ -336,13 +336,13 @@ function openNote(){
       dateText:dt?dt.text:q("#iDate").value.trim(), ts:dt?dt.ts:Date.now(), photoAsset:"", photoUrl:"", pages:[], source:"app", by:actorName(),
       lines:lines.filter(l=>String(l.name).trim()&&isFinite(Number(l.qty))&&Number(l.qty)!==0)
                  .map(l=>({name:String(l.name).trim(),qty:Number(l.qty),unit:l.unit||"",cat:l.cat||"construction"}))};
-    try{ if(ASSETS){ for(const pg of pages){ const a=await ASSETS.upload(pg.blob); rec.pages.push(a.id); if(!rec.photoAsset){ rec.photoAsset=a.id; rec.photoUrl=a.url; } } } }catch(e){}
+    try{ if(shared.ASSETS){ for(const pg of pages){ const a=await shared.ASSETS.upload(pg.blob); rec.pages.push(a.id); if(!rec.photoAsset){ rec.photoAsset=a.id; rec.photoUrl=a.url; } } } }catch(e){}
     try{
-      if(DB) await DB.collection("deliveries").doc(rec.id).set(rec);
-      else { deliveries.push(rec); ls.set("deliveries",JSON.stringify(deliveries)); }
+      if(shared.DB) await shared.DB.collection("deliveries").doc(rec.id).set(rec);
+      else { shared.deliveries.push(rec); ls.set("deliveries",JSON.stringify(shared.deliveries)); }
     }catch(e){ b.disabled=false; b.textContent="שמור תעודה"; toast("השמירה נכשלה."); return; }
     logAct("delivery","add","תעודה "+(rec.noteNo||"—")+" · "+(rec.supplier||"ספק לא ידוע")+" · "+rec.lines.length+" פריטים",rec.id);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock();
     linkNoteToBoq(rec).catch(()=>{});   // ברקע: קישור השורות לפריטי ה-EBOQ — כך "הגיע" נקבע לפי התעודה
   };
@@ -351,7 +351,7 @@ function openNote(){
 
 /* ---- חתימה בניפוק ציוד (כמו בניפוק ברגים) ---- */
 const moveSigned=m=>!!(m.sigAsset||m.sigUrl||m.sigData);
-function moveOuts(who,item){ return (demoStock?DEMO_MOVES:moves).filter(m=>m.dir!=="in"&&m.source!=="issue"&&(m.who||"").trim()===who&&m.item===item).sort((a,b)=>b.ts-a.ts); }
+function moveOuts(who,item){ return (shared.demoStock?DEMO_MOVES:shared.moves).filter(m=>m.dir!=="in"&&m.source!=="issue"&&(m.who||"").trim()===who&&m.item===item).sort((a,b)=>b.ts-a.ts); }
 function moveSlipText(who,item,outs){
   return "ניפוק ציוד · "+item+"\nל: "+who
     +"\n"+outs.map(m=>{ const d=new Date(m.ts); return fmtD(d)+" "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+": "+fmtN(m.qty)+" · חתימה: "+(moveSigned(m)?"יש":"אין"); }).join("\n");
@@ -374,7 +374,7 @@ function openMoveSlip(who,item){
 /* ---- ניפוק: הוצאה / החזרה / ספירה ---- */
 function openMove(item){
   let dir="out";
-  const names=[...new Set((demoStock?DEMO_MOVES:moves).map(m=>m.who).filter(Boolean))];
+  const names=[...new Set((shared.demoStock?DEMO_MOVES:shared.moves).map(m=>m.who).filter(Boolean))];
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק">'
   +'<div class="grab"></div><h2>'+esc(item)+'</h2>'
   +'<div class="f"><label>סוג הפעולה</label><div class="opts" id="oDir">'
@@ -426,16 +426,16 @@ function openMove(item){
     if(dir==="out"&&actorName()) rec.by=actorName();
     if(dir==="out" && pad.has()){
       let up=false;
-      try{ if(ASSETS){ const bl=await pad.blob(); const a=await ASSETS.upload(bl); rec.sigAsset=a.id; rec.sigUrl=a.url; up=true; } }catch(e){}
+      try{ if(shared.ASSETS){ const bl=await pad.blob(); const a=await shared.ASSETS.upload(bl); rec.sigAsset=a.id; rec.sigUrl=a.url; up=true; } }catch(e){}
       if(!up){ try{ rec.sigData=pad.dataUrl(); }catch(e){} }
     }
     try{
-      if(DB) await DB.collection(coll).doc(rec.id).set(rec);
-      else { (isC?counts:moves).push(rec);
-             ls.set(coll,JSON.stringify(isC?counts:moves)); }
+      if(shared.DB) await shared.DB.collection(coll).doc(rec.id).set(rec);
+      else { (isC?shared.counts:shared.moves).push(rec);
+             ls.set(coll,JSON.stringify(isC?shared.counts:shared.moves)); }
     }catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
     logAct(isC?"count":"move","add",(isC?"ספירה: ":dir==="in"?"החזרה: ":"הוצאה: ")+item+" · "+fmtN(rec.qty)+(isC?"":" · "+rec.who)+(dir==="out"?" · "+(pad.has()?"חתום":"ללא חתימה"):""),rec.id,isC?rec.who:null);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderStock();
   };
   setTimeout(()=>q("#mQty").focus(),50);
@@ -443,7 +443,7 @@ function openMove(item){
 
 /* ---- אירועים ---- */
 $("#btnNote").onclick=openNote;
-$("#btnClearDemoS").onclick=()=>{demoStock=false;ls.set("demoDoneS","1");renderStock();};
+$("#btnClearDemoS").onclick=()=>{shared.demoStock=false;ls.set("demoDoneS","1");renderStock();};
 $("#stockList").onclick=e=>{
   const n=e.target.dataset&&e.target.dataset.out; if(n) openMove(n);
 };
@@ -452,11 +452,11 @@ $("#noteList").onclick=async e=>{
   const id=e.target.dataset&&e.target.dataset.delnote;
   if(!id){ const c=e.target.closest(".dnote[data-id]"); if(c) openNoteDetail(c.dataset.id); return; }
   if(!(await ask("למחוק את התעודה? הפריטים שלה ירדו מהמלאי."))) return;
-  const old=byId(deliveries,id);
+  const old=byId(shared.deliveries,id);
   try{
-    if(DB) await DB.collection("deliveries").doc(id).delete();
-    else { deliveries=deliveries.filter(d=>d.id!==id);
-      ls.set("deliveries",JSON.stringify(deliveries)); renderStock(); }
+    if(shared.DB) await shared.DB.collection("deliveries").doc(id).delete();
+    else { shared.deliveries=shared.deliveries.filter(d=>d.id!==id);
+      ls.set("deliveries",JSON.stringify(shared.deliveries)); renderStock(); }
   }catch(err){ toast("המחיקה נכשלה."); return; }
   logAct("delivery","delete","נמחקה תעודה "+(old?(old.noteNo||"—")+" · "+(old.supplier||""):id),id,null,old?{...old,photoUrl:""}:null);
 };
@@ -472,8 +472,8 @@ $("#btnStockCsv").onclick=async()=>{
       .map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")));
   const csv="﻿"+lines.join("\r\n");
   const name="מלאי-אתר-"+new Date().toISOString().slice(0,10)+".csv";
-  if(DOWNLOADS){
-    try{ await DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+  if(shared.DOWNLOADS){
+    try{ await shared.DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
     catch(e){ if(!(e && e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return; }
   }
   const a=document.createElement("a");
@@ -495,16 +495,16 @@ $("#stockClr").onclick=()=>{
   $("#stockClr").hidden=true; renderStock();
 };
 $("#panelSearch").oninput=e=>{
-  panelQ=e.target.value.trim().toLowerCase(); panelMax=40;
+  panelQ=e.target.value.trim().toLowerCase(); shared.panelMax=40;
   $("#panelClr").hidden=!panelQ; render();
 };
 $("#panelClr").onclick=()=>{
-  $("#panelSearch").value=""; panelQ=""; panelMax=40;
+  $("#panelSearch").value=""; panelQ=""; shared.panelMax=40;
   $("#panelClr").hidden=true; render();
 };
 
 /* ---- ייבוא מוואטסאפ ---- */
-let imported = new Set();   // hashes already ingested (db "imports" or local)
+shared.imported=new Set();   // hashes already ingested (db "imports" or local)
 const CONCRETE_FIELDS =
   '"m3":<כמות הבטון במ״ק במשלוח הזה, מספר>,"cum":<"מצטבר"/"סה״כ להיום" כפי שמודפס על התעודה, מספר, או null>,'
 + '"ordered":<כמות שהוזמנה במ״ק אם מודפסת, או null>,"mix":"<סוג הבטון, למשל ב-30, או null>",'
@@ -591,7 +591,7 @@ function openImport(){
   q("#impFile").onchange=e=>{ const fs=[...e.target.files]; if(fs.length) run(fs); };
 
   async function run(files){
-    if(!SAMPLE){ body().innerHTML='<div class="empty">קריאה אוטומטית לא זמינה בתצוגה הזאת.</div>'; return; }
+    if(!shared.SAMPLE){ body().innerHTML='<div class="empty">קריאה אוטומטית לא זמינה בתצוגה הזאת.</div>'; return; }
     stage="scan"; body().innerHTML='<div class="prog"><i id="pb"></i></div><div class="prog-t"><span id="pt">פותח את הקובץ…</span><span id="pn"></span></div>';
     let raw;
     try{ raw=await collectFiles(files); }catch(err){ body().innerHTML='<div class="empty">'+(err.message==="nozip"?"ספריית ה-ZIP לא נטענה — נסה שוב עם חיבור.":"לא הצלחתי לפתוח את הקובץ.")+'</div>'; return; }
@@ -601,7 +601,7 @@ function openImport(){
     for(let i=0;i<raw.length;i++){
       q("#pt").textContent="מסנן כפילויות…"; q("#pn").textContent=(i+1)+"/"+raw.length; q("#pb").style.width=Math.round((i+1)/raw.length*40)+"%";
       let prep; try{ prep=await prepImage(raw[i].blob); }catch(e){ failed++; continue; }
-      if(imported.has(hashId(prep.bits))){ dupOld++; keptBits.push(prep.bits); URL.revokeObjectURL(prep.url); continue; }
+      if(shared.imported.has(hashId(prep.bits))){ dupOld++; keptBits.push(prep.bits); URL.revokeObjectURL(prep.url); continue; }
       if(keptBits.slice(-6).some(b=>ham(b,prep.bits)<=8)){ dupNear++; keptBits.push(prep.bits); nearIds.push(hashId(prep.bits)); URL.revokeObjectURL(prep.url); continue; }
       keptBits.push(prep.bits); items.push({...raw[i], prep, id:hashId(prep.bits)});
     }
@@ -616,7 +616,7 @@ function openImport(){
     review({dupNear,dupOld,failed,stopped,nearIds});
   }
   async function extractOne(it){
-    const call=()=>SAMPLE.json(IMPORT_PROMPT,{images:it.prep.blob, signal:ctl.signal});
+    const call=()=>shared.SAMPLE.json(IMPORT_PROMPT,{images:it.prep.blob, signal:ctl.signal});
     try{ return {ok:true, data:await call()}; }
     catch(e){
       if(e&&e.code==="cancelled") return {ok:false, err:"cancelled"};
@@ -635,7 +635,7 @@ function openImport(){
       if(d.kind==="concrete"){
         const rec=concreteFromAi(d,it);
         if(!rec){ notes.push({id:it.id,it,skip:true,reason:"תעודת בטון בלי כמות קריאה",on:false}); return; }
-        const exists=concrete.some(x=>rec.noteNo && x.noteNo && String(x.noteNo).trim()===String(rec.noteNo).trim());
+        const exists=shared.concrete.some(x=>rec.noteNo && x.noteNo && String(x.noteNo).trim()===String(rec.noteNo).trim());
         notes.push({id:it.id,it,concrete:true,rec,supplier:rec.supplier,noteNo:rec.noteNo,dateText:rec.dateText,ts:rec.ts,lines:[],pages:1,pageIds:[],sender:it.meta?it.meta.sender:"",exists,on:!exists});
         return;
       }
@@ -645,7 +645,7 @@ function openImport(){
       const key=(d.noteNo?String(d.noteNo).trim():"")? (String(d.supplier||"").slice(0,6)+"|"+String(d.noteNo).trim()) : it.id;
       if(byKey.has(key)){ const n=byKey.get(key); n.lines.push(...lines); n.pages++; n.pageIds.push(it.id); return; }
       const dt=parseDate(d.date)||(it.meta&&parseDate(it.meta.date))||null;
-      const exists=deliveries.some(x=>d.noteNo && x.noteNo && String(x.noteNo).trim()===String(d.noteNo).trim() && String(x.supplier||"").slice(0,6)===String(d.supplier||"").slice(0,6));
+      const exists=shared.deliveries.some(x=>d.noteNo && x.noteNo && String(x.noteNo).trim()===String(d.noteNo).trim() && String(x.supplier||"").slice(0,6)===String(d.supplier||"").slice(0,6));
       const n={id:it.id,it,supplier:String(d.supplier||"").trim(),noteNo:String(d.noteNo||"").trim(),dateText:dt?dt.text:(it.meta?it.meta.date:""),ts:dt?dt.ts:Date.now(),
                lines,pages:1,pageIds:[],sender:it.meta?it.meta.sender:"",exists,on:!exists && lines.length>0};
       byKey.set(key,n); notes.push(n);
@@ -684,29 +684,29 @@ function openImport(){
       if(n.concrete){
         const rec={...n.rec, id:"cn_"+(n.rec.noteNo?String(n.rec.noteNo).replace(/[^\w\-]/g,""):n.id), photoAsset:"", photoUrl:"", source:"whatsapp-import",
                    note:[n.rec.note,n.sender?("צולם ע״י "+n.sender):""].filter(Boolean).join(" · ")};
-        try{ if(ASSETS){ const a=await ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
+        try{ if(shared.ASSETS){ const a=await shared.ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
         try{
-          if(DB){ await DB.collection("concrete").doc(rec.id).set(rec); await DB.collection("imports").doc(n.id).set({ts:Date.now()}); }
-          else { concrete.push(rec); ls.set("concrete",JSON.stringify(concrete)); imported.add(n.id); ls.set("imports",JSON.stringify([...imported])); }
+          if(shared.DB){ await shared.DB.collection("concrete").doc(rec.id).set(rec); await shared.DB.collection("imports").doc(n.id).set({ts:Date.now()}); }
+          else { shared.concrete.push(rec); ls.set("concrete",JSON.stringify(shared.concrete)); shared.imported.add(n.id); ls.set("imports",JSON.stringify([...shared.imported])); }
         }catch(e){ b.disabled=false; b.textContent="השמירה נכשלה — נסה שוב"; return; }
-        imported.add(n.id); nCon++; continue;
+        shared.imported.add(n.id); nCon++; continue;
       }
       const rec={id:"im_"+n.id, supplier:n.supplier, noteNo:n.noteNo, dateText:n.dateText, ts:n.ts, photoAsset:"", photoUrl:"",
                  source:"whatsapp-import", note:n.sender?("צולם ע״י "+n.sender):"", lines:n.lines};
-      try{ if(ASSETS){ const a=await ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
+      try{ if(shared.ASSETS){ const a=await shared.ASSETS.upload(n.it.prep.blob); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
       try{
-        if(DB){ await DB.collection("deliveries").doc(rec.id).set(rec); await DB.collection("imports").doc(n.id).set({ts:Date.now()}); }
-        else { deliveries.push(rec); ls.set("deliveries",JSON.stringify(deliveries)); imported.add(n.id); ls.set("imports",JSON.stringify([...imported])); }
+        if(shared.DB){ await shared.DB.collection("deliveries").doc(rec.id).set(rec); await shared.DB.collection("imports").doc(n.id).set({ts:Date.now()}); }
+        else { shared.deliveries.push(rec); ls.set("deliveries",JSON.stringify(shared.deliveries)); shared.imported.add(n.id); ls.set("imports",JSON.stringify([...shared.imported])); }
       }catch(e){ b.disabled=false; b.textContent="השמירה נכשלה — נסה שוב"; return; }
-      imported.add(n.id); savedRecs.push(rec);
-      for(const pid of (n.pageIds||[])){ try{ if(DB) await DB.collection("imports").doc(pid).set({ts:Date.now(),page:true}); imported.add(pid); }catch(e){} }
+      shared.imported.add(n.id); savedRecs.push(rec);
+      for(const pid of (n.pageIds||[])){ try{ if(shared.DB) await shared.DB.collection("imports").doc(pid).set({ts:Date.now(),page:true}); shared.imported.add(pid); }catch(e){} }
     }
-    if(boq.length&&savedRecs.length) (async()=>{ let k=0; for(const r of savedRecs.slice(0,25)){ try{ k+=await linkNoteToBoq(r,true); }catch(e){} } if(k) toast(k+" שורות מהתעודות קושרו לפריטי EBOQ"); })();
+    if(shared.boq.length&&savedRecs.length) (async()=>{ let k=0; for(const r of savedRecs.slice(0,25)){ try{ k+=await linkNoteToBoq(r,true); }catch(e){} } if(k) toast(k+" שורות מהתעודות קושרו לפריטי EBOQ"); })();
     // remember skipped notes and near-duplicate shots too, so a re-export doesn't re-read them
-    for(const id of (nearIds||[])){ try{ if(DB) await DB.collection("imports").doc(id).set({ts:Date.now(),dup:true}); imported.add(id); }catch(e){} }
-    if(!DB) ls.set("imports",JSON.stringify([...imported]));
-    for(const n of notes.filter(n=>!n.on && !n.bad)){ try{ if(DB) await DB.collection("imports").doc(n.id).set({ts:Date.now(),skipped:true}); else { imported.add(n.id); ls.set("imports",JSON.stringify([...imported])); } }catch(e){} }
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    for(const id of (nearIds||[])){ try{ if(shared.DB) await shared.DB.collection("imports").doc(id).set({ts:Date.now(),dup:true}); shared.imported.add(id); }catch(e){} }
+    if(!shared.DB) ls.set("imports",JSON.stringify([...shared.imported]));
+    for(const n of notes.filter(n=>!n.on && !n.bad)){ try{ if(shared.DB) await shared.DB.collection("imports").doc(n.id).set({ts:Date.now(),skipped:true}); else { shared.imported.add(n.id); ls.set("imports",JSON.stringify([...shared.imported])); } }catch(e){} }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     logAct("import","add","ייבוא מוואטסאפ: "+(chosen.length-nCon)+" תעודות משלוח"+(nCon?", "+nCon+" תעודות בטון":""),"");
     body().innerHTML='<div class="empty">נקלטו '+(chosen.length-nCon)+' תעודות למלאי'+(nCon?' ו-'+nCon+' תעודות בטון ליומן הבטון':'')+'.</div>'; setMain("סגור",close,true); renderStock(); renderConcrete();
   }
@@ -751,10 +751,10 @@ function openConcreteNote(){
     q("#cnPages").innerHTML='<div class="pg"><img src="'+pgs[0].thumb+'" alt=""></div>'; q("#bScanCn").innerHTML='<i class="ic ic-cam"></i>סרוק שוב'; await readCn(pgs[0].blob); }});
   async function readCn(f){
     const line=q("#aiCn");
-    if(!SAMPLE){ line.textContent="מלא את הפרטים ידנית."; return; }
+    if(!shared.SAMPLE){ line.textContent="מלא את הפרטים ידנית."; return; }
     line.textContent="קורא את התעודה…";
     try{
-      const out=await SAMPLE.json("בתמונה תעודת משלוח של מפעל בטון (ישראלית). החזר רק JSON: "
+      const out=await shared.SAMPLE.json("בתמונה תעודת משלוח של מפעל בטון (ישראלית). החזר רק JSON: "
         +'{"supplier":"<שם המפעל או null>","noteNo":"<מספר התעודה או null>","date":"<תאריך כפי שמופיע או null>",'+CONCRETE_FIELDS+'}. '
         +"אל תמציא ואל תשלים מספרים לא קריאים: אם ערך לא קריא החזר null. m3 הוא כמות המשלוח הנוכחי בלבד, cum הוא המצטבר המודפס (סה״כ להיום/מצטבר) אם יש.",{images:f});
       if(out){
@@ -782,11 +782,11 @@ function openConcreteNote(){
       flags:[],photoAsset:"",photoUrl:"",source:"app",by:actorName()};
     const cum=Number(q("#cnCum").value); if(isFinite(cum)&&cum>0) rec.cum=cum;
     if(curConcrete().some(c=>c.id===rec.id)){ if(!(await ask("תעודה "+noteNo+" כבר ביומן. להחליף אותה?","החלף","var(--amber)"))){ b.disabled=false; b.textContent="שמור תעודה"; return; } }
-    try{ if(ASSETS&&photo){ const a=await ASSETS.upload(photo); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
-    try{ if(DB) await DB.collection("concrete").doc(rec.id).set(rec); else { concrete=concrete.filter(c=>c.id!==rec.id); concrete.push(rec); ls.set("concrete",JSON.stringify(concrete)); } }
+    try{ if(shared.ASSETS&&photo){ const a=await shared.ASSETS.upload(photo); rec.photoAsset=a.id; rec.photoUrl=a.url; } }catch(e){}
+    try{ if(shared.DB) await shared.DB.collection("concrete").doc(rec.id).set(rec); else { shared.concrete=shared.concrete.filter(c=>c.id!==rec.id); shared.concrete.push(rec); ls.set("concrete",JSON.stringify(shared.concrete)); } }
     catch(e){ b.disabled=false; b.textContent="שמור תעודה"; toast("השמירה נכשלה."); return; }
     logAct("concrete","add","תעודת בטון "+noteNo+" · "+fmtM3(rec.m3)+" מ״ק"+(rec.element?" · "+rec.element:""),rec.id);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderConcrete(); renderOverview(); toast("תעודת הבטון נשמרה.");
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
@@ -796,7 +796,7 @@ $("#btnConcreteNote").onclick=openConcreteNote;
 /* ---- תמונת מצב ---- */
 const ISSUE_RE=/לא תקינ|פגו[םמ]|חוס[ר]|חיסור|לאמת|חלקית|שבור|נזק/;
 const RET_RE=/החזרה/;
-const curNotes=()=>demoStock?DEMO_NOTES:deliveries;
+const curNotes=()=>shared.demoStock?DEMO_NOTES:shared.deliveries;
 const isBomNote=n=>n.source==="bom";
 const realNotes=()=>curNotes().filter(n=>!isBomNote(n));
 const fmtN=n=>Number(n).toLocaleString("he-IL");
@@ -808,13 +808,13 @@ function noteFlags(n){
   const ret = (ls.length>0 && ls.every(l=>Number(l.qty)<0)) || /תעודת החזרה|החזרה לספק/.test(n.note||"");
   return {issue, ret};
 }
-const curConcrete=()=>demoStock?DEMO_CONCRETE:concrete;
+const curConcrete=()=>shared.demoStock?DEMO_CONCRETE:shared.concrete;
 const fmtM3=n=>(Math.round(n*10)/10).toLocaleString("he-IL");
 function weekStart(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()); return d.getTime(); }
 function renderOverview(){
   renderStatus();
   const notes=realNotes();
-  if($("#demoBarO")) $("#demoBarO").hidden=!demoStock;
+  if($("#demoBarO")) $("#demoBarO").hidden=!shared.demoStock;
   if($("#ovNotes")) $("#ovNotes").textContent=fmtN(notes.length);
   const rows=stockRows();
   const sups=new Map();
@@ -921,8 +921,8 @@ function renderOverview(){
 
   // steps
   const counted=rows.filter(r=>r.counted!==null).length;
-  const mvN=(demoStock?DEMO_MOVES:moves).length;
-  const pN=records.length;
+  const mvN=(shared.demoStock?DEMO_MOVES:shared.moves).length;
+  const pN=shared.records.length;
   const steps=[
     {l:"קליטת תעודות משלוח", s:fmtN(notes.length)+" תעודות מ-"+fmtN(sups.size)+" ספקים", done:notes.length>0},
     {l:"מעקב בטון", s:cons.length?(fmtN(cons.length)+" משאיות · "+fmtM3(cM3)+" מ״ק"):"עוד לא נקלטו תעודות בטון.", done:cons.length>0},
@@ -936,9 +936,9 @@ function renderOverview(){
   const latest=[
     ...notes.map(n=>({ts:n.ts,w:"תעודת משלוח · "+shortSup(n.supplier)})),
     ...cons.map(c=>({ts:c.ts,w:"תעודת בטון "+(c.noteNo||"")})),
-    ...(demoStock?[]:issues).map(i=>({ts:i.ts,w:"ניפוק ל-"+(i.who||"")})),
-    ...(demoStock?[]:counts).map(c=>({ts:c.ts,w:"ספירה · "+c.item})),
-    ...(demoStock?[]:progress).map(p=>({ts:p.ts,w:"דיווח ביצוע · "+(p.who||"")})),
+    ...(shared.demoStock?[]:shared.issues).map(i=>({ts:i.ts,w:"ניפוק ל-"+(i.who||"")})),
+    ...(shared.demoStock?[]:shared.counts).map(c=>({ts:c.ts,w:"ספירה · "+c.item})),
+    ...(shared.demoStock?[]:shared.progress).map(p=>({ts:p.ts,w:"דיווח ביצוע · "+(p.who||"")})),
   ].filter(x=>x.ts).sort((a,b)=>b.ts-a.ts)[0];
   const lv=$("#ovLive");
   if(lv) lv.innerHTML=latest?'עודכן: '+esc(latest.w)+' · '+fmtD(latest.ts)+' '+new Date(latest.ts).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}):'';

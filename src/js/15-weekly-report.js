@@ -2,8 +2,8 @@
    מקורות: סטטוס התקדמות (כל הפעילויות), מאזן פאנלים, תעודות בטון, ניפוקים, תעודות משלוח, בקשות רכש / PO / תאריכי אספקה.
    ליזם: אחוזים, אבני דרך ותמונה בלבד. בלי ספקים, נהגים, קבלנים, מחירים וכמויות קטנות. הערות מתעודות לא נכנסות לאף גרסה. */
 let DRONE=[], droneSub=false;
-function droneWatch(){ if(droneSub||!DB) return; droneSub=true;
-  try{ watch(DB.collection("drone"),snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); }); }catch(e){} }
+function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
+  try{ watch(shared.DB.collection("drone"),snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); }); }catch(e){} }
 let wrRedraw=null;
 const wrPct=x=>Math.round(Math.max(0,Math.min(1,x))*100);
 const wrRange=(a,b)=>{ const [ya,ma,da]=a.split("-"), [yb,mb,db]=b.split("-"); return (+da)+"."+(+ma)+(ya!==yb?"."+ya:"")+"–"+(+db)+"."+(+mb)+"."+yb; };
@@ -11,7 +11,7 @@ const wrMonth=iso=>{ const m=String(iso||"").match(/^(\d{4})-(\d\d)/); return m?
 function wrData(endIso){
   const endT=new Date(endIso+"T23:59:59").getTime(), startT=endT-7*864e5+1000, startIso=isoOf(startT);
   const inW=t=>t>=startT&&t<=endT, hol=statusHolidays();
-  const acts=STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(a=>{
+  const acts=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(a=>{
     const total=Number(a.total)||0; const daily=(a.daily||[]).filter(d=>d.date<=endIso&&Number(d.actual)).sort((x,y)=>x.date<y.date?-1:1);
     let cum=0, doneDate=""; daily.forEach(d=>{ cum+=Number(d.actual); if(!doneDate&&total&&cum>=total) doneDate=d.date; });
     const done=Math.min(total||cum,cum), week=daily.filter(d=>d.date>=startIso).reduce((s,d)=>s+Number(d.actual),0);
@@ -26,21 +26,21 @@ function wrData(endIso){
     r.stale=r.started&&!r.complete&&(!last||last<isoOf(endT-7*864e5));
     return r; });
   const findA=re=>acts.find(a=>re.test(a.name));
-  const pb=panelBal.filter(b=>b.ts<=endT).slice().sort((a,b)=>b.ts-a.ts)[0]||null;
+  const pb=shared.panelBal.filter(b=>b.ts<=endT).slice().sort((a,b)=>b.ts-a.ts)[0]||null;
   const panA=findA(/פאנל/);
   const panels=pb?{installed:Number(pb.installed)||0,required:Number(pb.required)||0,broken:Number(pb.broken)||0,received:Number(pb.received)||0,date:pb.dateText||fmtD(pb.ts)}
     :panA?{installed:panA.done,required:panA.total,date:panA.last?isoText(panA.last):""}:null;
-  const con=concrete.filter(c=>c.ts<=endT), conW=con.filter(c=>inW(c.ts));
+  const con=shared.concrete.filter(c=>c.ts<=endT), conW=con.filter(c=>inW(c.ts));
   const m3=l=>Math.round(l.reduce((s,c)=>s+(Number(c.m3)||0),0)*10)/10;
-  const iss=issues.filter(s=>s.ts<=endT), issW=iss.filter(s=>inW(s.ts));
+  const iss=shared.issues.filter(s=>s.ts<=endT), issW=iss.filter(s=>inW(s.ts));
   const tabs=l=>l.reduce((s,x)=>s+(Number(x.tables)||0),0);
   const conA=findA(/קונסטרוקציה|שולחנות/);
-  const pgCon=progress.filter(p=>p.stage==="con"&&p.ts<=endT).reduce((m,p)=>Math.max(m,Number(p.tables)||0),0);
-  const notes=deliveries.filter(n=>n.source!=="bom"&&inW(n.ts)).slice().sort((a,b)=>a.ts-b.ts);
+  const pgCon=shared.progress.filter(p=>p.stage==="con"&&p.ts<=endT).reduce((m,p)=>Math.max(m,Number(p.tables)||0),0);
+  const notes=shared.deliveries.filter(n=>n.source!=="bom"&&inW(n.ts)).slice().sort((a,b)=>a.ts-b.ts);
   const sup=new Map(); notes.forEach(n=>{ const k=shortSup(n.supplier)||"ספק לא ידוע"; sup.set(k,(sup.get(k)||0)+1); });
   const today=isoOf(Date.now()), M=requestMatch(), reqOpen=M.rows.filter(r=>r.k!=="ok");
   const reqBad=M.rows.filter(r=>["none","hold","short","late"].includes(r.k));
-  const poLate=POS.filter(p=>poStatus(p).k==="late");
+  const poLate=shared.POS.filter(p=>poStatus(p).k==="late");
   const eta=etaRows().filter(r=>!r.arrived), etaLate=eta.filter(r=>r.late), etaSoon=eta.filter(r=>!r.late&&r.date&&r.date>=today&&r.date<=isoOf(Date.now()+14*864e5));
   const flags=[];
   acts.filter(a=>a.stale).forEach(a=>flags.push(a.name+": הסטטוס לא עודכן מאז "+(a.last?isoText(a.last):"—")+". המספרים בדוח נכונים לתאריך הזה."));
@@ -167,11 +167,11 @@ function openWeekly(){
     q("#wrDrone").innerHTML='<label>תמונת רחפן</label>'+(p?'<div class="wr-thumb"><img src="'+esc(p.src)+'" alt=""><span>בדוח: צילום מ-'+esc(isoText(p.date))+(prevShot(p)?' · להשוואה: '+esc(isoText(prevShot(p).date)):'')+'</span></div>':'<div class="note">אין עדיין תמונה עד התאריך הזה.</div>')
       +(can?'<div class="wr-prow"><span>תאריך הצילום</span><input type="date" id="wrImgDate" value="'+endIso+'"></div><div class="pick">העלאת תמונת רחפן<small>תמונה אחת לכל תאריך צילום · הדוח מציג את האחרונה ומשווה לצילום מלפני חודש ומעלה</small><input type="file" id="wrImg" accept="image/*"></div>':'');
     const f=q("#wrImg"); if(f) f.onchange=async ev=>{ const file=ev.target.files&&ev.target.files[0]; if(!file) return; toast("מעלה תמונה…");
-      try{ const bl=await wrShrink(file); if(ASSETS&&DB){ const a=await ASSETS.upload(bl); const date=q("#wrImgDate").value||endIso; const doc={id:"dr_"+date,date,asset:a.id,url:a.url,ts:Date.now(),by:actorName()};
-          await DB.doc("drone/"+doc.id).set(doc); DRONE=DRONE.filter(x=>x.id!==doc.id).concat(doc); logAct("progress","add","תמונת רחפן מ-"+isoText(date),doc.id); toast("התמונה נשמרה."); }
+      try{ const bl=await wrShrink(file); if(shared.ASSETS&&shared.DB){ const a=await shared.ASSETS.upload(bl); const date=q("#wrImgDate").value||endIso; const doc={id:"dr_"+date,date,asset:a.id,url:a.url,ts:Date.now(),by:actorName()};
+          await shared.DB.doc("drone/"+doc.id).set(doc); DRONE=DRONE.filter(x=>x.id!==doc.id).concat(doc); logAct("progress","add","תמונת רחפן מ-"+isoText(date),doc.id); toast("התמונה נשמרה."); }
         else { localImg={src:URL.createObjectURL(bl),date:q("#wrImgDate").value||endIso,blob:bl}; toast("התמונה נכנסה לדוח (לא נשמרה, אין חיבור למאגר)."); } }catch(e){ toast("ההעלאה נכשלה."); }
       draw(); }; };
-  const drawPlan=()=>{ const el=q("#wrPlan"); if(!el) return; const A=STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const drawPlan=()=>{ const el=q("#wrPlan"); if(!el) return; const A=shared.STATUS.slice().sort((a,b)=>(a.order||0)-(b.order||0));
     el.innerHTML=A.length?A.map(a=>'<div class="wr-prow"><span>'+esc(a.name)+'</span><input type="date" data-id="'+esc(a.id)+'" value="'+esc(a.planEnd||"")+'"></div>').join(""):'<div class="note">אין פעילויות בסטטוס.</div>'; };
   const draw=()=>{ const D=wrData(endIso), p=photo(); q("#wrFrame").srcdoc=wrHtml(mode,D,imgOpts(p,prevShot(p))); drawDrone(); };
   wrRedraw=draw;
@@ -179,7 +179,7 @@ function openWeekly(){
   q("#wrEnd").onchange=ev=>{ if(ev.target.value){ endIso=ev.target.value; draw(); } };
   let lt=null; q("#wrLead").oninput=ev=>{ lead=ev.target.value.trim(); clearTimeout(lt); lt=setTimeout(draw,400); };
   const ps=q("#wrPlanSave"); if(ps) ps.onclick=async()=>{ ps.disabled=true; let n=0;
-    for(const inp of scrim.querySelectorAll("#wrPlan input[data-id]")){ const a=STATUS.find(x=>x.id===inp.dataset.id); if(!a||(a.planEnd||"")===inp.value) continue;
+    for(const inp of scrim.querySelectorAll("#wrPlan input[data-id]")){ const a=shared.STATUS.find(x=>x.id===inp.dataset.id); if(!a||(a.planEnd||"")===inp.value) continue;
       if(await saveStatus({...a,planEnd:inp.value,updated:Date.now()})){ n++; logAct("progress","edit","תאריך יעד "+a.name+": "+(inp.value?isoText(inp.value):"נמחק"),a.id); } }
     ps.disabled=false; toast(n?"נשמרו "+n+" תאריכי יעד.":"לא היה שינוי."); draw(); };
   q("#wrDl").onclick=async()=>{ const b=q("#wrDl"); b.disabled=true; const D=wrData(endIso), p=photo(), pv=prevShot(p); const emb=async x=>x?{...x,src:await wrDataUrl(x.blob||await (await fetch(x.src)).blob())}:null; let ep=null, epv=null;

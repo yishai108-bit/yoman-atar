@@ -4,10 +4,10 @@ const DEMO_CONCRETE=[
   {id:"dc2",supplier:"עמי-רן בטון בע\"מ",noteNo:"227253",dateText:"08/10/2026",ts:Date.now()-86400000*4,m3:8,mix:"ב-30",element:"שדה 2 שורה 15",truck:"ערבל 78",note:"",demo:true},
   {id:"dc3",supplier:"עמי-רן בטון בע\"מ",noteNo:"227120",dateText:"30/09/2026",ts:Date.now()-86400000*12,m3:8,mix:"ב-30",element:"שדה 3 שורה 19",truck:"ערבל 60",note:"",demo:true},
 ];
-let concrete=[], concreteQ="", cDayMax=20, openDays=new Set();
+shared.concrete=[];let concreteQ="",cDayMax=20,openDays=new Set();
 function renderConcrete(){
   const all=curConcrete();
-  $("#demoBarC").hidden=!demoStock;
+  $("#demoBarC").hidden=!shared.demoStock;
   const q=concreteQ;
   const rows=all.filter(c=>!q||hit(c.noteNo,q)||hit(c.element,q)||hit(c.truck,q)||hit(c.note,q)||hit(c.dateText,q));
   const m3=all.reduce((s,c)=>s+(Number(c.m3)||0),0);
@@ -91,7 +91,7 @@ function openConcreteDetail(id){
   const del=scrim.querySelector("#cnDel");
   if(del) del.onclick=async()=>{
     if(!(await ask("למחוק את תעודת הבטון "+(c.noteNo||"")+"?"))) return;
-    try{ if(DB) await DB.collection("concrete").doc(c.id).delete(); else { concrete=concrete.filter(x=>x.id!==c.id); ls.set("concrete",JSON.stringify(concrete)); renderConcrete(); renderOverview(); } }
+    try{ if(shared.DB) await shared.DB.collection("concrete").doc(c.id).delete(); else { shared.concrete=shared.concrete.filter(x=>x.id!==c.id); ls.set("concrete",JSON.stringify(shared.concrete)); renderConcrete(); renderOverview(); } }
     catch(e){ toast("המחיקה נכשלה."); return; }
     logAct("concrete","delete","נמחקה תעודת בטון "+(c.noteNo||"")+" · "+fmtM3(Number(c.m3)||0)+" מ״ק",c.id,null,{...c,photoUrl:""});
     close();
@@ -109,8 +109,8 @@ $("#btnConcreteCsv").onclick=async()=>{
     .map(x=>'"'+String(x??"").replace(/"/g,'""')+'"').join(",")));
   const csv="﻿"+lines.join("\r\n");
   const name="בטון-"+new Date().toISOString().slice(0,10)+".csv";
-  if(DOWNLOADS){
-    try{ await DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+  if(shared.DOWNLOADS){
+    try{ await shared.DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
     catch(e){ if(!(e && e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return; }
   }
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=name; a.click();

@@ -1,8 +1,8 @@
 /* ================= מאזן פאנלים ================= */
-let panelBal=[], panelMoves=[];   // panelMoves: קבלות/העברות פאנלים בין אתרים אחרי המאזן האחרון
+shared.panelBal=[];shared.panelMoves=[];   // panelMoves: קבלות/העברות פאנלים בין אתרים אחרי המאזן האחרון
 function pbEffective(b){
   if(!b) return null; const e={...b,brokenReasons:(b.brokenReasons||[]).map(r=>({...r})),takenOut:(b.takenOut||[]).map(t=>({...t})),arrBroken:0,liveNotes:[]};
-  (demoStock?[]:panelMoves).filter(m=>m.ts>b.ts).sort((x,y)=>x.ts-y.ts).forEach(m=>{
+  (shared.demoStock?[]:shared.panelMoves).filter(m=>m.ts>b.ts).sort((x,y)=>x.ts-y.ts).forEach(m=>{
     const q=N(m.qty), br=Math.min(q,N(m.broken)), pl=N(m.pallets);
     if(m.dir==="out"){ e.takenOut.push({site:m.site||"אתר אחר",pallets:pl,qty:q}); e.closed=N(e.closed)-q; e.liveNotes.push("−"+fmtN(q)+" ל"+(m.site||"אתר אחר")+" ("+(fmtDT(m.dateText)||fmtD(m.ts))+")"); }
     else { e.received=N(e.received)+q; e.receivedPallets=N(e.receivedPallets)+pl; e.closed=N(e.closed)+q-br; e.broken=N(e.broken)+br; e.arrBroken+=br;
@@ -11,9 +11,9 @@ function pbEffective(b){
   });
   e.closed=Math.max(0,N(e.closed)); return e;
 }
-const curPb=()=>pbEffective(panelBal.slice().sort((a,b)=>b.ts-a.ts)[0]||null);
-const prevPb=()=>panelBal.slice().sort((a,b)=>b.ts-a.ts)[1]||null;
-let PANELS_PER_TABLE=81;   // שולחן 27 × 3 שורות (ניתן לשינוי בהגדרות האתר)
+const curPb=()=>pbEffective(shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[0]||null);
+const prevPb=()=>shared.panelBal.slice().sort((a,b)=>b.ts-a.ts)[1]||null;
+shared.PANELS_PER_TABLE=81;   // שולחן 27 × 3 שורות (ניתן לשינוי בהגדרות האתר)
 const N=v=>Number(v)||0;
 function pbCalc(b,prev){
   const onSite=N(b.closed)+N(b.singles)+N(b.installed)+N(b.scattered)+N(b.broken);
@@ -25,7 +25,7 @@ function pbCalc(b,prev){
   const brokenSum=(b.brokenReasons||[]).reduce((s,r)=>s+N(r.qty),0);
   const toInstall=Math.max(0,N(b.required)-N(b.installed));
   const r={onSite,taken,takenPallets,spare,usable,gap,brokenSum,toInstall,pct:N(b.required)?N(b.installed)/N(b.required):0,
-    tablesImplied:N(b.installed)/PANELS_PER_TABLE};
+    tablesImplied:N(b.installed)/shared.PANELS_PER_TABLE};
   if(prev){
     const days=Math.max(1,(b.ts-prev.ts)/86400000);
     r.days=days; r.dInst=N(b.installed)-N(prev.installed); r.dBroken=N(b.broken)-N(b.arrBroken)-N(prev.broken);
@@ -92,8 +92,8 @@ function renderPanelBal(){
     if(c.expBroken!=null) L.push(row("צפי שבורים עד סוף ההתקנה ("+fmtN(c.toInstall)+" נותרו להתקין)","−"+fmtN(Math.round(c.expBroken)),"neg"));
     if(c.projected!=null) L.push(row("<b>ספייר צפוי בסוף</b>",(c.projected<0?"−":"+")+fmtN(Math.abs(Math.round(c.projected))),c.projected<0?"neg":""));
   }
-  L.push(row("שולחנות עם פאנלים (לפי "+PANELS_PER_TABLE+" לשולחן)","~"+fmtN(Math.floor(c.tablesImplied))));
-  if(!demoStock){ const KK=kitStats(); if(!KK.doneProxy&&KK.donePan) L.push(row("שולחנות עם פאנלים לפי דיווחי ביצוע"+(KK.donePan>Math.floor(c.tablesImplied)+2?" · יותר מהמאזן: לעדכן מאזן":""),fmtN(KK.donePan))); }
+  L.push(row("שולחנות עם פאנלים (לפי "+shared.PANELS_PER_TABLE+" לשולחן)","~"+fmtN(Math.floor(c.tablesImplied))));
+  if(!shared.demoStock){ const KK=kitStats(); if(!KK.doneProxy&&KK.donePan) L.push(row("שולחנות עם פאנלים לפי דיווחי ביצוע"+(KK.donePan>Math.floor(c.tablesImplied)+2?" · יותר מהמאזן: לעדכן מאזן":""),fmtN(KK.donePan))); }
   (b.brokenReasons||[]).forEach(r=>{ if(N(r.qty)) L.push(row("שבורים: "+esc(r.reason),fmtN(N(r.qty)),"neg")); });
   if(b.note) L.push(row(esc(b.note),""));
   (b.liveNotes||[]).forEach(t=>L.push(row("<b>מאז המאזן:</b> "+esc(t),"")));
@@ -152,8 +152,8 @@ function openPanelBal(){
     const b=q("#pbSave"); b.disabled=true; b.textContent="שומר…";
     const c=pbCalc(doc);
     const cnt={id:"c"+ts+"_pb",item:"פאנלים סולאריים",qty:c.onSite,who:by||"—",ts,cat:"panels",unit:"יח'",source:"panelbal"};
-    try{ if(DB){ await DB.doc("panelbal/"+id).set(doc); await DB.doc("counts/"+cnt.id).set(cnt); }
-         else { panelBal.push(doc); ls.set("panelbal",JSON.stringify(panelBal)); counts.push(cnt); ls.set("counts",JSON.stringify(counts)); } }
+    try{ if(shared.DB){ await shared.DB.doc("panelbal/"+id).set(doc); await shared.DB.doc("counts/"+cnt.id).set(cnt); }
+         else { shared.panelBal.push(doc); ls.set("panelbal",JSON.stringify(shared.panelBal)); shared.counts.push(cnt); ls.set("counts",JSON.stringify(shared.counts)); } }
     catch(e){ b.disabled=false; b.textContent="שמור מאזן"; toast("השמירה נכשלה."); return; }
     logAct("panelbal","add","מאזן פאנלים "+dateText+": באתר "+fmtN(c.onSite)+" · מותקנים "+fmtN(doc.installed)+" · שבורים "+fmtN(doc.broken)+" · ספייר "+(c.usable<0?"−":"+")+fmtN(Math.abs(c.usable)),id,by);
     close(); renderPanelBal(); renderStock(); toast("המאזן נשמר.");
@@ -165,7 +165,7 @@ $("#btnPb").onclick=openPanelBal;
 function openPanelMove(){
   let dir="in";
   const today=new Date(); const iso=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-  const sites=[...new Set([...panelMoves.map(m=>m.site),...panelBal.flatMap(b=>(b.takenOut||[]).map(t=>t.site))].filter(Boolean))];
+  const sites=[...new Set([...shared.panelMoves.map(m=>m.site),...shared.panelBal.flatMap(b=>(b.takenOut||[]).map(t=>t.site))].filter(Boolean))];
   const F=(id,l,v,ph,mode)=>'<div class="f"><label for="'+id+'">'+l+'</label><input type="text" id="'+id+'" value="'+esc(v??"")+'" placeholder="'+esc(ph||"")+'"'+(mode?' inputmode="'+mode+'"':'')+' autocomplete="off"></div>';
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פאנלים בין אתרים"><div class="grab"></div><h2>פאנלים: הגיעו / יצאו</h2>'
     +'<div class="note-card">תנועת פאנלים בין אתרים, בלי לספור מחדש: המאזן מתעדכן לבד. ספירה מלאה עושים ב«עדכון מאזן».</div>'
@@ -188,13 +188,13 @@ function openPanelMove(){
     const by=q("#pmBy").value.trim(); ls.set("issuer",by);
     const dv=q("#pmDate").value; let ts=Date.now(); if(dv){ const d=new Date(dv+"T12:00:00"); if(!isNaN(d)) ts=d.getTime(); }
     const dateText=fmtD(ts);
-    const bal=panelBal.slice().sort((x,y)=>y.ts-x.ts)[0]; if(bal&&ts<=bal.ts) ts=bal.ts+1;   // תנועה תמיד אחרי המאזן האחרון
+    const bal=shared.panelBal.slice().sort((x,y)=>y.ts-x.ts)[0]; if(bal&&ts<=bal.ts) ts=bal.ts+1;   // תנועה תמיד אחרי המאזן האחרון
     const id="pm"+Date.now();
     const doc={id,ts,dateText,dir,site:q("#pmSite").value.trim(),pallets:Number(q("#pmPal").value)||0,qty:Number(q("#pmQty").value)||0,broken:dir==="in"?Number(q("#pmBroken").value)||0:0,by,note:q("#pmNote").value.trim(),source:"app"};
-    try{ if(DB) await DB.doc("panelmoves/"+id).set(doc); else { panelMoves.push(doc); ls.set("panelmoves",JSON.stringify(panelMoves)); } }
+    try{ if(shared.DB) await shared.DB.doc("panelmoves/"+id).set(doc); else { shared.panelMoves.push(doc); ls.set("panelmoves",JSON.stringify(shared.panelMoves)); } }
     catch(e){ b.disabled=false; b.textContent="שמור"; toast("השמירה נכשלה."); return; }
     logAct("panelbal","add",(dir==="in"?"הגיעו ":"יצאו ")+fmtN(doc.qty)+" פאנלים "+(dir==="in"?"מ":"ל")+doc.site+(doc.pallets?" · "+fmtN(doc.pallets)+" משטחים":"")+(doc.broken?" · "+fmtN(doc.broken)+" שבורים בהגעה":""),id,by);
-    if(demoStock){ demoStock=false; ls.set("demoDoneS","1"); }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderPanelBal(); renderOverview(); toast("נשמר. המאזן עודכן.");
   };
   requestAnimationFrame(()=>{ const sh=q(".sheet"); if(sh) sh.scrollTop=0; const a=document.activeElement; if(a && scrim.contains(a)) a.blur(); });
@@ -209,7 +209,7 @@ function ringHtml(pct,cls,label,lg){
 }
 /* ---- כפתור פעולה ראשי (בילטון) ---- */
 const FAB_LABEL="פעולה";
-let fabTab="over";
+shared.fabTab="over";
 $("#fab").onclick=()=>openFabMenu();
 function openFabMenu(){
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פעולה"><div class="grab"></div><h2>מה עושים?</h2><div class="stock">'
@@ -221,7 +221,7 @@ function openFabMenu(){
 }
 /* ניפוק ציוד: בוחרים פריט מהמלאי (כלי עבודה וחומרים קודם) ואז הוצאה עם «מי לקח» */
 function openEquipIssue(){
-  const rows=(demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
+  const rows=(shared.demoStock?[]:stockRows()).filter(r=>r.name); const pri={tools:0,staging:1,safety:2,electrical:3,construction:4,civil:5,containers:6,panels:7};
   rows.sort((a,b)=>(pri[a.cat]??9)-(pri[b.cat]??9)||String(a.name).localeCompare(String(b.name),"he"));
   let qtxt="";
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ניפוק ציוד"><div class="grab"></div><h2>ניפוק ציוד</h2>'

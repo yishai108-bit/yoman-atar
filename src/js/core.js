@@ -1,3 +1,5 @@
+// מצב משותף: משתנים שקובץ אחד מגדיר וקובץ אחר משנה. מרוכזים כאן כדי שהמעבר למודולים יהיה אפשרי.
+const shared={};
 const BLAME = [
   {id:"supplier",   label:"ספק / יצרן",   cls:"c-supplier",   color:"var(--sage-fill)",  claim:true},
   {id:"carrier",    label:"מוביל",        cls:"c-carrier",    color:"var(--info-fill)",    claim:true},
@@ -58,22 +60,22 @@ function ask(msg, okLabel, color, sub){
     scrim.querySelector(".cancel").focus();
   });
 }
-let DB=null, ASSETS=null, SAMPLE=null, DOWNLOADS=null, USER=null, UID=null, IS_OWNER=null;
-let records = [], unsub = null, demoMode = true;
+shared.DB=null;shared.ASSETS=null;shared.SAMPLE=null;shared.DOWNLOADS=null;shared.USER=null;shared.IS_OWNER=null;let UID=null;
+shared.records=[];shared.unsub=null;shared.demoMode=true;
 
 /* ---------- יומן פעולות (audit log): מי, מתי, מה ---------- */
-let logs=[], uidTried=false;
+shared.logs=[];let uidTried=false;
 const LOG_KINDS={issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש"};
 const actorName=()=>(ls.get("issuer")||"").trim();
 async function logAct(kind,action,summary,ref,who,data){
-  if(USER && UID===null && !uidTried){ uidTried=true; try{ UID=await USER.id(); }catch(e){ UID=null; } }
+  if(shared.USER && UID===null && !uidTried){ uidTried=true; try{ UID=await shared.USER.id(); }catch(e){ UID=null; } }
   const rec={id:"lg"+Date.now()+Math.random().toString(36).slice(2,5),ts:Date.now(),kind,action,
     summary:String(summary||"").slice(0,240),ref:ref?String(ref):"",who:(who||actorName()).slice(0,60),uid:UID||"",
     dev:/Mobi|Android/i.test(navigator.userAgent)?"mobile":"desktop"};
   if(data){ try{ let s=JSON.stringify(data); if(s.length>6000) s=s.slice(0,6000); rec.data=s; }catch(e){} }
   try{
-    if(DB) await DB.doc("log/"+rec.id).set(rec);
-    else { logs.unshift(rec); if(logs.length>1500) logs=logs.slice(0,1500); ls.set("log",JSON.stringify(logs)); }
+    if(shared.DB) await shared.DB.doc("log/"+rec.id).set(rec);
+    else { shared.logs.unshift(rec); if(shared.logs.length>1500) shared.logs=shared.logs.slice(0,1500); ls.set("log",JSON.stringify(shared.logs)); }
   }catch(e){ /* היומן לא חוסם את העבודה */ }
 }
 /* ---------- הגדרות שהן מפה (ספקים, ברקודים, כינויים) ---------- */
@@ -83,9 +85,9 @@ async function logAct(kind,action,summary,ref,who,data){
 // במקום שמירה שנכשלת (עד גרסה 51 זה הפיל את שמירת בקשת הרכש של עורך: «השמירה נכשלה» אחרי שהבקשה כבר נשמרה).
 async function mergeSettingsMap(name,patch){
   if(!patch||!Object.keys(patch).length) return;
-  if(!DB){ let cur={}; try{ cur=JSON.parse(ls.get(name)||"{}")||{}; }catch(e){} ls.set(name,JSON.stringify({...cur,...patch})); return; }
+  if(!shared.DB){ let cur={}; try{ cur=JSON.parse(ls.get(name)||"{}")||{}; }catch(e){} ls.set(name,JSON.stringify({...cur,...patch})); return; }
   if(ROLE!=="owner") return;
-  const ref=DB.doc("settings/"+name);
+  const ref=shared.DB.doc("settings/"+name);
   const snap=await ref.get();
   const d=snap&&snap.exists?snap.data():null;
   const cur=d&&d.map&&typeof d.map==="object"?d.map:{};
@@ -101,15 +103,15 @@ function openLog(){
   const q=s=>scrim.querySelector(s);
   q(".cancel").onclick=close;
   async function draw(){
-    const present=[...new Set(logs.map(l=>l.kind))];
-    q("#lgChips").innerHTML='<button type="button" class="chip2" data-k="all" aria-pressed="'+(kind==="all")+'">הכל <span class="num">'+logs.length+'</span></button>'
+    const present=[...new Set(shared.logs.map(l=>l.kind))];
+    q("#lgChips").innerHTML='<button type="button" class="chip2" data-k="all" aria-pressed="'+(kind==="all")+'">הכל <span class="num">'+shared.logs.length+'</span></button>'
       +present.map(k=>'<button type="button" class="chip2" data-k="'+esc(k)+'" aria-pressed="'+(kind===k)+'">'+esc(LOG_KINDS[k]||k)+'</button>').join("");
-    const rows=logs.filter(l=>kind==="all"||l.kind===kind).slice().sort((a,b)=>b.ts-a.ts);
+    const rows=shared.logs.filter(l=>kind==="all"||l.kind===kind).slice().sort((a,b)=>b.ts-a.ts);
     const box=q("#lgList"); box.innerHTML="";
     if(!rows.length){ box.innerHTML='<div class="empty">עוד אין פעולות ביומן. מהשמירה הבאה הכל נרשם.</div>'; return; }
     let names={};
     const uids=[...new Set(rows.slice(0,max).map(l=>l.uid).filter(Boolean))];
-    if(USER&&uids.length){ try{ names=await USER.profiles(uids); }catch(e){ names={}; } }
+    if(shared.USER&&uids.length){ try{ names=await shared.USER.profiles(uids); }catch(e){ names={}; } }
     rows.slice(0,max).forEach(l=>{
       const d=new Date(l.ts); const nm=(names[l.uid]&&names[l.uid].name)||"";
       const who=l.who&&nm&&l.who!==nm ? l.who+" ("+nm+")" : (l.who||nm||"—");
@@ -133,9 +135,9 @@ function alertSheet(title,html){
 /* ---------- render ---------- */
 function render(){
   renderOverview(); renderPanelBal();
-  const rows = demoMode ? DEMO : records;
-  $("#demoBar").hidden = !demoMode;
-  $("#listLabel").textContent = demoMode ? "רשומות לדוגמה" : "רשומות";
+  const rows = shared.demoMode ? DEMO : shared.records;
+  $("#demoBar").hidden = !shared.demoMode;
+  $("#listLabel").textContent = shared.demoMode ? "רשומות לדוגמה" : "רשומות";
   $("#listCount").textContent = rows.length ? rows.length + " פאנלים" : "";
 
   const counts = {};
@@ -177,7 +179,7 @@ function render(){
   if(!shownP.length){
     list.innerHTML='<div class="empty">אין פאנל שמתאים לחיפוש.</div>'; return;
   }
-  shownP.slice(0,panelMax).forEach(r=>{
+  shownP.slice(0,shared.panelMax).forEach(r=>{
     const b = byId(BLAME,r.blame) || byId(BLAME,"unknown");
     const el=document.createElement("div");
     el.className="rec"+(r.blame==="unknown"?" unknown":"");
@@ -193,11 +195,11 @@ function render(){
       + '<div class="meta">'+bits.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>';
     list.appendChild(el);
   });
-  if(shownP.length>panelMax){
+  if(shownP.length>shared.panelMax){
     const b=document.createElement("button");
     b.className="more"; b.type="button";
-    b.textContent="הצג עוד "+(shownP.length-panelMax);
-    b.onclick=()=>{panelMax+=40; render();};
+    b.textContent="הצג עוד "+(shownP.length-shared.panelMax);
+    b.onclick=()=>{shared.panelMax+=40; render();};
     list.appendChild(b);
   }
 }
@@ -267,10 +269,10 @@ function openSheet(){
   }
   async function readSerial(file){
     const line=scrim.querySelector("#aiLine");
-    if(!SAMPLE){ line.textContent="הקלד את המספר הסידורי ידנית."; return; }
+    if(!shared.SAMPLE){ line.textContent="הקלד את המספר הסידורי ידנית."; return; }
     line.textContent="קורא את המדבקה…";
     try{
-      const out = await SAMPLE.json(
+      const out = await shared.SAMPLE.json(
         "בתמונה מדבקה של פאנל סולארי. החזר רק JSON: "
         + '{"serial":"<המספר הסידורי המלא בדיוק כפי שמופיע, או null>"}. '
         + "המספר הסידורי הוא בדרך כלל המחרוזת הארוכה ביותר של אותיות לטיניות וספרות, "
@@ -298,22 +300,22 @@ function openSheet(){
       serial:draft.serial, blame:draft.blame, blameOther:draft.blame==="unknown"?(draft.blameOther||""):"", note:draft.note||"",
       ts:Date.now(), labelAsset:"", damageAsset:"", labelUrl:"", damageUrl:"" };
     try{
-      if(ASSETS){
-        if(draft.labelBlob){ const a=await ASSETS.upload(draft.labelBlob);
+      if(shared.ASSETS){
+        if(draft.labelBlob){ const a=await shared.ASSETS.upload(draft.labelBlob);
           rec.labelAsset=a.id; rec.labelUrl=a.url; }
-        if(draft.damageBlob){ const a=await ASSETS.upload(draft.damageBlob);
+        if(draft.damageBlob){ const a=await shared.ASSETS.upload(draft.damageBlob);
           rec.damageAsset=a.id; rec.damageUrl=a.url; }
       }
     }catch(e){ /* keep the record even if a photo fails */ }
     try{
-      if(DB) await DB.collection("panels").doc(rec.id).set(rec);
-      else { records.push(rec); ls.set("panels",JSON.stringify(records)); }
+      if(shared.DB) await shared.DB.collection("panels").doc(rec.id).set(rec);
+      else { shared.records.push(rec); ls.set("panels",JSON.stringify(shared.records)); }
     }catch(e){
       btn.disabled=false; btn.textContent="שמור רשומה";
       toast("השמירה נכשלה. נסה שוב."); return;
     }
     logAct("panel","add","פאנל שבור "+rec.serial+" · "+((byId(BLAME,rec.blame)||{}).label||rec.blame),rec.id);
-    if(demoMode){ demoMode=false; ls.set("demoDone","1"); }
+    if(shared.demoMode){ shared.demoMode=false; ls.set("demoDone","1"); }
     close(); render();
   }
   function esckey(ev){ if(ev.key==="Escape") close(); }
@@ -325,20 +327,20 @@ function openSheet(){
 
 /* ---------- actions ---------- */
 $("#btnAdd").onclick = openSheet;
-$("#btnClearDemo").onclick = ()=>{ demoMode=false; ls.set("demoDone","1"); render(); };
+$("#btnClearDemo").onclick = ()=>{ shared.demoMode=false; ls.set("demoDone","1"); render(); };
 $("#list").onclick = async e => {
   const id = e.target.dataset && e.target.dataset.del; if(!id) return;
   if(!(await ask("למחוק את הרשומה?"))) return;
-  const old=byId(records,id);
+  const old=byId(shared.records,id);
   try{
-    if(DB) await DB.collection("panels").doc(id).delete();
-    else { records=records.filter(r=>r.id!==id);
-           ls.set("panels",JSON.stringify(records)); render(); }
+    if(shared.DB) await shared.DB.collection("panels").doc(id).delete();
+    else { shared.records=shared.records.filter(r=>r.id!==id);
+           ls.set("panels",JSON.stringify(shared.records)); render(); }
   }catch(err){ toast("המחיקה נכשלה."); return; }
   logAct("panel","delete","נמחק פאנל שבור "+(old?old.serial:id),id,null,old);
 };
 $("#btnCsv").onclick = async ()=>{
-  const rows = demoMode ? DEMO : records;
+  const rows = shared.demoMode ? DEMO : shared.records;
   if(!rows.length){ toast("אין רשומות לייצוא."); return; }
   const head=["מספר סידורי","מי שבר","הערה / תיאור","תאריך"];
   const lines=[head.join(",")].concat(rows.slice().sort((a,b)=>b.ts-a.ts).map(r=>{
@@ -349,8 +351,8 @@ $("#btnCsv").onclick = async ()=>{
   }));
   const csv="﻿"+lines.join("\r\n");
   const name="פאנלים-שבורים-"+new Date().toISOString().slice(0,10)+".csv";
-  if(DOWNLOADS){
-    try{ await DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
+  if(shared.DOWNLOADS){
+    try{ await shared.DOWNLOADS.save({filename:name,data:new Blob([csv],{type:"text/csv"})}); return; }
     catch(e){ if(!(e && e.code==="declined")) toast("הייצוא לא זמין כאן כרגע."); return; }
   }
   const a=document.createElement("a");

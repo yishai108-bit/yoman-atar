@@ -2,7 +2,7 @@
 function renderAlerts(){
   const box=$("#ovAlerts"); if(!box) return;
   box.innerHTML="";
-  if(demoStock){ box.hidden=true; return; }
+  if(shared.demoStock){ box.hidden=true; return; }
   const P=moneyPoints().filter(p=>p.sev===3).slice(0,3);
   if(!P.length){ box.hidden=true; return; }
   P.forEach(p=>{
