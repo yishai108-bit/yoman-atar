@@ -1,0 +1,9 @@
+{
+  "name": "yoman-atar",
+  "private": true,
+  "description": "יומן אתר: בדיקות ובנייה. האפליקציה עצמה היא artifact/yoman.html.",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": { "node": ">=20" }
+}

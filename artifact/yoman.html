@@ -1,5 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>יומן אתר</title>
+<script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Heebo:wght@400;500;700;900&display=swap">
@@ -613,8 +614,17 @@ body.r-viewer .ro-bar{display:block}
 .lock .pad button:active{background:var(--line2)}
 .lock .pad .ghostk{border:0;background:transparent;font-size:.95rem;font-family:var(--ui)}
 .lock .brand{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));font-weight:700;letter-spacing:.14em;color:var(--pv);font-size:.85rem}
+/* פס חיבור: כשהמאגר לא זמין, שהעובד לא יחשוב שהמספרים עדכניים */
+.netbar{position:fixed;top:0;inset-inline:0;z-index:85;direction:rtl;display:flex;align-items:center;gap:10px;
+  background:var(--clay);color:#fff;padding:calc(6px + env(safe-area-inset-top,0px)) 14px 6px;font-weight:700;font-size:.86rem;line-height:1.35;box-shadow:var(--shadow)}
+.netbar[hidden]{display:none}
+.netbar span{flex:1;min-width:0}
+.netbar button{background:#fff;color:var(--clay);border:0;border-radius:4px;padding:0 14px;font-weight:700;font-family:inherit;min-height:44px;flex:0 0 auto}
+body.net-off #app{padding-top:calc(12px + var(--netH,0px))}
+body.net-off .tabs{top:var(--netH,0px)}
 @media (min-width:640px){
   #app{padding:28px 24px 100px}
+  body.net-off #app{padding-top:calc(28px + var(--netH,0px))}
   .top h1{font-size:1.9rem}
   .scrim{align-items:center;padding:20px}
   .sheet{border-radius:8px;max-height:88vh}
@@ -623,6 +633,7 @@ body.r-viewer .ro-bar{display:block}
 </style>
 
 <div id="app">
+  <div class="netbar" id="netBar" role="status" aria-live="polite" hidden><span id="netMsg"></span><button type="button" id="netRe">רענן</button></div>
   <div class="top">
     <h1><span class="mark" aria-hidden="true"></span>יומן אתר</h1>
     <div class="side">
@@ -3677,7 +3688,7 @@ function renderOnboarding(){
 
 /* ================= הגדרות אתר, גיבוי, ייבוא BOM ================= */
 const KIT_SOURCE_DEFAULT="BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-const APP_VERSION="51";
+const APP_VERSION="52";
 const SHOW_PRICES=false;   // בלי מחירים באפליקציה: שום ₪ לא מוצג (מחירים שנשמרו נשארים מוסתרים)
 let SITE={name:"אתר הקמה עין תמר",company:"BELECTRIC",panelsPerTable:81,custom:false};
 function applySite(d){
@@ -5588,8 +5599,33 @@ tidyUI();
 showTab(ls.get("tab")||"over");
 render(); renderStock(); renderConcrete(); renderDay(); renderOrders();
 
+/* ---------- מצב חיבור למאגר ---------- */
+// אין חיבור לאינטרנט, האזנה למאגר שמתה, או מאגר שלא נטען בכלל: מראים פס אדום למעלה.
+// עד גרסה 51 השגיאות נבלעו בשקט והעובד ראה נתונים ישנים כאילו הם עדכניים.
+const NET={offline:navigator.onLine===false, dead:0, noDb:false, cacheSince:0};
+function drawNet(){
+  const bar=$("#netBar"); if(!bar) return;
+  const stale=NET.cacheSince&&Date.now()-NET.cacheSince>45000;
+  const msg = NET.offline ? "אין חיבור לאינטרנט. הנתונים כאן אולי לא מעודכנים, ושמירה עלולה להיכשל."
+    : NET.dead ? "החיבור למאגר הנתונים נותק. הנתונים כאן אולי לא מעודכנים. רענן כדי להתחבר מחדש."
+    : NET.noDb ? "אין חיבור למאגר הנתונים. מה שנשמר עכשיו נשאר במכשיר הזה בלבד ולא מגיע לאחרים."
+    : stale ? "החיבור למאגר איטי. ייתכן שהנתונים לא מעודכנים." : "";
+  bar.hidden=!msg; $("#netMsg").textContent=msg;
+  document.body.classList.toggle("net-off",!!msg);
+  document.body.style.setProperty("--netH",msg?bar.offsetHeight+"px":"0px");
+}
+function netErr(e){ NET.dead++; drawNet(); }
+function netSeen(snap){ const c=!!(snap&&snap.metadata&&snap.metadata.fromCache); if(!c) NET.cacheSince=0; else if(!NET.cacheSince) NET.cacheSince=Date.now(); }
+const watch=(ref,next)=>ref.onSnapshot(snap=>{ netSeen(snap); next(snap); },netErr);
+window.addEventListener("online",()=>{ NET.offline=false; drawNet(); });
+window.addEventListener("offline",()=>{ NET.offline=true; drawNet(); });
+window.addEventListener("resize",()=>{ if(!$("#netBar").hidden) drawNet(); });
+setInterval(drawNet,15000);
+$("#netRe").onclick=()=>location.reload();
+drawNet();
+
 (async ()=>{
-  const localOnly = () => { $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
+  const localOnly = () => { NET.noDb=true; drawNet(); $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
                             $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
   if(!window.claude || !claude.use) { localOnly(); return; }
   $("#app").classList.add("skel"); const unskel=()=>$("#app").classList.remove("skel"); setTimeout(unskel,4000);
@@ -5612,71 +5648,71 @@ render(); renderStock(); renderConcrete(); renderDay(); renderOrders();
     : " קריאה אוטומטית לא זמינה כאן — הקלד את המספר הסידורי.";
   if(!DB) localOnly();
   if(DB){
-    unsub = DB.collection("panels").onSnapshot(snap=>{
+    unsub = watch(DB.collection("panels"),snap=>{
       records = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       if(records.length) { demoMode=false; ls.set("demoDone","1"); }
       render();
-    }, ()=>{});
-    DB.collection("deliveries").onSnapshot(snap=>{
+    });
+    watch(DB.collection("deliveries"),snap=>{
       deliveries = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       if(deliveries.length){ demoStock=false; ls.set("demoDoneS","1"); }
       renderStock(); renderOrders();
-    }, ()=>{});
-    DB.collection("moves").onSnapshot(snap=>{
+    });
+    watch(DB.collection("moves"),snap=>{
       moves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderStock();
-    }, ()=>{});
-    DB.collection("counts").onSnapshot(snap=>{
+    });
+    watch(DB.collection("counts"),snap=>{
       counts = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderStock();
-    }, ()=>{});
-    DB.collection("concrete").onSnapshot(snap=>{
+    });
+    watch(DB.collection("concrete"),snap=>{
       concrete = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderConcrete(); renderOverview();
-    }, ()=>{});
-    DB.collection("issues").onSnapshot(snap=>{
+    });
+    watch(DB.collection("issues"),snap=>{
       issues = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderSlips(); renderOverview(); unskel();
-    }, ()=>{});
-    DB.collection("progress").onSnapshot(snap=>{
+    });
+    watch(DB.collection("progress"),snap=>{
       progress = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderOverview();
-    }, ()=>{});
-    DB.collection("panelbal").onSnapshot(snap=>{
+    });
+    watch(DB.collection("panelbal"),snap=>{
       panelBal = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderPanelBal(); renderOverview();
-    }, ()=>{});
-    DB.collection("daylog").onSnapshot(snap=>{ daylog=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); }, ()=>{});
-    DB.collection("orders").onSnapshot(snap=>{ orders=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); }, ()=>{});
-    DB.collection("pos").onSnapshot(snap=>{ POS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); }, ()=>{});
-    DB.collection("eta").onSnapshot(snap=>{ ETA=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); }, ()=>{});
-    DB.collection("crew").onSnapshot(snap=>{ CREW=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); }, ()=>{});
-    DB.collection("status").onSnapshot(snap=>{ STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderStatus(); }, ()=>{});
-    DB.doc("settings/boq").onSnapshot(snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ boq=d.lines; boqSource=d.source||""; renderOrders(); } }, ()=>{});
-    DB.doc("settings/aliases").onSnapshot(snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") ALIASES=d.map; }, ()=>{});
-    DB.doc("settings/cba").onSnapshot(snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ cba=d; renderOrders(); } }, ()=>{});   // לבעלים בלבד לפי כללי הגישה
-    DB.doc("settings/suppliers").onSnapshot(snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") SUPPLIERS=d.map; }, ()=>{});
-    DB.collection("panelmoves").onSnapshot(snap=>{
+    });
+    watch(DB.collection("daylog"),snap=>{ daylog=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
+    watch(DB.collection("orders"),snap=>{ orders=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
+    watch(DB.collection("pos"),snap=>{ POS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
+    watch(DB.collection("eta"),snap=>{ ETA=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderOrders(); });
+    watch(DB.collection("crew"),snap=>{ CREW=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderDay(); });
+    watch(DB.collection("status"),snap=>{ STATUS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderStatus(); });
+    watch(DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ boq=d.lines; boqSource=d.source||""; renderOrders(); } });
+    watch(DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") ALIASES=d.map; });
+    watch(DB.doc("settings/cba"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ cba=d; renderOrders(); } });   // לבעלים בלבד לפי כללי הגישה
+    watch(DB.doc("settings/suppliers"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") SUPPLIERS=d.map; });
+    watch(DB.collection("panelmoves"),snap=>{
       panelMoves = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
       renderPanelBal(); renderOverview();
-    }, ()=>{});
-    DB.doc("settings/bom").onSnapshot(snap=>{
+    });
+    watch(DB.doc("settings/bom"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
       if(d && Array.isArray(d.lines) && d.lines.length){ kit=d.lines; kitSource=d.source||kitSource; if(Array.isArray(d.types)&&d.types.length) kitTypes=d.types; renderOverview(); }
-    }, ()=>{});
-    DB.doc("settings/prices").onSnapshot(snap=>{
+    });
+    watch(DB.doc("settings/prices"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
       if(d){ prices={concreteM3:Number(d.concreteM3)||0,dieselL:Number(d.dieselL)||0,panel:Number(d.panel)||0,parts:d.parts||{}}; renderOverview(); }
-    }, ()=>{});
-    DB.collection("imports").onSnapshot(snap=>{ imported = new Set(snap.docs.map(d=>d.id)); }, ()=>{});
-    DB.doc("settings/site").onSnapshot(snap=>{
+    });
+    watch(DB.collection("imports"),snap=>{ imported = new Set(snap.docs.map(d=>d.id)); });
+    watch(DB.doc("settings/site"),snap=>{
       const d = snap && snap.exists ? snap.data() : null;
       if(d){ applySite(d); renderOverview(); renderPanelBal(); }
-    }, ()=>{});
-    DB.doc("settings/barcodes").onSnapshot(snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") BARCODES=d.map; }, ()=>{});
-    DB.collection("log").orderBy("ts","desc").limit(400).onSnapshot(snap=>{
+    });
+    watch(DB.doc("settings/barcodes"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") BARCODES=d.map; });
+    watch(DB.collection("log").orderBy("ts","desc").limit(400),snap=>{
       logs = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
-    }, ()=>{});
+    });
   }
 })();
 </script>
