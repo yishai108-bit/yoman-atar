@@ -288,7 +288,7 @@ export function showTab(which){
 export function __init(){
 /* ================= הגדרות אתר, גיבוי, ייבוא BOM ================= */
 KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-APP_VERSION = "55";
+APP_VERSION = "56";
 SHOW_PRICES = false;
    // בלי מחירים באפליקציה: שום ₪ לא מוצג (מחירים שנשמרו נשארים מוסתרים)
 SITE = {name:"אתר הקמה עין תמר",company:"BELECTRIC",panelsPerTable:81,custom:false};

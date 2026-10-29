@@ -84,3 +84,18 @@ test("בלי סטטוס: הכרטיס מסביר מה חסר ולא נופל", a
   assert.deepStrictEqual(r, { empty: false, body: true });
   await ctx.close();
 });
+
+test("שולחנות עם פאנלים: לפי תמהיל השולחנות במפה ובסדר הביצוע, לא חלוקה אחידה ב-81", async () => {
+  const { page, ctx } = await openApp(browser, { mock: { seed: fixture } });
+  const r = await page.evaluate(() => ({
+    et: tablesForPanels(8910, "אתר הקמה עין תמר"),          // 104 שולחנות של 81 ועוד 18 של 27
+    uniform: Math.floor(8910 / 81),
+    half: tablesForPanels(81 + 40.5, "אתר הקמה עין תמר"),    // שולחן שלם וחצי מהבא
+    nomap: tablesForPanels(810, "אתר בלי מפה"),              // בלי מפה: 810 / 81
+  }));
+  assert.strictEqual(r.et, 122);
+  assert.strictEqual(r.uniform, 110);
+  assert.ok(Math.abs(r.half - 1.5) < 1e-9, String(r.half));
+  assert.strictEqual(r.nomap, 10);
+  await ctx.close();
+});

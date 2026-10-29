@@ -20,6 +20,15 @@ const fmt=n=>fmtN(Math.round(n));
 
 // המפה של האתר הנוכחי: לפי חלק משם האתר. null = אין מפה.
 export function siteMap(name){ const n=String(name||(SITE&&SITE.name)||""); for(const k in SITE_MAPS) if(n.includes(k)) return SITE_MAPS[k]; return null; }
+// כמה שולחנות מכסים N פאנלים מותקנים: לפי תמהיל השולחנות במפה ובסדר הביצוע (81 ל-IN27/EX27, 27 ל-EX9),
+// לא חלוקה אחידה ב-81 (8,910 פאנלים בעין תמר = 122 שולחנות, לא 110). בלי מפה: N חלקי פאנלים-לשולחן של האתר. יכול לצאת שבר.
+export function tablesForPanels(installed,name){
+  const n=Number(installed)||0, map=siteMap(name);
+  if(!map||!map.tables||!map.tables.length) return n/(shared.PANELS_PER_TABLE||81);
+  let left=n, k=0;
+  for(const t of map.tables){ const p=(map.types||{})[t[4]]||81; if(left<=0) break; if(left>=p){ left-=p; k++; } else { k+=left/p; left=0; } }
+  return left>0?k+left/(shared.PANELS_PER_TABLE||81):k;   // יותר פאנלים מהמפה: ההמשך לפי ברירת המחדל
+}
 
 // סדרות מצטברות מתוך פעילויות הסטטוס: {drill:{total,pts:[[iso,cum]...],last}, ...}. רק מה שקיים.
 export function siteBuildSeries(acts){

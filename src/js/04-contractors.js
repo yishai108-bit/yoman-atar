@@ -1,6 +1,7 @@
 import { $, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { curConcrete, curNotes, fmtM3, fmtN, holders, noteFlags, renderOverview, stockRows } from "./01-stock.js";
 import { missingConcrete, openIssue, openKitEditor, perOf, trucksText, typeLabel } from "./03-kit.js";
+import { tablesForPanels } from "./19-site-build.js";
 import { N, curPb, pbCalc, prevPb, ringHtml } from "./05-panels.js";
 import { SHOW_PRICES, showTab } from "./08-settings.js";
 import { foldSum } from "./12-ui-cleanup.js";
@@ -35,7 +36,7 @@ export function kitStats(){
   const sumSt=st=>prog.filter(p=>stageOf(p)===st).reduce((s,p)=>s+(Number(p.tables)||0),0);
   const doneOk=sumSt("ok"), donePan=Math.max(sumSt("pan"),doneOk), done=Math.max(sumSt("con"),donePan);   // שלבים מצטברים: קונסטרוקציה ⊇ פאנלים ⊇ אושרו
   const doneProxy=!prog.length;                 // אין דיווחי ביצוע → קירוב: הגבוה מבין שולחנות שנופקו ושולחנות עם פאנלים
-  const pbNow=shared.demoStock?null:curPb(); const panelTables=pbNow?Math.floor(N(pbNow.installed)/shared.PANELS_PER_TABLE):0;
+  const pbNow=shared.demoStock?null:curPb(); const panelTables=pbNow?Math.floor(tablesForPanels(N(pbNow.installed))):0;
   const proxySrc=doneProxy?(panelTables>declTables?"panels":"issues"):"reports";
   const doneEff=doneProxy?Math.max(declTables,panelTables):done;
   const remaining=Math.max(0,total-doneEff);

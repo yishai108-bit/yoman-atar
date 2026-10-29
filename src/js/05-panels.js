@@ -1,6 +1,7 @@
 import { $, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { CATS, fmtN, openMove, openNote, renderOverview, renderStock, stockRows } from "./01-stock.js";
 import { openIssue, openQuickCount } from "./03-kit.js";
+import { siteMap, tablesForPanels } from "./19-site-build.js";
 import { kitStats } from "./04-contractors.js";
 import { openOrder } from "./14-cba.js";
 export let curPb, prevPb, N, FAB_LABEL;
@@ -26,7 +27,7 @@ export function pbCalc(b,prev){
   const brokenSum=(b.brokenReasons||[]).reduce((s,r)=>s+N(r.qty),0);
   const toInstall=Math.max(0,N(b.required)-N(b.installed));
   const r={onSite,taken,takenPallets,spare,usable,gap,brokenSum,toInstall,pct:N(b.required)?N(b.installed)/N(b.required):0,
-    tablesImplied:N(b.installed)/shared.PANELS_PER_TABLE};
+    tablesImplied:tablesForPanels(N(b.installed))};
   if(prev){
     const days=Math.max(1,(b.ts-prev.ts)/86400000);
     r.days=days; r.dInst=N(b.installed)-N(prev.installed); r.dBroken=N(b.broken)-N(b.arrBroken)-N(prev.broken);
@@ -93,7 +94,7 @@ export function renderPanelBal(){
     if(c.expBroken!=null) L.push(row("צפי שבורים עד סוף ההתקנה ("+fmtN(c.toInstall)+" נותרו להתקין)","−"+fmtN(Math.round(c.expBroken)),"neg"));
     if(c.projected!=null) L.push(row("<b>ספייר צפוי בסוף</b>",(c.projected<0?"−":"+")+fmtN(Math.abs(Math.round(c.projected))),c.projected<0?"neg":""));
   }
-  L.push(row("שולחנות עם פאנלים (לפי "+shared.PANELS_PER_TABLE+" לשולחן)","~"+fmtN(Math.floor(c.tablesImplied))));
+  L.push(siteMap()?row("שולחנות עם פאנלים (לפי תמהיל השולחנות במפה, בסדר הביצוע)",fmtN(Math.floor(c.tablesImplied))):row("שולחנות עם פאנלים (לפי "+shared.PANELS_PER_TABLE+" לשולחן)","~"+fmtN(Math.floor(c.tablesImplied))));
   if(!shared.demoStock){ const KK=kitStats(); if(!KK.doneProxy&&KK.donePan) L.push(row("שולחנות עם פאנלים לפי דיווחי ביצוע"+(KK.donePan>Math.floor(c.tablesImplied)+2?" · יותר מהמאזן: לעדכן מאזן":""),fmtN(KK.donePan))); }
   (b.brokenReasons||[]).forEach(r=>{ if(N(r.qty)) L.push(row("שבורים: "+esc(r.reason),fmtN(N(r.qty)),"neg")); });
   if(b.note) L.push(row(esc(b.note),""));
