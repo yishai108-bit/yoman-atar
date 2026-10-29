@@ -4,6 +4,7 @@ import { SITE, csvOf, loadScript, saveFile } from "./08-settings.js";
 import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
+import { renderSiteBuild } from "./19-site-build.js";
 export let isWorkday;
    // א׳–ה׳
 export function statusHolidays(){ const h=new Set(); shared.STATUS.forEach(a=>(a.daily||[]).forEach(d=>{ if(d.holiday) h.add(d.date); })); return h; }
@@ -23,6 +24,7 @@ export function statusCalc(a,hol){
 export function renderStatus(){
   const el=$("#statusList"); if(!el) return; el.innerHTML="";
   const A=(shared.demoStock?[]:shared.STATUS).slice().sort((a,b)=>(a.order||0)-(b.order||0)); const hol=statusHolidays();
+  renderSiteBuild();
   if(!A.length){ foldSum("status",""); el.innerHTML='<div class="empty" style="padding:16px">אין עדיין סטטוס. ייבא את קובץ הסטטוס של החברה (xlsx) בהגדרות או בכפתור למטה.</div>'; return; }
   let behind=0, doneN=0;
   A.forEach(a=>{ const c=statusCalc(a,hol); if(c.remaining===0) doneN++; else if(c.reqNow===null||(c.reqOrig&&c.reqNow>c.reqOrig*1.25)) behind++;

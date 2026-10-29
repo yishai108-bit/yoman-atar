@@ -115,11 +115,11 @@ function renderTodayTip() {
   };
   box.hidden = false;
 }
-function __init$i() {
+function __init$j() {
 }
 const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$i,
+  __init: __init$j,
   foldSum,
   renderTodayTip,
   tidyUI
@@ -552,8 +552,8 @@ function renderConSummary() {
       machines.set(w.machine, m);
     }
   });
-  const P = [...people.values()].sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name, "he")), M = [...machines.values()].sort((a, b) => b.days.size - a.days.size);
-  const manDays = P.reduce((s, p) => s + p.days.size, 0), machDays = M.reduce((s, m) => s + m.days.size, 0), hrs = rows.reduce((s, w) => s + (Number(w.hours) || 0), 0);
+  const P = [...people.values()].sort((a, b) => b.days.size - a.days.size || a.name.localeCompare(b.name, "he")), M2 = [...machines.values()].sort((a, b) => b.days.size - a.days.size);
+  const manDays = P.reduce((s, p) => s + p.days.size, 0), machDays = M2.reduce((s, m) => s + m.days.size, 0), hrs = rows.reduce((s, w) => s + (Number(w.hours) || 0), 0);
   foldSum("consum", rows.length ? csCon + " · " + manDays + " ימי עבודה" : "");
   $("#csStats").innerHTML = '<div class="stat"><div class="v num">' + fmtN(days.size) + '</div><div class="k">ימים באתר</div></div><div class="stat"><div class="v num">' + fmtN(manDays) + '</div><div class="k">ימי עובד</div></div><div class="stat"><div class="v num">' + fmtN(machDays) + '</div><div class="k">ימי כלי צמ״ה</div></div>';
   box.innerHTML = "";
@@ -567,9 +567,9 @@ function renderConSummary() {
     h.innerHTML = '<i style="background:var(--pv)"></i>' + esc(t) + "<span>" + n + "</span>";
     box.appendChild(h);
   };
-  if (M.length) {
-    head("כלי צמ״ה", M.length);
-    M.forEach((m) => {
+  if (M2.length) {
+    head("כלי צמ״ה", M2.length);
+    M2.forEach((m) => {
       const d = document.createElement("div");
       d.className = "holder";
       d.innerHTML = '<div class="who">' + esc(m.machine) + '<div class="what">' + esc([...m.ops].join(", ")) + (m.hours ? " · " + fmtN(m.hours) + " שעות" : "") + '</div></div><div class="q num">' + fmtN(m.days.size) + " <small>ימים</small></div>";
@@ -614,7 +614,7 @@ async function registerCrewToday() {
   logAct("daylog", "add", "נרשם הצוות ליום " + isoText(shared.dayISO) + ": " + src.length + " אנשים", "");
   renderDay();
 }
-function __init$h() {
+function __init$i() {
   shared.daylog = [];
   shared.dayISO = "";
   shared.CREW = [];
@@ -690,7 +690,7 @@ const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get LATE() {
     return LATE;
   },
-  __init: __init$h,
+  __init: __init$i,
   conRows,
   copyCrew,
   get csCon() {
@@ -718,6 +718,882 @@ const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   renderConSummary,
   renderCrew,
   renderDay
+}, Symbol.toStringTag, { value: "Module" }));
+const SITE_MAPS = {
+  "עין תמר": {
+    w: 1100,
+    h: 639,
+    start: "2026-05-01",
+    types: { 1: 81, 2: 81, 3: 27 },
+    source: "מפת הקונסטרוקציה EIT_M_90 (145 IN27, 71 EX27, 42 EX9)",
+    tables: [
+      [135, 31.2, 81.2, 13.9, 2],
+      [217.2, 31.2, 81.2, 13.9, 2],
+      [299.5, 31.2, 81.2, 13.9, 2],
+      [381.7, 31.2, 81.2, 13.9, 2],
+      [465.5, 31.2, 25.5, 13.9, 3],
+      [493.6, 31.2, 25.8, 13.9, 3],
+      [539.4, 31.2, 81.3, 13.9, 2],
+      [621.8, 31.2, 81.3, 13.9, 2],
+      [704.1, 31.2, 81.3, 13.9, 2],
+      [786.5, 31.2, 81.3, 13.9, 2],
+      [868.8, 31.2, 81.3, 13.9, 2],
+      [951.2, 31.2, 81.3, 13.9, 2],
+      [1035.1, 31.2, 25.8, 13.9, 3],
+      [77, 53.1, 81.3, 13.9, 2],
+      [159.4, 53.1, 81.3, 13.9, 2],
+      [241.7, 53.1, 81.3, 13.9, 2],
+      [324, 53.1, 81.3, 13.9, 2],
+      [406.4, 53.1, 81.3, 13.9, 2],
+      [490.2, 53.1, 25.5, 13.9, 3],
+      [536.1, 53.1, 81.4, 13.9, 2],
+      [618.5, 53.1, 81.4, 13.9, 2],
+      [700.9, 53.1, 81.4, 13.9, 2],
+      [783.3, 53.1, 81.4, 13.9, 2],
+      [865.7, 53.1, 81.4, 13.9, 2],
+      [948.1, 53.1, 81.4, 13.9, 2],
+      [1032, 53.1, 25.5, 13.9, 3],
+      [73.9, 75.2, 80.1, 13.9, 2],
+      [156.6, 75.2, 81.2, 13.9, 1],
+      [238.9, 75.2, 81.2, 13.9, 1],
+      [321.1, 75.2, 81.2, 13.9, 1],
+      [403.4, 75.2, 81.2, 13.9, 1],
+      [487.1, 75.2, 25.8, 13.9, 3],
+      [533, 75.2, 81.3, 13.9, 1],
+      [615.3, 75.2, 81.3, 13.9, 1],
+      [697.7, 75.2, 81.3, 13.9, 1],
+      [780, 75.2, 81.3, 13.9, 1],
+      [862.3, 75.2, 81.3, 13.9, 1],
+      [946.2, 75.2, 80.1, 13.9, 2],
+      [1028.9, 75.2, 25.5, 13.9, 3],
+      [70.8, 97.1, 80.1, 13.9, 2],
+      [153.5, 97.1, 81.2, 13.9, 1],
+      [235.8, 97.1, 81.2, 13.9, 1],
+      [318, 97.1, 81.2, 13.9, 1],
+      [400.3, 97.1, 81.2, 13.9, 1],
+      [484.1, 97.1, 25.8, 13.9, 3],
+      [529.9, 97.1, 81.3, 13.9, 1],
+      [612.2, 97.1, 81.3, 13.9, 1],
+      [694.6, 97.1, 81.3, 13.9, 1],
+      [776.9, 97.1, 81.3, 13.9, 1],
+      [859.2, 97.1, 81.3, 13.9, 1],
+      [943.1, 97.1, 80.1, 13.9, 2],
+      [67.8, 119, 80.4, 14.2, 2],
+      [150.4, 119, 81.2, 14.2, 1],
+      [232.7, 119, 81.2, 14.2, 1],
+      [314.9, 119, 81.2, 14.2, 1],
+      [397.2, 119, 81.2, 14.2, 1],
+      [481, 119, 25.8, 14.2, 3],
+      [526.8, 119, 81.3, 14.2, 1],
+      [609.1, 119, 81.3, 14.2, 1],
+      [691.5, 119, 81.3, 14.2, 1],
+      [773.8, 119, 81.3, 14.2, 1],
+      [856.1, 119, 81.3, 14.2, 1],
+      [940, 119, 80.1, 14.2, 2],
+      [64.9, 141.2, 80.1, 13.9, 2],
+      [147.4, 141.2, 81.2, 13.9, 1],
+      [229.6, 141.2, 81.2, 13.9, 1],
+      [311.8, 141.2, 81.2, 13.9, 1],
+      [394.1, 141.2, 81.2, 13.9, 1],
+      [477.9, 141.2, 25.8, 13.9, 3],
+      [523.7, 141.2, 81.3, 13.9, 1],
+      [606.1, 141.2, 81.3, 13.9, 1],
+      [688.4, 141.2, 81.3, 13.9, 1],
+      [770.7, 141.2, 81.3, 13.9, 1],
+      [853.1, 141.2, 81.3, 13.9, 1],
+      [936.7, 141.2, 80.1, 13.9, 2],
+      [61.8, 163.3, 80.1, 13.9, 2],
+      [144.3, 163.3, 81.3, 13.9, 1],
+      [226.6, 163.3, 81.3, 13.9, 1],
+      [308.9, 163.3, 81.3, 13.9, 1],
+      [391.2, 163.3, 81.3, 13.9, 1],
+      [474.8, 163.3, 25.8, 13.9, 3],
+      [520.6, 163.3, 81.2, 13.9, 1],
+      [602.9, 163.3, 81.2, 13.9, 1],
+      [685.1, 163.3, 81.2, 13.9, 1],
+      [767.4, 163.3, 81.2, 13.9, 1],
+      [850.9, 163.3, 80.1, 13.9, 2],
+      [933.6, 163.3, 80.1, 13.9, 2],
+      [58.7, 185.2, 80.1, 13.9, 2],
+      [141.4, 185.2, 81.2, 13.9, 1],
+      [223.7, 185.2, 81.2, 13.9, 1],
+      [305.9, 185.2, 81.2, 13.9, 1],
+      [388.2, 185.2, 81.2, 13.9, 1],
+      [471.7, 185.2, 25.8, 13.9, 3],
+      [517.3, 185.2, 81.3, 13.9, 1],
+      [599.6, 185.2, 81.3, 13.9, 1],
+      [681.9, 185.2, 81.3, 13.9, 1],
+      [764.2, 185.2, 81.3, 13.9, 1],
+      [847.8, 185.2, 80.1, 13.9, 2],
+      [930.5, 185.2, 26.4, 13.9, 3],
+      [957.9, 185.2, 26.4, 13.9, 3],
+      [55.6, 207.4, 80.1, 13.9, 2],
+      [138.3, 207.4, 81.2, 13.9, 1],
+      [220.6, 207.4, 81.2, 13.9, 1],
+      [302.8, 207.4, 81.2, 13.9, 1],
+      [385.1, 207.4, 81.2, 13.9, 1],
+      [468.6, 207.4, 25.8, 13.9, 3],
+      [514.2, 207.4, 81.2, 13.9, 1],
+      [596.4, 207.4, 81.2, 13.9, 1],
+      [678.7, 207.4, 81.2, 13.9, 1],
+      [760.9, 207.4, 81.2, 13.9, 1],
+      [844.7, 207.4, 80.1, 13.9, 2],
+      [927.4, 207.4, 26.4, 13.9, 3],
+      [954.8, 207.4, 26.4, 13.9, 3],
+      [52.6, 229.3, 80.1, 14.2, 2],
+      [135.2, 229.3, 81.2, 14.2, 1],
+      [217.5, 229.3, 81.2, 14.2, 1],
+      [299.7, 229.3, 81.2, 14.2, 1],
+      [382, 229.3, 81.2, 14.2, 1],
+      [465.8, 229.3, 25.5, 14.2, 3],
+      [511.1, 229.3, 81.2, 14.2, 1],
+      [593.3, 229.3, 81.2, 14.2, 1],
+      [675.6, 229.3, 81.2, 14.2, 1],
+      [757.8, 229.3, 81.2, 14.2, 1],
+      [841.6, 229.3, 80.1, 14.2, 2],
+      [924.3, 229.3, 26.4, 14.2, 3],
+      [951.7, 229.3, 26.4, 14.2, 3],
+      [77.8, 251.4, 80.1, 13.9, 2],
+      [160.5, 251.4, 81.2, 13.9, 1],
+      [242.7, 251.4, 81.2, 13.9, 1],
+      [325, 251.4, 81.2, 13.9, 1],
+      [407.2, 251.4, 81.2, 13.9, 1],
+      [508, 251.4, 81.2, 13.9, 1],
+      [590.3, 251.4, 81.2, 13.9, 1],
+      [672.5, 251.4, 81.2, 13.9, 1],
+      [754.7, 251.4, 81.2, 13.9, 1],
+      [838.5, 251.4, 80.1, 13.9, 2],
+      [921.2, 251.4, 25.5, 13.9, 3],
+      [46.4, 273.3, 80.1, 14.2, 2],
+      [129.1, 273.3, 81.2, 14.2, 1],
+      [211.3, 273.3, 81.2, 14.2, 1],
+      [293.5, 273.3, 81.2, 14.2, 1],
+      [375.8, 273.3, 81.2, 14.2, 1],
+      [459.6, 273.3, 25.8, 14.2, 3],
+      [504.9, 273.3, 81.2, 14.2, 1],
+      [587.2, 273.3, 81.2, 14.2, 1],
+      [669.4, 273.3, 81.2, 14.2, 1],
+      [751.6, 273.3, 81.2, 14.2, 1],
+      [835.4, 273.3, 80.1, 14.2, 2],
+      [43.3, 295.5, 80.1, 13.9, 2],
+      [126, 295.5, 81.2, 13.9, 1],
+      [208.2, 295.5, 81.2, 13.9, 1],
+      [290.5, 295.5, 81.2, 13.9, 1],
+      [372.7, 295.5, 81.2, 13.9, 1],
+      [456.5, 295.5, 25.8, 13.9, 3],
+      [501.8, 295.5, 81.2, 13.9, 1],
+      [584.1, 295.5, 81.2, 13.9, 1],
+      [666.3, 295.5, 81.2, 13.9, 1],
+      [748.6, 295.5, 81.2, 13.9, 1],
+      [832.3, 295.5, 80.1, 13.9, 2],
+      [914.8, 295.5, 25.8, 13.9, 3],
+      [40.2, 317.6, 80.1, 13.9, 2],
+      [122.9, 317.6, 81.2, 13.9, 1],
+      [205.1, 317.6, 81.2, 13.9, 1],
+      [287.4, 317.6, 81.2, 13.9, 1],
+      [369.6, 317.6, 81.2, 13.9, 1],
+      [453.4, 317.6, 25.8, 13.9, 3],
+      [498.5, 317.6, 81.3, 13.9, 1],
+      [580.8, 317.6, 81.3, 13.9, 1],
+      [663.1, 317.6, 81.3, 13.9, 1],
+      [745.4, 317.6, 81.3, 13.9, 1],
+      [829, 317.6, 80.1, 13.9, 2],
+      [911.7, 317.6, 25.8, 13.9, 3],
+      [37.1, 339.5, 80.4, 13.9, 2],
+      [119.8, 339.5, 81.2, 13.9, 1],
+      [202, 339.5, 81.2, 13.9, 1],
+      [284.3, 339.5, 81.2, 13.9, 1],
+      [366.5, 339.5, 81.2, 13.9, 1],
+      [450.3, 339.5, 25.8, 13.9, 3],
+      [495.4, 339.5, 81.2, 13.9, 1],
+      [577.6, 339.5, 81.2, 13.9, 1],
+      [659.9, 339.5, 81.2, 13.9, 1],
+      [742.1, 339.5, 81.2, 13.9, 1],
+      [825.9, 339.5, 80.1, 13.9, 2],
+      [34.3, 361.7, 80.1, 13.9, 2],
+      [116.7, 361.7, 81.2, 13.9, 1],
+      [198.9, 361.7, 81.2, 13.9, 1],
+      [281.2, 361.7, 81.2, 13.9, 1],
+      [363.4, 361.7, 81.2, 13.9, 1],
+      [447.2, 361.7, 25.8, 13.9, 3],
+      [492.3, 361.7, 81.2, 13.9, 1],
+      [574.5, 361.7, 81.2, 13.9, 1],
+      [656.8, 361.7, 81.2, 13.9, 1],
+      [739, 361.7, 81.2, 13.9, 1],
+      [822.8, 361.7, 80.1, 13.9, 2],
+      [31.2, 383.6, 80.1, 13.9, 2],
+      [113.6, 383.6, 81.3, 13.9, 1],
+      [195.9, 383.6, 81.3, 13.9, 1],
+      [278.2, 383.6, 81.3, 13.9, 1],
+      [360.5, 383.6, 81.3, 13.9, 1],
+      [444.1, 383.6, 25.8, 13.9, 3],
+      [489.2, 383.6, 81.2, 13.9, 1],
+      [571.4, 383.6, 81.2, 13.9, 1],
+      [653.7, 383.6, 81.2, 13.9, 1],
+      [735.9, 383.6, 81.2, 13.9, 1],
+      [819.7, 383.6, 80.1, 13.9, 2],
+      [28.1, 405.5, 80.1, 14.2, 2],
+      [110.8, 405.5, 81.2, 14.2, 1],
+      [193, 405.5, 81.2, 14.2, 1],
+      [275.3, 405.5, 81.2, 14.2, 1],
+      [357.5, 405.5, 81.2, 14.2, 1],
+      [441, 405.5, 25.8, 14.2, 3],
+      [486.1, 405.5, 81.2, 14.2, 1],
+      [568.4, 405.5, 81.2, 14.2, 1],
+      [650.6, 405.5, 81.2, 14.2, 1],
+      [732.8, 405.5, 81.2, 14.2, 1],
+      [816.6, 405.5, 79.9, 14.2, 2],
+      [25, 427.6, 81.3, 13.9, 2],
+      [107.3, 427.6, 81.3, 13.9, 2],
+      [189.7, 427.6, 81.3, 13.9, 2],
+      [272, 427.6, 81.3, 13.9, 2],
+      [354.3, 427.6, 81.3, 13.9, 2],
+      [437.9, 427.6, 25.8, 13.9, 3],
+      [483, 427.6, 81.2, 13.9, 1],
+      [565.3, 427.6, 81.2, 13.9, 1],
+      [647.5, 427.6, 81.2, 13.9, 1],
+      [729.7, 427.6, 81.2, 13.9, 1],
+      [813.3, 427.6, 26.5, 13.9, 3],
+      [840.8, 427.6, 26.5, 13.9, 3],
+      [48.7, 449.5, 81.3, 14.2, 2],
+      [131, 449.5, 81.3, 14.2, 2],
+      [213.4, 449.5, 81.3, 14.2, 2],
+      [295.7, 449.5, 81.3, 14.2, 2],
+      [378, 449.5, 81.3, 14.2, 2],
+      [479.7, 449.5, 80.1, 14.2, 2],
+      [562.4, 449.5, 81.1, 14.2, 1],
+      [644.5, 449.5, 81.1, 14.2, 1],
+      [726.7, 449.5, 81.1, 14.2, 1],
+      [810.2, 449.5, 26.4, 14.2, 3],
+      [837.6, 449.5, 26.4, 14.2, 3],
+      [402.1, 471.9, 26.5, 13.7, 3],
+      [429.7, 471.9, 26.5, 13.7, 3],
+      [476.6, 471.9, 80.1, 13.7, 2],
+      [559.3, 471.9, 81.1, 13.7, 1],
+      [641.4, 471.9, 81.1, 13.7, 1],
+      [723.5, 471.9, 81.1, 13.7, 1],
+      [807.1, 471.9, 26.4, 13.7, 3],
+      [834.5, 471.9, 26.4, 13.7, 3],
+      [473.5, 493.8, 80.1, 13.7, 2],
+      [556.2, 493.8, 81.1, 13.7, 1],
+      [638.3, 493.8, 81.1, 13.7, 1],
+      [720.4, 493.8, 81.1, 13.7, 1],
+      [804, 493.8, 26.4, 13.7, 3],
+      [831.4, 493.8, 26.4, 13.7, 3],
+      [489.2, 516, 81.3, 13.7, 2],
+      [571.5, 516, 81.3, 13.7, 2],
+      [653.8, 516, 81.3, 13.7, 2],
+      [736.1, 516, 81.3, 13.7, 2],
+      [819.7, 516, 25.8, 13.7, 3]
+    ],
+    road: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAiYAAAFAAQAAAACg8IoxAAAF+UlEQVR42u1cvY7cNhAekouTisCrdDYQRHoEl64sPUiKPILLFMadgrxUihQKsMWVeYJABlJcKRhXyAZ3mULalbSrH2rmA05BzM7r3e++meF8wyFFEf3vRuyuR337JTWP4SY+1sN/6xmIvZsAIXVFSa2lMWrJBJfA+YCQc852KMY551x1/s+0R/eounE3AmS6n90Goh3FJNVunM6fPoxC2Flr0sv38s6+m1Euu8UMvmluMbxnZXrxZ+CGzqnWze42FPtakiOBbSP9JEH5qhuUqJSgOCJDRPRWFaK8/7Pxs0w89o1FQhTKNUDIoobLSYqD4FJlRERkhd4tNAAFY9E3lFmUTAhSaCJSv2/Boqipk5UMJYZwSSAoDoKSkSYiLfRLI0+mlKFYiEUNilQwc9Kea6+5USP8YiqEX3YNyg6jDDKLwhIS6QKBErWLoUIoDAguCQQlRdUAIiKVC5ORNBG92kBVU3Y7FVbXSC6RVBjOU1jSTBQIi0JMtYdwOXs1kCYjaSJ6vYFZd+aSQGbee6kwbCUbFYZLjUDRmEhXhKwB34m8W7RcPkhQXkH8EhXbmXVJDo2RqJ2+P1skQjkNV70SQzTEHVIUVRM1+1J//CNACQuAX0zVWqTEwkBayGWHyYASgRJCuEQFIbNRtM2QQixyFxQJl+yM4nKEMIgaYYvwi7KEi7QQRddYLpLWvm0CtLi1B1gUlhC/FITNacEGQXDxy52AwbsLSiiWF9IXD71gpO9pM9nYCsMmuLTCQFra2p/HXrDu6OTA8FHuOr/8IE9BmXdDzNyFcOmF90c+StxZlLz03E0gKA6CkkFQTpAtD9txySAogjTqRfr00vOlRqBoDJcKgbLDcClvXcTQ/aKTbntgC+abTusKyHzho0SE8EsMiVECQXEdiqC1z3pc+H45QVpYC1odIlDAXAxR/cj98fMjwLum6iwSnNpXCL/saDuRDssNzbqiQ9mx2+m+1PFPp2N4jL6wf/uph8I/VXsPsSiDoJzGii1fpES10SIsUpgMqBEommg7OV31UJ7lgklacKpWjuY3d20o8wsEJSKERTEk0gl+1rEtchAuGQRl0CmytzFtn8s7CApA6mCRZrf2dR/lxP77EIsqBMoOw6VEoITwSBv6+zPvl6+/7yvmTxA23IYvhvglgaA4CEoGQRnkn+J61w641IA48y2yCJSr7Ym3TJgPU2LDa4OJSLM3TiqEXwbnrhoiMJp9al8iLAoxs65AoETDuDPb6RhiUTKg4qq/eFw+9bmYn+VSR3qHmXUIwWRvVlgIlyuUBCB1bC4D0dcWERXUSjWSCybpE+9BhB3GooEUaMdLgfBqXdfeIF2L8maodbxbE9cxSVliF195t2SduCdXKE9m5R3l0VlnifbrHyW7uYU1vNbtOe5vHOV/BbwbH28+GdxY9/TRmBTEnjfkl9b9y+89oJn17TkblRoUGMkliNTbJJ9jEbNokqmW9eWokqU9jMpHpZ4WHgvzFKUFk64q6pRiLpgU+lX7p1VPuk2hfJnvDz77WUTZ7M0x32dmglmt8N2eU7PZnXqupdysSc53RfY4V2IyX5Svc7cy/LehUrtO6sbHXGXwR1Ezer6iCX+wnoLJNWlFNZ02yaypyZMm7ddUwP3Unei4WNFNPE89ZryuG5owyaxbG8RdXYp5L3Zp/mg9UvFu31Izv9495kE+lsUrm4f4Qmbt226GE691pLp4aLVbemSU7SbR8upmikyXf8Yx7ue37zHqMkc5RmNmGjK97QjH2eFryPTK+0PF6MoPFOTD8s5aqqeuHhwLjrQfHr3agYJ8UPtZKMeMflk4TfHpGw8U/JZP7Ej5oxyzwbKfuQVFZpCAMXP/5Zj1G8WEu4tz6E8Yx0U5ZvMrXM/e/kAmJ/novaLsI5tLm01AMqJrf5c2t0aQUSKUMxnhW3RaMkKUswJXiDAFQpSGjBSlVWDpUZFxLr+8Ik5G5kGMYpz71VlANjkAium/U1BEBoBinHMQnRHdzezIlBAyiHNOA3EMpQjHkIFwEb9MsCVD38Z/b/wLt3mZXdU2kWwAAAAASUVORK5CYII="
+  }
+};
+const DAY = 864e5, SPLIT = 0.2;
+const STAGES$1 = [["drill", /קידוח/, "קידוחים", "#9A9EA1", "עמודים"], ["cast", /יציק/, "יציקות", "#3F4447", "עמודים"], ["tables", /קונסטרוקצ|שולחנ/, "שולחנות", "#FFAA00", "שולחנות"], ["panels", /פאנל/, "פאנלים מותקנים", "#3199CC", "פאנלים"]];
+const MONTHS = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
+const dt = (iso) => {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+};
+const ddmm = (t) => {
+  const d = new Date(t);
+  return d.getUTCDate() + "." + (d.getUTCMonth() + 1);
+};
+const fmt = (n) => fmtN(Math.round(n));
+function siteMap(name) {
+  const n = String(name || SITE && SITE.name || "");
+  for (const k in SITE_MAPS) if (n.includes(k)) return SITE_MAPS[k];
+  return null;
+}
+function siteBuildSeries(acts) {
+  const out = {};
+  for (const [k, re] of STAGES$1) {
+    const a = (acts || []).find((x) => re.test(x.name || "") && !/כלונס|TML/i.test(x.name || ""));
+    if (!a) continue;
+    const daily = (a.daily || []).filter((d) => Number(d.actual) && d.date).slice().sort((x, y) => x.date < y.date ? -1 : 1);
+    let c = 0;
+    out[k] = { total: Number(a.total) || 0, pts: daily.map((d) => {
+      c += Number(d.actual);
+      return [d.date, c];
+    }), last: daily.length ? daily[daily.length - 1].date : "" };
+  }
+  return out;
+}
+function model(map, ser, todayIso) {
+  const T = (map ? map.tables : []).map(([x, y, w, h, ty]) => ({ x, y, w, h, ty, pan: (map.types || {})[ty] || 81 }));
+  const sumPan = T.reduce((a, b) => a + b.pan, 0);
+  const TOT = {};
+  TOT.tables = ser.tables && ser.tables.total || T.length || 0;
+  TOT.panels = ser.panels && ser.panels.total || sumPan || 0;
+  TOT.drill = ser.drill && ser.drill.total || ser.cast && ser.cast.total || TOT.tables * 18;
+  TOT.cast = ser.cast && ser.cast.total || TOT.drill;
+  T.forEach((b) => {
+    b.piles = sumPan ? b.pan * TOT.drill / sumPan : 0;
+  });
+  const firsts = Object.values(ser).map((s) => s.pts[0] && dt(s.pts[0][0])).filter(Boolean);
+  const dEnd = dt(todayIso) + DAY, first = firsts.length ? Math.min(...firsts) : dEnd - 30 * DAY;
+  let d0 = map && map.start ? dt(map.start) : first - 7 * DAY;
+  if (d0 >= first) d0 = first - 7 * DAY;
+  const dMid = first - d0 > 45 * DAY ? Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth(), 1) : d0;
+  const split = dMid > d0 ? SPLIT : 0;
+  const t2u = (t) => split && t <= dMid ? (t - d0) / (dMid - d0) * split : split + (t - dMid) / (dEnd - dMid) * (1 - split);
+  const u2t = (u2) => split && u2 <= split ? d0 + u2 / split * (dMid - d0) : dMid + (u2 - split) / (1 - split) * (dEnd - dMid);
+  const PTS = {};
+  for (const k in ser) {
+    const p = ser[k].pts;
+    if (!p.length) continue;
+    PTS[k] = [[dt(p[0][0]), 0], ...p.map(([s, c]) => [Math.min(dEnd, dt(s) + DAY), c])];
+  }
+  const val = (k, t) => {
+    const p = PTS[k];
+    if (!p || t <= p[0][0]) return 0;
+    for (let i = 1; i < p.length; i++) {
+      if (t <= p[i][0]) {
+        const a = p[i - 1], b = p[i];
+        return a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0]);
+      }
+    }
+    return p[p.length - 1][1];
+  };
+  const lastRec = (k, t) => {
+    let s = "";
+    for (const [d] of ser[k] ? ser[k].pts : []) {
+      if (dt(d) <= t) s = d;
+    }
+    return s;
+  };
+  const alloc = (units, key) => {
+    const f = new Float32Array(T.length);
+    let left = units;
+    for (let i = 0; i < T.length && left > 0; i++) {
+      const need = key(T[i]);
+      if (!need) continue;
+      const g = Math.min(need, left);
+      f[i] = g / need;
+      left -= g;
+    }
+    return f;
+  };
+  const state = (u2) => {
+    const t = u2t(u2);
+    const v = { drill: val("drill", t), cast: val("cast", t), tables: val("tables", t), panels: val("panels", t) };
+    const panF = alloc(v.panels, (x) => x.pan);
+    const panTables = panF.reduce((a, b) => a + b, 0);
+    const strF = alloc(Math.max(v.tables, panTables), () => 1);
+    const strPiles = strF.reduce((a, f, i) => a + f * T[i].piles, 0);
+    const castF = alloc(Math.max(v.cast, strPiles), (x) => x.piles);
+    const castPiles = castF.reduce((a, f, i) => a + f * T[i].piles, 0);
+    const drillF = alloc(Math.max(v.drill, castPiles), (x) => x.piles);
+    return { t, v, panF, strF, castF, drillF, today: u2 > 0.999 };
+  };
+  const ms = [];
+  const firstOf = { drill: "קידוח ראשון בשדה", cast: "יציקה ראשונה", tables: "השולחנות הראשונים", panels: "הפאנלים הראשונים מותקנים" };
+  for (const k in firstOf) {
+    const p = ser[k] && ser[k].pts[0];
+    if (p) ms.push([dt(p[0]), firstOf[k]]);
+  }
+  if (ser.panels && TOT.panels) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const q of [0.25, 0.5, 0.75, 1]) {
+      const p = ser.panels.pts.find((x) => x[1] >= TOT.panels * q);
+      if (p && !seen.has(p[0])) {
+        seen.add(p[0]);
+        ms.push([dt(p[0]), Math.round(p[1] / TOT.panels * 100) + "% מהפאנלים: " + fmt(p[1])]);
+      }
+    }
+  }
+  if (ser.tables && TOT.tables) {
+    const p = ser.tables.pts.find((x) => x[1] >= TOT.tables);
+    if (p) ms.push([dt(p[0]), "כל השולחנות הורכבו"]);
+  }
+  ms.sort((a, b) => b[0] - a[0]);
+  return { T, TOT, d0, dMid, dEnd, t2u, u2t, val, lastRec, state, ms, hasMap: !!map && T.length > 0, map };
+}
+let M = null, u = 1, vel = 0, target = 1, dragging = false, raf = 0, playing = null, built = false, lastDay = -1, hist = [];
+let cv, ctx, roadImg = null, roadTint = null, scale = 1, px = 1, SE = [];
+const K = 0.6, TOP = 26, LIFT = 7, FRONT = 2.5;
+const reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clamp = (x) => Math.max(0, Math.min(1, x));
+function siteBuildState(uu) {
+  return M ? M.state(uu == null ? u : uu) : null;
+}
+function buildDom() {
+  const box = $("#sbBody");
+  if (!box || built) return;
+  built = true;
+  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="sbBig">0%</span><span class="sb-cap">מהפאנלים מותקנים</span></div><div class="sb-sub" id="sbSub"></div><div class="sb-ph"><span class="sb-date num" id="sbDate"></span><span class="sb-today" id="sbToday">היום</span></div><div class="sb-cvw" id="sbCvw"><canvas id="sbCv" aria-label="שרטוט האתר: השולחנות לפי מפת הקונסטרוקציה"></canvas></div><div class="sb-keys"><span><i style="border-top:1px dashed #B9BBBC;height:0;border-radius:0"></i>מתוכנן</span><span><i style="width:7px;height:7px;border:1px solid #9A9EA1;background:#fff"></i>נקדח</span><span><i style="width:6px;height:6px;background:#3F4447"></i>עמוד יצוק</span><span><i style="border:1px solid #3F4447;background:#fff;transform:skewX(-30deg)"></i>קונסטרוקציה</span><span><i style="border:1px solid #1E7FB0;background:#D3E9F5;transform:skewX(-30deg)"></i>פאנלים</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>עובדים כאן</span></div><div class="sb-rail" id="sbRail" tabindex="0" role="slider" aria-label="ציר זמן"><div class="track"></div><div class="fill" id="sbFill"></div><div id="sbTicks"></div><div class="knob" id="sbKnob"></div></div><div class="sb-ctrl"><span class="hint">היום משמאל. גררו ימינה כדי לחזור להתחלה.</span><div class="sb-btns"><button class="sb-go" id="sbPlay" type="button">הפעלה מההתחלה</button><button class="ghost" id="sbBack" type="button" aria-label="שבוע אחורה">אחורה</button><button class="ghost" id="sbFwd" type="button" aria-label="שבוע קדימה">קדימה</button></div></div><div class="sb-stats" id="sbStats"></div><div class="sb-nomap" id="sbNoMap" hidden></div><ul class="sb-ms" id="sbMs"></ul><div class="note" id="sbNote" style="margin:8px 0 0"></div>';
+  cv = $("#sbCv");
+  ctx = cv.getContext("2d");
+  roadTint = document.createElement("canvas");
+  SE = STAGES$1.map(([k, re, l, c, unit]) => {
+    const el = document.createElement("div");
+    el.className = "sb-stat";
+    el.innerHTML = '<span class="k"><i style="background:' + c + '"></i>' + l + '</span><span class="v num">0</span><span class="of">מתוך <span class="num"></span> ' + unit + '</span><div class="bar"><span style="background:' + c + '"></span></div><span class="asof"></span>';
+    $("#sbStats").appendChild(el);
+    return { k, el, v: el.querySelector(".v"), of: el.querySelector(".of .num"), b: el.querySelector(".bar span"), a: el.querySelector(".asof") };
+  });
+  const rail = $("#sbRail");
+  const railU = (x) => {
+    const r = rail.getBoundingClientRect();
+    return (r.right - x) / r.width;
+  };
+  rail.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    rail.focus({ preventScroll: true });
+    stopPlay();
+    dragging = true;
+    hist = [];
+    rail.setPointerCapture(e.pointerId);
+    track(railU(e.clientX));
+    kick();
+  });
+  rail.addEventListener("pointermove", (e) => {
+    if (dragging && rail.hasPointerCapture(e.pointerId)) track(railU(e.clientX));
+  });
+  rail.addEventListener("pointerup", endDrag);
+  rail.addEventListener("pointercancel", endDrag);
+  rail.addEventListener("keydown", (e) => {
+    if (!M) return;
+    const t = M.u2t(target);
+    if (e.key === "ArrowLeft") {
+      goT(t + 7 * DAY);
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      goT(t - 7 * DAY);
+      e.preventDefault();
+    } else if (e.key === "Home") {
+      goT(M.dEnd);
+      e.preventDefault();
+    } else if (e.key === "End") {
+      goT(M.d0);
+      e.preventDefault();
+    }
+  });
+  const cvw = $("#sbCvw");
+  let sx = 0, sy = 0, su = 0, cd = false;
+  cvw.addEventListener("pointerdown", (e) => {
+    sx = e.clientX;
+    sy = e.clientY;
+    su = u;
+    cd = false;
+    cvw.setPointerCapture(e.pointerId);
+  });
+  cvw.addEventListener("pointermove", (e) => {
+    if (!cvw.hasPointerCapture(e.pointerId)) return;
+    const dx = e.clientX - sx;
+    if (!cd) {
+      if (Math.abs(dx) < 6) return;
+      if (Math.abs(e.clientY - sy) > Math.abs(dx)) {
+        cvw.releasePointerCapture(e.pointerId);
+        return;
+      }
+      cd = true;
+      stopPlay();
+      dragging = true;
+      hist = [];
+      kick();
+    }
+    track(su - dx / cvw.clientWidth * 0.9);
+  });
+  cvw.addEventListener("pointerup", () => {
+    if (cd) endDrag();
+    cd = false;
+  });
+  cvw.addEventListener("pointercancel", () => {
+    if (cd) endDrag();
+    cd = false;
+  });
+  $("#sbBack").onclick = () => M && goT(M.u2t(target) - 7 * DAY);
+  $("#sbFwd").onclick = () => M && goT(M.u2t(target) + 7 * DAY);
+  $("#sbPlay").onclick = () => {
+    if (playing) {
+      stopPlay();
+      return;
+    }
+    if (reduce()) {
+      u = target = 1;
+      draw();
+      return;
+    }
+    u = 0;
+    vel = 0;
+    $("#sbPlay").textContent = "עצירה";
+    const t0 = performance.now(), dur = 11e3;
+    const ease = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    const tick = (now) => {
+      const x = Math.min(1, (now - t0) / dur);
+      u = ease(x);
+      draw();
+      if (x < 1) playing = requestAnimationFrame(tick);
+      else {
+        playing = null;
+        target = 1;
+        $("#sbPlay").textContent = "הפעלה מההתחלה";
+      }
+    };
+    playing = requestAnimationFrame(tick);
+  };
+  addEventListener("resize", () => {
+    clearTimeout(size.t);
+    size.t = setTimeout(size, 80);
+  });
+}
+function track(nu) {
+  const t = performance.now();
+  hist.push([t, nu]);
+  while (hist.length > 1 && t - hist[0][0] > 100) hist.shift();
+  u = clamp(nu);
+}
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  let vv = 0;
+  if (hist.length > 1) {
+    const a = hist[0], b = hist[hist.length - 1];
+    const s = (b[0] - a[0]) / 1e3;
+    if (s > 0) vv = (b[1] - a[1]) / s;
+  }
+  vel = 0;
+  target = clamp(u + Math.max(-2, Math.min(2, vv)) * 0.25);
+  kick();
+}
+function step(ts) {
+  const now = ts || performance.now();
+  const d = Math.min(0.05, (now - (step.l || now)) / 1e3) || 0.016;
+  step.l = now;
+  if (!dragging && !playing) {
+    const k = 90, c = 2 * Math.sqrt(k);
+    const a = k * (target - u) - c * vel;
+    vel += a * d;
+    u += vel * d;
+    if (u < 0) {
+      u = 0;
+      vel = 0;
+    }
+    if (u > 1) {
+      u = 1;
+      vel = 0;
+    }
+    if (Math.abs(target - u) < 3e-4 && Math.abs(vel) < 5e-4) {
+      u = target;
+      vel = 0;
+      draw();
+      raf = 0;
+      step.l = 0;
+      return;
+    }
+  }
+  draw();
+  raf = requestAnimationFrame(step);
+}
+function kick() {
+  if (!raf) {
+    step.l = 0;
+    raf = requestAnimationFrame(step);
+  }
+}
+function goT(t) {
+  stopPlay();
+  target = clamp(M.t2u(t));
+  if (reduce()) {
+    u = target;
+    vel = 0;
+    draw();
+  } else kick();
+}
+function stopPlay() {
+  if (playing) {
+    cancelAnimationFrame(playing);
+    playing = null;
+    $("#sbPlay").textContent = "הפעלה מההתחלה";
+    target = u;
+    vel = 0;
+  }
+}
+function size() {
+  if (!M || !M.hasMap || !cv) return;
+  const W = cv.parentElement.clientWidth;
+  if (!W) return;
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  const VH = M.map.h * K + TOP + 10;
+  scale = W / M.map.w;
+  px = 1 / scale;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(VH * scale * dpr);
+  cv.style.height = VH * scale + "px";
+  ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  roadTint.width = 0;
+  draw();
+}
+function tintRoad() {
+  if (roadTint.width || !roadImg || !roadImg.complete || !roadImg.naturalWidth) return;
+  roadTint.width = M.map.w;
+  roadTint.height = Math.round(M.map.h * K);
+  const c = roadTint.getContext("2d");
+  c.drawImage(roadImg, 0, 0, M.map.w, roadTint.height);
+  c.globalCompositeOperation = "source-in";
+  c.fillStyle = "#E4E5E5";
+  c.fillRect(0, 0, M.map.w, roadTint.height);
+}
+function icoDrill(x, y) {
+  const q = px;
+  ctx.save();
+  ctx.strokeStyle = "#E40033";
+  ctx.lineWidth = 1.6 * q;
+  ctx.lineJoin = "round";
+  ctx.strokeRect(x - 6 * q, y - 4 * q, 12 * q, 4 * q);
+  ctx.beginPath();
+  ctx.moveTo(x - 2 * q, y - 4 * q);
+  ctx.lineTo(x - 2 * q, y - 22 * q);
+  ctx.lineTo(x + 3 * q, y - 4 * q);
+  ctx.moveTo(x - 2 * q, y - 22 * q);
+  ctx.lineTo(x - 2 * q, y - 26 * q);
+  ctx.moveTo(x - 2 * q, y - 14 * q);
+  ctx.lineTo(x + 1 * q, y - 14 * q);
+  ctx.stroke();
+  ctx.restore();
+}
+function icoCrane(x, y) {
+  const q = px;
+  ctx.save();
+  ctx.strokeStyle = "#E40033";
+  ctx.lineWidth = 1.6 * q;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeRect(x - 9 * q, y - 6 * q, 14 * q, 5 * q);
+  ctx.strokeRect(x + 5 * q, y - 9 * q, 5 * q, 8 * q);
+  ctx.beginPath();
+  ctx.arc(x - 5 * q, y, 2 * q, 0, 7);
+  ctx.moveTo(x + 6 * q, y);
+  ctx.arc(x + 4 * q, y, 2 * q, 0, 7);
+  ctx.moveTo(x - 6 * q, y - 6 * q);
+  ctx.lineTo(x - 16 * q, y - 20 * q);
+  ctx.lineTo(x - 16 * q, y - 14 * q);
+  ctx.stroke();
+  ctx.restore();
+}
+function draw() {
+  if (!M) return;
+  const s = M.state(u);
+  ui(s);
+  if (!M.hasMap || !cv.width) return;
+  const q = px, T = M.T, PY = (y) => TOP + y * K, VH = M.map.h * K + TOP + 10;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, M.map.w, VH);
+  tintRoad();
+  if (roadTint.width) ctx.drawImage(roadTint, 0, TOP);
+  let drillAt = null, panAt = null;
+  for (const i of M.byY) {
+    const b = T[i];
+    const x0 = b.x, x1 = b.x + b.w, gb = PY(b.y), gf = PY(b.y + b.h);
+    const df = s.drillF[i], cf = s.castF[i], sf = s.strF[i], pf = s.panF[i];
+    ctx.setLineDash([3 * q, 3 * q]);
+    ctx.strokeStyle = "#C9CBCC";
+    ctx.lineWidth = 0.8 * q;
+    ctx.beginPath();
+    ctx.moveTo(x0, gf);
+    ctx.lineTo(x1, gf);
+    ctx.moveTo(x0, gb);
+    ctx.lineTo(x1, gb);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const per = Math.max(2, Math.round(b.piles / 2)), nD = Math.round(df * per * 2), nC = Math.round(cf * per * 2);
+    for (let j = 0; j < nD; j++) {
+      const row = j < per ? 0 : 1, k = row ? j - per : j;
+      const cx = x0 + (k + 0.5) * b.w / per, cy = row ? gb : gf;
+      if (j < nC) {
+        ctx.fillStyle = "#3F4447";
+        ctx.fillRect(cx - 0.9 * q, cy - 0.9 * q, 1.8 * q, 1.8 * q);
+      } else {
+        ctx.strokeStyle = "#9A9EA1";
+        ctx.lineWidth = 0.8 * q;
+        ctx.strokeRect(cx - 1.1 * q, cy - 1.1 * q, 2.2 * q, 2.2 * q);
+      }
+    }
+    if (df > 0 && df < 1 && !drillAt) drillAt = [x0 + b.w * df, gf];
+    if (sf > 0) {
+      const xe = x0 + b.w * sf;
+      ctx.strokeStyle = "#3F4447";
+      ctx.lineWidth = 0.9 * q;
+      ctx.beginPath();
+      ctx.moveTo(x0, gf - FRONT);
+      ctx.lineTo(xe, gf - FRONT);
+      ctx.moveTo(x0, gb - LIFT);
+      ctx.lineTo(xe, gb - LIFT);
+      const legs = Math.max(2, Math.round(per / 3));
+      for (let k = 0; k <= legs; k++) {
+        const lx = x0 + k * b.w / legs;
+        if (lx > xe + 0.01) break;
+        ctx.moveTo(lx, gf);
+        ctx.lineTo(lx, gf - FRONT);
+        ctx.moveTo(lx, gb);
+        ctx.lineTo(lx, gb - LIFT);
+        ctx.moveTo(lx, gf - FRONT);
+        ctx.lineTo(lx, gb - LIFT);
+      }
+      ctx.stroke();
+    }
+    if (pf > 0) {
+      const xe = x0 + b.w * pf;
+      ctx.beginPath();
+      ctx.moveTo(x0, gf - FRONT);
+      ctx.lineTo(xe, gf - FRONT);
+      ctx.lineTo(xe, gb - LIFT);
+      ctx.lineTo(x0, gb - LIFT);
+      ctx.closePath();
+      ctx.fillStyle = "#D3E9F5";
+      ctx.fill();
+      ctx.strokeStyle = "#1E7FB0";
+      ctx.lineWidth = 0.9 * q;
+      ctx.stroke();
+      ctx.beginPath();
+      const cols = Math.max(1, Math.round(b.pan / 9));
+      for (let c = 1; c < cols; c++) {
+        const lx = x0 + c * b.w / cols;
+        if (lx >= xe) break;
+        ctx.moveTo(lx, gf - FRONT);
+        ctx.lineTo(lx, gb - LIFT);
+      }
+      ctx.lineWidth = 0.5 * q;
+      ctx.stroke();
+      if (pf < 1 && !panAt) panAt = [xe, gf];
+    }
+  }
+  if (drillAt) icoDrill(drillAt[0], drillAt[1]);
+  if (panAt) icoCrane(panAt[0] + 4 * q, panAt[1] + 2 * q);
+}
+function ui(s) {
+  const p = u * 100;
+  $("#sbKnob").style.right = p + "%";
+  $("#sbFill").style.width = p + "%";
+  const TOT = M.TOT;
+  SE.forEach((o) => {
+    const x = s.v[o.k];
+    o.v.textContent = fmt(x);
+    o.b.style.width = (TOT[o.k] && x >= 0.5 ? x / TOT[o.k] * 100 : 0) + "%";
+  });
+  const pct = TOT.panels ? s.v.panels / TOT.panels * 100 : 0;
+  $("#sbBig").textContent = (pct < 1 && pct > 0 ? pct.toFixed(1) : Math.round(pct)) + "%";
+  const day = Math.round((s.t - M.d0) / DAY);
+  if (day === lastDay) return;
+  lastDay = day;
+  const isToday = u > 0.999;
+  $("#sbDate").textContent = isToday ? isoText(isoOf(Date.now())) : ddmm(s.t) + "." + new Date(s.t).getUTCFullYear();
+  $("#sbToday").style.opacity = isToday ? 1 : 0;
+  $("#sbRail").setAttribute("aria-valuetext", ddmm(s.t));
+  SE.forEach((o) => {
+    const r = M.lastRec(o.k, s.t);
+    o.a.textContent = r ? "עדכון אחרון " + isoText(r) : "טרם התחיל";
+    o.a.classList.toggle("old", isToday && !!r && dt(r) < M.dEnd - 8 * DAY);
+  });
+  $("#sbSub").innerHTML = s.v.drill < 1 && s.v.cast < 1 && s.v.tables < 1 ? "<b>אדמה ריקה.</b> כאן מתחיל הסיפור." : "<b>" + fmt(s.v.panels) + "</b> פאנלים על <b>" + fmt(s.v.tables) + "</b> שולחנות · <b>" + fmt(s.v.cast) + "</b> עמודים יצוקים";
+  let best = null;
+  M.msB.forEach(([b, mt]) => {
+    if (mt <= s.t + DAY / 2 && (!best || mt > best[1])) best = [b, mt];
+  });
+  M.msB.forEach(([b]) => b.classList.toggle("on", !!best && b === best[0]));
+}
+function renderSiteBuild() {
+  const card = $("#buildCard");
+  if (!card) return;
+  buildDom();
+  const acts = shared.demoStock ? [] : shared.STATUS || [];
+  const ser = siteBuildSeries(acts);
+  const map = siteMap();
+  const has = Object.keys(ser).length > 0;
+  const empty = $("#sbEmpty");
+  if (empty) empty.hidden = has;
+  $("#sbBody").hidden = !has;
+  if (!has) {
+    M = null;
+    foldSum("build", "");
+    return;
+  }
+  M = model(map, ser, isoOf(Date.now()));
+  M.byY = M.T.map((_, i) => i).sort((i, j) => M.T[i].y - M.T[j].y || M.T[i].x - M.T[j].x);
+  SE.forEach((o) => {
+    o.of.textContent = fmtN(M.TOT[o.k]);
+    o.el.hidden = !ser[o.k];
+  });
+  const ticks = $("#sbTicks");
+  ticks.innerHTML = "";
+  const months = [];
+  if (new Date(M.d0).getUTCDate() === 1) months.push(M.d0);
+  for (let d = new Date(M.d0); ; ) {
+    const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+    if (t >= M.dEnd - 10 * DAY) break;
+    months.push(t);
+    d = new Date(t);
+  }
+  const dense = months.filter((t) => t >= M.dMid);
+  const every = dense.length > 6 ? 2 : 1;
+  months.forEach((t, i) => {
+    if (t < M.dMid ? i > 0 : dense.indexOf(t) % every) return;
+    const x = M.t2u(t) * 100;
+    const tk = document.createElement("div");
+    tk.className = "tk";
+    tk.style.right = x + "%";
+    ticks.appendChild(tk);
+    const lb = document.createElement("div");
+    lb.className = "lab";
+    lb.style.right = x + "%";
+    lb.textContent = MONTHS[new Date(t).getUTCMonth()];
+    ticks.appendChild(lb);
+  });
+  const now = document.createElement("div");
+  now.className = "lab now";
+  now.style.right = "100%";
+  now.textContent = "היום";
+  ticks.appendChild(now);
+  const msEl = $("#sbMs");
+  msEl.innerHTML = "";
+  M.msB = M.ms.map(([t, what]) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = '<span class="when num">' + ddmm(t) + '</span><span class="what">' + esc(what) + "</span>";
+    b.onclick = () => goT(t + DAY);
+    li.appendChild(b);
+    msEl.appendChild(li);
+    return [b, t + DAY];
+  });
+  const nm = $("#sbNoMap");
+  nm.hidden = M.hasMap;
+  ["#sbCvw", ".sb-keys", "#sbRail", ".sb-ctrl", "#sbDate", "#sbToday"].forEach((sel) => {
+    const e = card.querySelector(sel);
+    if (e) e.hidden = !M.hasMap;
+  });
+  if (!M.hasMap) {
+    nm.innerHTML = "<b>אין עדיין מפת שולחנות לאתר הזה.</b> המספרים למעלה מהסטטוס. כשתהיה מפת הקונסטרוקציה (תוכנית השולחנות עם המיקום של כל שולחן), השרטוט של האתר נבנה יופיע כאן.";
+  } else if (map.road && (!roadImg || roadImg.src !== map.road)) {
+    roadImg = new Image();
+    roadImg.onload = () => {
+      roadTint.width = 0;
+      draw();
+    };
+    roadImg.src = map.road;
+  }
+  $("#sbNote").textContent = M.hasMap ? "הכמויות מסטטוס ההתקדמות. השולחנות במיקום לפי " + (map.source || "מפת הקונסטרוקציה") + ". סדר הביצוע על המפה, מהשורות האחרונות למעלה עד הראשונות למטה, ולכן המיקום של כל שלב הוא קירוב; הכמויות אמיתיות." : "";
+  const tv = M.val("panels", M.dEnd), tp = M.TOT.panels ? Math.round(tv / M.TOT.panels * 100) : 0;
+  foldSum("build", M.hasMap ? tp + "% פאנלים" : tp + "% פאנלים · אין מפה");
+  lastDay = -1;
+  if (!raf && !playing) {
+    u = clamp(u);
+    target = u;
+  }
+  if (M.hasMap) size();
+  else draw();
+}
+function __init$h() {
+}
+const m19 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  __init: __init$h,
+  renderSiteBuild,
+  siteBuildSeries,
+  siteBuildState,
+  siteMap
 }, Symbol.toStringTag, { value: "Module" }));
 let isWorkday;
 function statusHolidays() {
@@ -755,6 +1631,7 @@ function renderStatus() {
   el.innerHTML = "";
   const A = (shared.demoStock ? [] : shared.STATUS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
   const hol = statusHolidays();
+  renderSiteBuild();
   if (!A.length) {
     foldSum("status", "");
     el.innerHTML = '<div class="empty" style="padding:16px">אין עדיין סטטוס. ייבא את קובץ הסטטוס של החברה (xlsx) בהגדרות או בכפתור למטה.</div>';
@@ -1957,7 +2834,7 @@ function openBoqLinker(prefill) {
   const auto = q("#lkAuto");
   if (auto) auto.onclick = async () => {
     await linkAllNotesToBoq(true);
-    draw();
+    draw2();
   };
   q("#lkMode").onclick = (e) => {
     const b = e.target.closest("[data-m]");
@@ -1965,19 +2842,19 @@ function openBoqLinker(prefill) {
     mode = b.dataset.m;
     shown = 40;
     scrim.querySelectorAll("#lkMode .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
-    draw();
+    draw2();
   };
   q("#lkQ").oninput = (e) => {
     qtxt = e.target.value.trim().toLowerCase();
     shown = 40;
-    draw();
+    draw2();
   };
   if (prefill) q("#lkQ").value = prefill;
   q("#lkSup").onclick = () => {
     onlySup = !onlySup;
     q("#lkSup").setAttribute("aria-pressed", String(onlySup));
     shown = 40;
-    draw();
+    draw2();
   };
   async function setLink(rec, idx, code, conf, coll) {
     coll = coll || "deliveries";
@@ -2002,10 +2879,10 @@ function openBoqLinker(prefill) {
     rec.lines = lines;
     if (code && code !== "-") learnAlias(rec.supplier, lines[idx].name, code);
     logAct(coll === "pos" ? "order" : "delivery", "edit", (code ? code === "-" ? "סומן לא ב-EBOQ: " : "קושר ל-EBOQ " + code + ": " : "בוטל קישור: ") + lines[idx].name + " · " + (coll === "pos" ? rec.no : shortSup(rec.supplier || "")), rec.id);
-    draw();
+    draw2();
     renderOrders();
   }
-  function draw() {
+  function draw2() {
     const box = q("#lkList");
     box.innerHTML = "";
     const rows = [];
@@ -2074,7 +2951,7 @@ function openBoqLinker(prefill) {
       m.textContent = "עוד " + (rows.length - shown);
       m.onclick = () => {
         shown += 40;
-        draw();
+        draw2();
       };
       box.appendChild(m);
     }
@@ -2083,7 +2960,7 @@ function openBoqLinker(prefill) {
     h.textContent = rows.length + " שורות";
     box.prepend(h);
   }
-  draw();
+  draw2();
 }
 function openBoqImport() {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא EBOQ"><div class="grab"></div><h2>ייבוא EBOQ (כתב כמויות)</h2><div class="note-card">כתב הכמויות של חשמל (EBOQ), סיביל או שטח ההתארגנות: xlsx או csv. גיליון EBOQ של הרכש נקרא ישירות, כולל מספרי PO, ספק ומק״ט ספק; קובץ אחר נקרא בעזרת AI, ואתה מאשר. ה-EBOQ הוא תכנון, לא מלאי: ממנו רואים מה עוד לא הוזמן ומה בדרך.</div>' + (shared.boq.length ? '<div class="legend">כרגע ב-EBOQ: <b>' + shared.boq.length + "</b> פריטים (" + esc(shared.boqSource || "") + "). קובץ חדש מתווסף; פריט עם אותו מק״ט או שם מתעדכן.</div>" : "") + '<div id="bqBody"><div class="pick">בחר קובץ EBOQ<small>xlsx / xls / csv</small><input type="file" id="bqFile" accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"></div></div><div class="acts"><button class="save" id="bqGo" hidden type="button">שמור ל-EBOQ</button><button class="cancel" type="button">סגור</button></div></div>');
@@ -2799,7 +3676,7 @@ function showTab(which) {
 }
 function __init$d() {
   KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-  APP_VERSION = "54";
+  APP_VERSION = "55";
   SHOW_PRICES = false;
   SITE = { name: "אתר הקמה עין תמר", company: "BELECTRIC", panelsPerTable: 81, custom: false };
   $("#btnSettings").onclick = openSettings;
@@ -2910,11 +3787,11 @@ function detectQuad(c) {
     if (a >= 180) a -= 180;
     ang[i] = a;
   }
-  const hist = new Uint32Array(257);
-  for (let i = 0; i < mag.length; i++) hist[Math.min(256, Math.round(mag[i] / maxM * 256))]++;
+  const hist2 = new Uint32Array(257);
+  for (let i = 0; i < mag.length; i++) hist2[Math.min(256, Math.round(mag[i] / maxM * 256))]++;
   let cnt = 0, thr = maxM;
   for (let b = 256; b >= 0; b--) {
-    cnt += hist[b];
+    cnt += hist2[b];
     if (cnt >= W * H * 0.08) {
       thr = b / 256 * maxM;
       break;
@@ -2998,27 +3875,27 @@ function defaultQuad(w, h) {
 function solveH(src, dst) {
   const A = [], b = [];
   for (let i = 0; i < 4; i++) {
-    const { x, y } = src[i], { x: u, y: v } = dst[i];
-    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]);
-    b.push(u);
+    const { x, y } = src[i], { x: u2, y: v } = dst[i];
+    A.push([x, y, 1, 0, 0, 0, -u2 * x, -u2 * y]);
+    b.push(u2);
     A.push([0, 0, 0, x, y, 1, -v * x, -v * y]);
     b.push(v);
   }
   const n = 8;
-  const M = A.map((r, i) => [...r, b[i]]);
+  const M2 = A.map((r, i) => [...r, b[i]]);
   for (let c = 0; c < n; c++) {
     let p = c;
-    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
-    [M[c], M[p]] = [M[p], M[c]];
-    const d = M[c][c] || 1e-12;
-    for (let k = c; k <= n; k++) M[c][k] /= d;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M2[r][c]) > Math.abs(M2[p][c])) p = r;
+    [M2[c], M2[p]] = [M2[p], M2[c]];
+    const d = M2[c][c] || 1e-12;
+    for (let k = c; k <= n; k++) M2[c][k] /= d;
     for (let r = 0; r < n; r++) {
       if (r === c) continue;
-      const f = M[r][c];
-      for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+      const f = M2[r][c];
+      for (let k = c; k <= n; k++) M2[r][k] -= f * M2[c][k];
     }
   }
-  const h = M.map((r) => r[n]);
+  const h = M2.map((r) => r[n]);
   return [h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7], 1];
 }
 function warpQuad(c, quad) {
@@ -3120,7 +3997,7 @@ function rotateCanvas(c, times) {
 function openScanner(opts) {
   opts = opts || {};
   const pages = [];
-  let step = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
+  let step2 = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
   const root = document.createElement("div");
   root.className = "scan";
   root.setAttribute("role", "dialog");
@@ -3131,7 +4008,7 @@ function openScanner(opts) {
   const q = (s) => root.querySelector(s);
   const stage = q("#scStage"), bot = q("#scBot");
   const title = () => {
-    q("#scTitle").textContent = "סריקת תעודה · עמוד " + (pages.length + (step === "pick" ? 1 : 1)) + (pages.length ? " · " + pages.length + " נסרקו" : "");
+    q("#scTitle").textContent = "סריקת תעודה · עמוד " + (pages.length + (step2 === "pick" ? 1 : 1)) + (pages.length ? " · " + pages.length + " נסרקו" : "");
   };
   function close() {
     document.removeEventListener("keydown", esck);
@@ -3177,7 +4054,7 @@ function openScanner(opts) {
     await acceptCanvas(w);
   }
   function showPick() {
-    step = "pick";
+    step2 = "pick";
     title();
     stage.innerHTML = '<div class="scan-pick"><label><i class="ic ic-cam big"></i>צלם תעודה<input type="file" accept="image/*" capture="environment"></label><label><i class="ic ic-gal big"></i>מהגלריה<input type="file" accept="image/*" multiple></label><div class="hint3" style="grid-column:1/3">מצלמים את כל התעודה על רקע כהה. הקצוות יזוהו לבד, אפשר לתקן באצבע.</div></div>';
     stage.querySelectorAll("input")[0].onchange = q("#scCam").onchange;
@@ -3201,18 +4078,18 @@ function openScanner(opts) {
     quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
     showCrop();
   }
-  let wrap = null, svg = null, cv = null, loupe = null;
+  let wrap = null, svg = null, cv2 = null, loupe = null;
   function showCrop() {
-    step = "crop";
+    step2 = "crop";
     title();
     stage.innerHTML = '<div class="scan-wrap" id="scWrap"><canvas id="scCv"></canvas><svg id="scSvg" xmlns="http://www.w3.org/2000/svg"></svg><canvas class="loupe" id="scLoupe" width="220" height="220"></canvas></div>';
     wrap = q("#scWrap");
-    cv = q("#scCv");
+    cv2 = q("#scCv");
     svg = q("#scSvg");
     loupe = q("#scLoupe");
-    cv.width = photo.width;
-    cv.height = photo.height;
-    cv.getContext("2d").drawImage(photo, 0, 0);
+    cv2.width = photo.width;
+    cv2.height = photo.height;
+    cv2.getContext("2d").drawImage(photo, 0, 0);
     svg.setAttribute("viewBox", "0 0 " + photo.width + " " + photo.height);
     layout();
     drawQuad();
@@ -3220,7 +4097,7 @@ function openScanner(opts) {
     drawBot();
   }
   function layout() {
-    if (!wrap || step !== "crop") return;
+    if (!wrap || step2 !== "crop") return;
     const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
     const k = Math.min(sw / photo.width, sh / photo.height);
     wrap.style.width = Math.round(photo.width * k) + "px";
@@ -3279,7 +4156,7 @@ function openScanner(opts) {
     }
   }
   function showPreview() {
-    step = "preview";
+    step2 = "preview";
     title();
     const key = filter + "|" + rot;
     if (!warped) warped = warpQuad(photo, quad);
@@ -3318,9 +4195,9 @@ function openScanner(opts) {
     return '<div class="scan-pages">' + pages.map((p, i) => '<div class="pg"><img src="' + p.thumb + '" alt=""><b>' + (i + 1) + '</b><button type="button" data-rm="' + i + '" aria-label="הסר עמוד">×</button></div>').join("") + "</div>";
   }
   function drawBot() {
-    if (step === "pick") {
+    if (step2 === "pick") {
       bot.innerHTML = pagesStrip() + (pages.length ? '<div class="scan-row"><button class="save" type="button" id="scDone">סיום · ' + pages.length + (pages.length === 1 ? " עמוד" : " עמודים") + "</button></div>" : '<div class="hint3">עמוד אחד או יותר לכל תעודה. בסוף: סיום.</div>');
-    } else if (step === "crop") {
+    } else if (step2 === "crop") {
       bot.innerHTML = '<div class="hint3">גרור את הפינות לקצוות התעודה</div><div class="scan-row"><button class="ghost" type="button" id="scAuto">אוטומטי</button><button class="ghost" type="button" id="scAll">כל התמונה</button><button class="ghost" type="button" id="scRetake">צלם שוב</button></div><div class="scan-row"><button class="save" type="button" id="scNext">המשך ›</button></div>';
       q("#scAuto").onclick = () => {
         quad = detectQuad(photo) || defaultQuad(photo.width, photo.height);
@@ -3427,8 +4304,8 @@ async function buildPdf(pages, title) {
   obj(3, "<< /Title (" + String(title || "scan").replace(/[()\\]/g, "") + ") /Producer (Yoman Atar) >>");
   pages.forEach((p, i) => {
     const pn = 4 + i * 3, cn = pn + 1, xn = pn + 2;
-    const PW = 595.28, PH = 841.89, M = 24;
-    const k = Math.min((PW - 2 * M) / p.w, (PH - 2 * M) / p.h);
+    const PW = 595.28, PH = 841.89, M2 = 24;
+    const k = Math.min((PW - 2 * M2) / p.w, (PH - 2 * M2) / p.h);
     const w = p.w * k, h = p.h * k;
     const x = (PW - w) / 2, y = (PH - h) / 2;
     const content = "q " + w.toFixed(2) + " 0 0 " + h.toFixed(2) + " " + x.toFixed(2) + " " + y.toFixed(2) + " cm /Im" + i + " Do Q";
@@ -3722,12 +4599,12 @@ function __init$b() {
     copyText(t);
   };
   $("#btnReqCsv").onclick = () => {
-    const M = REQM || requestMatch();
-    if (!M.rows.length) {
+    const M2 = REQM || requestMatch();
+    if (!M2.rows.length) {
       toast("אין בקשות.");
       return;
     }
-    saveFile("בקשות-מול-הזמנות-" + isoOf(Date.now()) + ".csv", new Blob([csvOf(["בקשה", "תאריך בקשה", "פריט", "סעיף EBOQ", "יחידה", "ביקשתי", "הוזמן", "מוקפא", "PO", "תאריך אספקה", "הגיע", "מצב", "לטובת", "נדרש עד"], M.rows.map((r) => [r.o.no, fmtD(r.o.ts), r.l.name, r.l.boq || "", r.l.unit || "", r.qty, r.ordered, r.hold || "", r.pos.map((m) => m.p.no).join(" "), r.due ? fmtD(r.due) : "", r.arrived, REQ_ST[r.k][0], r.o.task || "", r.o.need ? r.o.need.split("-").reverse().join("/") : ""]))], { type: "text/csv" }));
+    saveFile("בקשות-מול-הזמנות-" + isoOf(Date.now()) + ".csv", new Blob([csvOf(["בקשה", "תאריך בקשה", "פריט", "סעיף EBOQ", "יחידה", "ביקשתי", "הוזמן", "מוקפא", "PO", "תאריך אספקה", "הגיע", "מצב", "לטובת", "נדרש עד"], M2.rows.map((r) => [r.o.no, fmtD(r.o.ts), r.l.name, r.l.boq || "", r.l.unit || "", r.qty, r.ordered, r.hold || "", r.pos.map((m) => m.p.no).join(" "), r.due ? fmtD(r.due) : "", r.arrived, REQ_ST[r.k][0], r.o.task || "", r.o.need ? r.o.need.split("-").reverse().join("/") : ""]))], { type: "text/csv" }));
   };
   $("#btnOrdersCsv").onclick = () => {
     const rows = shared.orders.slice().sort((a, b) => a.ts - b.ts).flatMap((o) => [...orderGroups(o).entries()].flatMap(([sp, L]) => L.map((l) => [o.no, fmtD(o.ts), (ORDER_ST[o.status] || ORDER_ST.draft)[0], sp, l.boq || l.code || "", l.sku || "", l.name, l.qty, l.unit, (CATS.find((c) => c.id === l.cat) || {}).label || l.cat, o.task, o.need ? o.need.split("-").reverse().join("/") : "", l.note])));
@@ -4182,26 +5059,26 @@ function requestMatch() {
 }
 function reqLineHtml(r) {
   const st = REQ_ST[r.k] || REQ_ST.wait;
-  const u = esc(r.l.unit || "");
-  return '<small style="color:var(--ink3)">ביקשתי ' + fmtN(r.qty) + " · הוזמן " + fmtN(r.ordered) + (r.hold ? " (+" + fmtN(r.hold) + " מוקפא)" : "") + " · הגיעו " + fmtN(r.arrived) + " " + u + "</small>" + (r.pos.length ? '<br><small style="color:var(--ink3)">' + esc(r.pos.map((m) => m.p.no + (m.due ? " · אספקה " + fmtD(m.due) : "")).join(" · ")) + (r.l.po ? " · קישור ידני" : "") + "</small>" : "") + '<br><small style="color:' + st[1] + ';font-weight:700">' + st[0] + "</small>";
+  const u2 = esc(r.l.unit || "");
+  return '<small style="color:var(--ink3)">ביקשתי ' + fmtN(r.qty) + " · הוזמן " + fmtN(r.ordered) + (r.hold ? " (+" + fmtN(r.hold) + " מוקפא)" : "") + " · הגיעו " + fmtN(r.arrived) + " " + u2 + "</small>" + (r.pos.length ? '<br><small style="color:var(--ink3)">' + esc(r.pos.map((m) => m.p.no + (m.due ? " · אספקה " + fmtD(m.due) : "")).join(" · ")) + (r.l.po ? " · קישור ידני" : "") + "</small>" : "") + '<br><small style="color:' + st[1] + ';font-weight:700">' + st[0] + "</small>";
 }
 function renderRequests() {
   const el = $("#orReq");
   if (!el) return;
-  const M = REQM || requestMatch();
+  const M2 = REQM || requestMatch();
   el.innerHTML = "";
-  const open = M.rows.filter((r) => r.k !== "ok");
-  if (!M.rows.length) {
+  const open = M2.rows.filter((r) => r.k !== "ok");
+  if (!M2.rows.length) {
     foldSum("reqs", "");
     el.innerHTML = '<div class="empty" style="padding:16px">עוד אין בקשות שנשלחו לרכש.<br>«בקשת רכש חדשה» למעלה, או להעלות לתיקיית הפרויקט את מה ששלחתי לרכש ואת אישורי ההזמנה, וזה ייקלט כאן.</div>';
     return;
   }
-  const cnt = (k) => M.rows.filter((r) => r.k === k).length;
+  const cnt = (k) => M2.rows.filter((r) => r.k === k).length;
   const bad = cnt("none") + cnt("hold") + cnt("short") + cnt("late");
   foldSum("reqs", bad ? bad + " דורשים טיפול" : open.length ? open.length + " בדרך" : "הכל הגיע");
   const groups = [["none", "ביקשתי ולא הוזמן", "var(--clay)", (r) => r.k === "none" || r.k === "hold"], ["short", "הוזמן פחות ממה שביקשתי", "var(--amber)", (r) => r.k === "short"], ["late", "הוזמן ולא הגיע · באיחור", "var(--clay)", (r) => r.k === "late"], ["wait", "ממתין לרכש / בדרך בזמן", "var(--info)", (r) => r.k === "wait" || r.k === "fresh"]];
   groups.forEach(([k, label, color, f]) => {
-    const its = M.rows.filter(f);
+    const its = M2.rows.filter(f);
     if (!its.length) return;
     const h = document.createElement("div");
     h.className = "grouphead";
@@ -4232,12 +5109,12 @@ function renderRequests() {
     d.textContent = ok + " שורות בקשה הגיעו במלואן.";
     el.appendChild(d);
   }
-  if (M.extra.length) {
+  if (M2.extra.length) {
     const h = document.createElement("div");
     h.className = "grouphead";
-    h.innerHTML = '<i style="background:var(--ink3)"></i>הוזמן בלי בקשה שלי<span>' + M.extra.length + "</span>";
+    h.innerHTML = '<i style="background:var(--ink3)"></i>הוזמן בלי בקשה שלי<span>' + M2.extra.length + "</span>";
     el.appendChild(h);
-    M.extra.slice(-6).reverse().forEach((x) => {
+    M2.extra.slice(-6).reverse().forEach((x) => {
       const d2 = document.createElement("button");
       d2.type = "button";
       d2.className = "holder";
@@ -4253,8 +5130,8 @@ function renderRequests() {
   }
 }
 function reqMissingText() {
-  const M = REQM || requestMatch();
-  const pick = (k) => M.rows.filter((r) => k.includes(r.k));
+  const M2 = REQM || requestMatch();
+  const pick = (k) => M2.rows.filter((r) => k.includes(r.k));
   const sec = (title, rs, f) => rs.length ? "*" + title + "*\n" + rs.map((r, i) => i + 1 + ". " + r.l.name + (r.l.boq ? " (סעיף " + r.l.boq + ")" : "") + " — " + f(r)).join("\n") : "";
   return [
     "*" + SITE.name + " · בקשות רכש פתוחות · " + fmtD(Date.now()) + "*",
@@ -4273,7 +5150,7 @@ function openPoLinkPicker(o, li, done) {
   scrim.onclick = (e) => {
     if (e.target === scrim) close();
   };
-  const draw = (t) => {
+  const draw2 = (t) => {
     const box = q("#plList");
     box.innerHTML = "";
     t = (t || "").toLowerCase();
@@ -4295,8 +5172,8 @@ function openPoLinkPicker(o, li, done) {
     }));
     if (!n) box.innerHTML = '<div class="hint">אין שורת PO כזו מ-45 יום לפני הבקשה והלאה.</div>';
   };
-  q("#plQ").oninput = (e) => draw(e.target.value.trim());
-  draw("");
+  q("#plQ").oninput = (e) => draw2(e.target.value.trim());
+  draw2("");
   const cl = q("#plClear");
   if (cl) cl.onclick = async () => {
     close();
@@ -4558,7 +5435,7 @@ function renderOrders() {
   const cat = catalog();
   const list = (shared.demoStock ? [] : shared.orders).slice().sort((a, b) => b.ts - a.ts);
   REQM = null;
-  const M = requestMatch();
+  const M2 = requestMatch();
   list.filter((o) => o.status === "sent" || o.status === "partial");
   list.filter((o) => o.status === "draft");
   const toOrder = cat.filter((c) => c.planned > 0 && c.toOrder > 0), awaiting = cat.filter((c) => c.awaiting > 0), planned = cat.filter((c) => c.planned > 0);
@@ -4566,7 +5443,7 @@ function renderOrders() {
   $("#orBig").textContent = fmtN(toOrder.length);
   $("#orCap").textContent = toOrder.length === 1 ? "פריט ב-EBOQ שעוד לא הוזמן" : "פריטים ב-EBOQ שעוד לא הוזמנו";
   $("#orSub").innerHTML = planned.length ? "ב-BOM / EBOQ <b>" + fmtN(planned.length) + '</b> פריטים · <b style="color:var(--amber)">' + fmtN(awaiting.length) + "</b> הוזמנו ועוד לא נקלטו · <b>" + fmtN(planned.filter((c) => !c.toOrder && !c.awaiting).length) + "</b> הגיעו במלואם" + (miss("electrical") ? " · לא הוזמן: חשמל <b>" + miss("electrical") + "</b>" : "") + (miss("civil") ? " · סיביל <b>" + miss("civil") + "</b>" : "") + (miss("construction") ? " · קונסטרוקציה <b>" + miss("construction") + "</b>" : "") : "אין עדיין EBOQ. ייבוא כתב הכמויות (חשמל, סיביל, התארגנות) מראה מה עוד לא הוזמן ומה בדרך.";
-  const reqBad = M.rows.filter((r) => r.k === "none" || r.k === "hold" || r.k === "short" || r.k === "late").length;
+  const reqBad = M2.rows.filter((r) => r.k === "none" || r.k === "hold" || r.k === "short" || r.k === "late").length;
   $("#orStats").innerHTML = '<div class="stat"><div class="v num"' + (reqBad ? ' style="color:var(--clay)"' : "") + ">" + fmtN(reqBad) + '</div><div class="k">בקשות שדורשות טיפול</div></div><div class="stat"><div class="v num">' + fmtN((shared.demoStock ? [] : shared.POS).filter((p) => poStatus(p).k !== "ok").length) + '</div><div class="k">PO פתוחים ברכש</div></div><div class="stat"><div class="v num" style="color:var(--amber)">' + fmtN(awaiting.length) + '</div><div class="k">פריטים בדרך</div></div>';
   const L = $("#orList");
   L.innerHTML = "";
@@ -4578,7 +5455,7 @@ function renderOrders() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "slip";
-    const rr = o.status !== "draft" && o.status !== "cancelled" ? (o.lines || []).map((l, li) => M.by.get(o.id + "#" + li)).filter(Boolean) : [];
+    const rr = o.status !== "draft" && o.status !== "cancelled" ? (o.lines || []).map((l, li) => M2.by.get(o.id + "#" + li)).filter(Boolean) : [];
     const pr = rr.filter((r) => r.k === "ok").length, bad = rr.filter((r) => r.k === "none" || r.k === "hold" || r.k === "short" || r.k === "late").length;
     b.innerHTML = "<b>" + esc(o.no) + " · " + esc(o.task || "") + '</b><span class="sigok" style="background:var(--line2);color:' + (rr.length && pr === rr.length ? "var(--sage)" : st[1]) + '">' + (rr.length && pr === rr.length ? "הגיע במלואו" : st[0] + (pr ? " · " + pr + "/" + rr.length + " הגיעו" : "")) + (bad ? ' · <span style="color:var(--clay)">' + bad + " דורשים טיפול</span>" : "") + "</span><span>" + fmtD(o.ts) + " · " + (o.lines || []).length + " פריטים · " + [...g.keys()].join(", ") + "</span>";
     b.onclick = () => openOrderDetail(o);
@@ -5130,7 +6007,7 @@ function openEquipIssue() {
   scrim.onclick = (e) => {
     if (e.target === scrim) close();
   };
-  const draw = () => {
+  const draw2 = () => {
     const box = q("#eqList");
     box.innerHTML = "";
     const t = qtxt.toLowerCase();
@@ -5160,7 +6037,7 @@ function openEquipIssue() {
   };
   q("#eqQ").oninput = (e) => {
     qtxt = e.target.value.trim();
-    draw();
+    draw2();
   };
   q("#eqNew").onclick = () => {
     const nm = qtxt.trim();
@@ -5172,7 +6049,7 @@ function openEquipIssue() {
     close();
     openMove(nm);
   };
-  draw();
+  draw2();
   setTimeout(() => q("#eqQ").focus(), 60);
 }
 function openStockActions() {
@@ -5402,7 +6279,7 @@ function moneyPoints() {
   const P = [];
   const cons = curConcrete();
   const notes = curNotes();
-  const K = kitStats();
+  const K2 = kitStats();
   const pr = shared.prices || {};
   const pp = pr.parts || {};
   const ils = (v) => SHOW_PRICES && v > 0 ? "₪" + fmtN(Math.round(v)) : "";
@@ -5416,7 +6293,7 @@ function moneyPoints() {
     s: "המונה המצטבר של הספק קפץ (" + m.days.join(", ") + "). לדרוש את התעודות לפני שהחשבונית מגיעה." + (pr.concreteM3 || !SHOW_PRICES ? "" : " הזן מחיר למ״ק כדי לראות ₪."),
     tab: "concrete"
   });
-  const over = K.parts.filter((p) => p.dev != null && p.dev > 0.05);
+  const over = K2.parts.filter((p) => p.dev != null && p.dev > 0.05);
   if (over.length) {
     const soFar = over.reduce((s, p) => s + p.overSoFar, 0), proj = over.reduce((s, p) => s + Math.max(0, p.needAct - p.needNorm), 0);
     const money = over.reduce((s, p) => s + (pp[p.code] ? (p.overSoFar + Math.max(0, p.needAct - p.needNorm)) * pp[p.code] : 0), 0);
@@ -5430,7 +6307,7 @@ function moneyPoints() {
       tab: "over"
     });
   }
-  const short = K.parts.filter((p) => p.inBom && p.def && p.issued > 0 && p.shortAct > 0).sort((a, b) => a.worthAct - b.worthAct);
+  const short = K2.parts.filter((p) => p.inBom && p.def && p.issued > 0 && p.shortAct > 0).sort((a, b) => a.worthAct - b.worthAct);
   if (short.length) P.push({
     sev: 3,
     n: fmtN(short.length),
@@ -5439,58 +6316,58 @@ function moneyPoints() {
     s: short.slice(0, 3).map((p) => shortName(p.name) + ": מספיק ל-" + fmtN(Math.floor(p.worthAct)) + " מתוך " + fmtN(Math.round(p.remaining))).join(" · ") + (short.length > 3 ? " ועוד " + (short.length - 3) : "") + ". הזמנה משלטר היא שבועות של הובלה. עצירת אתר עולה יותר מהברגים.",
     tab: "over"
   });
-  if (!K.doneProxy) {
-    const atSite = K.cons.reduce((s, c) => s + Math.max(0, c.tables - c.done), 0);
+  if (!K2.doneProxy) {
+    const atSite = K2.cons.reduce((s, c) => s + Math.max(0, c.tables - c.done), 0);
     if (atSite > 0) P.push({
       sev: 2,
       n: fmtN(atSite),
       u: "שולחנות",
       b: "ברגים שנופקו ועוד לא הורכבו",
-      s: "נופק ל-" + fmtN(K.declTables) + " שולחנות, דווחו גמורים " + fmtN(K.done) + ". ברגים ששוכבים בשטח נעלמים, נרטבים, או נספרים פעמיים.",
+      s: "נופק ל-" + fmtN(K2.declTables) + " שולחנות, דווחו גמורים " + fmtN(K2.done) + ". ברגים ששוכבים בשטח נעלמים, נרטבים, או נספרים פעמיים.",
       tab: "over"
     });
-  } else if (K.declTables && K.proxySrc === "panels") P.push({
+  } else if (K2.declTables && K2.proxySrc === "panels") P.push({
     sev: 1,
-    n: "~" + fmtN(K.panelTables),
+    n: "~" + fmtN(K2.panelTables),
     u: "שולחנות עומדים",
     b: "יותר שולחנות עומדים ממה שנופקו להם ברגים ברישום",
-    s: "לפי הפאנלים המותקנים ~" + fmtN(K.panelTables) + " שולחנות, ברישום נופקו ברגים ל-" + fmtN(K.declTables) + ". ההפרש יצא בקרטונים בלי כמות ובניפוקים בלי מספר שולחנות. דיווח ביצוע שבועי סוגר את זה.",
+    s: "לפי הפאנלים המותקנים ~" + fmtN(K2.panelTables) + " שולחנות, ברישום נופקו ברגים ל-" + fmtN(K2.declTables) + ". ההפרש יצא בקרטונים בלי כמות ובניפוקים בלי מספר שולחנות. דיווח ביצוע שבועי סוגר את זה.",
     tab: "over",
     act: "progress"
   });
-  else if (K.declTables) P.push({
+  else if (K2.declTables) P.push({
     sev: 1,
-    n: fmtN(K.declTables),
+    n: fmtN(K2.declTables),
     u: "שולחנות",
     b: "נופקו ברגים, ואף שולחן גמור לא דווח",
     s: "בלי דיווח ביצוע אי אפשר לדעת כמה ברגים שוכבים בשטח. דיווח לוקח עשר שניות, בכפתור בלשונית קבלנים.",
     tab: "over",
     act: "progress"
   });
-  if (!K.doneProxy && K.donePan > K.doneOk) P.push({
+  if (!K2.doneProxy && K2.donePan > K2.doneOk) P.push({
     sev: 1,
-    n: fmtN(K.donePan - K.doneOk),
+    n: fmtN(K2.donePan - K2.doneOk),
     u: "שולחנות",
     b: "שולחנות עם פאנלים שעוד לא אושרו ע״י מפקח",
     s: "הקבלן יחייב עליהם. חשבון קבלן נבדק מול שולחנות מאושרים, לא מול שולחנות שהורכבו. אישור = דיווח ביצוע בשלב «אושר ע״י מפקח».",
     tab: "over",
     act: "progress-ok"
   });
-  const zero = K.parts.filter((p) => p.inBom && p.def && !p.issued && K.declTables > 0);
+  const zero = K2.parts.filter((p) => p.inBom && p.def && !p.issued && K2.declTables > 0);
   if (zero.length) P.push({
     sev: 2,
     n: fmtN(zero.reduce((s, p) => s + p.have, 0)),
     u: "יח' בלי מעקב",
     b: zero.length + " פריטי קיט יוצאים לשטח בלי רישום",
-    s: zero.map((p) => shortName(p.name)).join(", ") + ". נופקו ברגים ל-" + fmtN(K.declTables) + " שולחנות, ולמחברים אפס רישום. מה שלא נרשם לא נספר.",
+    s: zero.map((p) => shortName(p.name)).join(", ") + ". נופקו ברגים ל-" + fmtN(K2.declTables) + " שולחנות, ולמחברים אפס רישום. מה שלא נרשם לא נספר.",
     tab: "over"
   });
-  if (K.undeclN || K.cartons.length) P.push({
+  if (K2.undeclN || K2.cartons.length) P.push({
     sev: 1,
-    n: fmtN(K.undeclN + K.cartons.length),
+    n: fmtN(K2.undeclN + K2.cartons.length),
     u: "רשומות",
     b: "ניפוקים שאי אפשר לבדוק מול הנורמה",
-    s: [K.undeclN ? K.undeclN + " ניפוקים בלי מספר שולחנות" : "", K.cartons.length ? K.cartons.length + " שורות קרטון בלי כמות ליחידות" : ""].filter(Boolean).join(" · ") + ". מהיום כל ניפוק יוצא דרך «ניפוק לפי שולחן», וזה נעלם.",
+    s: [K2.undeclN ? K2.undeclN + " ניפוקים בלי מספר שולחנות" : "", K2.cartons.length ? K2.cartons.length + " שורות קרטון בלי כמות ליחידות" : ""].filter(Boolean).join(" · ") + ". מהיום כל ניפוק יוצא דרך «ניפוק לפי שולחן», וזה נעלם.",
     tab: "stock"
   });
   const isDep = (l) => /פקדון|פיקדון|כד ריק|^כד מים|^תכולת כד/.test(l.name || "");
@@ -5705,59 +6582,59 @@ function sparkHtml(pts, norm) {
 }
 function renderContractors() {
   if (!$("#conWho")) return;
-  const K = kitStats();
-  $("#demoBarK").hidden = !(shared.demoStock || !K.issuesN);
-  $("#conBig").textContent = fmtN(K.declTables);
-  $("#conIss").textContent = fmtN(K.issuesN);
-  $("#conDone").textContent = K.doneProxy ? K.proxySrc === "panels" ? "~" + fmtN(K.panelTables) : "—" : fmtN(K.done);
+  const K2 = kitStats();
+  $("#demoBarK").hidden = !(shared.demoStock || !K2.issuesN);
+  $("#conBig").textContent = fmtN(K2.declTables);
+  $("#conIss").textContent = fmtN(K2.issuesN);
+  $("#conDone").textContent = K2.doneProxy ? K2.proxySrc === "panels" ? "~" + fmtN(K2.panelTables) : "—" : fmtN(K2.done);
   const cdk = $("#conDone").nextElementSibling;
-  if (cdk) cdk.textContent = K.doneProxy && K.proxySrc === "panels" ? "שולחנות עם פאנלים (אומדן)" : "קונסטרוקציה הושלמה";
+  if (cdk) cdk.textContent = K2.doneProxy && K2.proxySrc === "panels" ? "שולחנות עם פאנלים (אומדן)" : "קונסטרוקציה הושלמה";
   const pipe = $("#conPipe");
   if (pipe) {
     pipe.innerHTML = "";
-    const rows = [["נופקו ברגים (ברישום)", K.declTables, "var(--amber-fill)"], ["קונסטרוקציה הושלמה", K.doneProxy ? null : K.done, "var(--info-fill)"], ["פאנלים הורכבו", K.doneProxy ? K.proxySrc === "panels" ? K.panelTables : null : K.donePan, "var(--sage-fill)"], ["אושרו ע״י מפקח", K.doneProxy ? null : K.doneOk, "var(--ink2)"]];
+    const rows = [["נופקו ברגים (ברישום)", K2.declTables, "var(--amber-fill)"], ["קונסטרוקציה הושלמה", K2.doneProxy ? null : K2.done, "var(--info-fill)"], ["פאנלים הורכבו", K2.doneProxy ? K2.proxySrc === "panels" ? K2.panelTables : null : K2.donePan, "var(--sage-fill)"], ["אושרו ע״י מפקח", K2.doneProxy ? null : K2.doneOk, "var(--ink2)"]];
     rows.forEach(([l, v, col], i) => {
       const d = document.createElement("div");
       d.className = "hb";
-      const pct = K.total && v != null ? Math.min(100, v / K.total * 100) : 0;
-      d.innerHTML = '<div class="l">' + l + (i === 2 && K.doneProxy && v != null ? ' <small style="color:var(--ink3)">(אומדן לפי מאזן פאנלים)</small>' : "") + '</div><div class="v">' + (v == null ? "לא דווח" : fmtN(Math.round(v)) + " / " + fmtN(K.total)) + '</div><div class="t"><i style="width:' + pct + "%;background:" + col + '"></i></div>';
+      const pct = K2.total && v != null ? Math.min(100, v / K2.total * 100) : 0;
+      d.innerHTML = '<div class="l">' + l + (i === 2 && K2.doneProxy && v != null ? ' <small style="color:var(--ink3)">(אומדן לפי מאזן פאנלים)</small>' : "") + '</div><div class="v">' + (v == null ? "לא דווח" : fmtN(Math.round(v)) + " / " + fmtN(K2.total)) + '</div><div class="t"><i style="width:' + pct + "%;background:" + col + '"></i></div>';
       pipe.appendChild(d);
     });
-    if (!K.doneProxy && K.donePan > K.doneOk) {
+    if (!K2.doneProxy && K2.donePan > K2.doneOk) {
       const d = document.createElement("div");
       d.className = "note";
       d.style.margin = "4px 0 0";
-      d.textContent = "ממתינים לאישור מפקח: " + fmtN(K.donePan - K.doneOk) + " שולחנות עם פאנלים." + (K.done > K.donePan ? " קונסטרוקציה בלי פאנלים: " + fmtN(K.done - K.donePan) + "." : "");
+      d.textContent = "ממתינים לאישור מפקח: " + fmtN(K2.donePan - K2.doneOk) + " שולחנות עם פאנלים." + (K2.done > K2.donePan ? " קונסטרוקציה בלי פאנלים: " + fmtN(K2.done - K2.donePan) + "." : "");
       pipe.appendChild(d);
     }
-    if (!K.doneProxy && K.done > K.declTables) {
+    if (!K2.doneProxy && K2.done > K2.declTables) {
       const d = document.createElement("div");
       d.className = "note";
       d.style.cssText = "color:var(--clay);margin:4px 0 0";
-      d.textContent = "נבנו " + fmtN(K.done - K.declTables) + " שולחנות יותר ממה שנופקו להם ברגים ברישום: ההפרש יצא בניפוקים בלי מספר שולחנות ובקרטונים. מהיום כל ניפוק נרשם לפי שולחן.";
+      d.textContent = "נבנו " + fmtN(K2.done - K2.declTables) + " שולחנות יותר ממה שנופקו להם ברגים ברישום: ההפרש יצא בניפוקים בלי מספר שולחנות ובקרטונים. מהיום כל ניפוק נרשם לפי שולחן.";
       pipe.appendChild(d);
     }
   }
-  $("#conPace").textContent = K.pace ? fmtN(Math.round(K.pace)) : "—";
-  const weeksLeft = K.pace ? K.remaining / K.pace : 0;
+  $("#conPace").textContent = K2.pace ? fmtN(Math.round(K2.pace)) : "—";
+  const weeksLeft = K2.pace ? K2.remaining / K2.pace : 0;
   const endTxt = weeksLeft ? fmtD(Date.now() + weeksLeft * 7 * 864e5) : "";
-  $("#conSub").innerHTML = (K.doneProxy ? K.proxySrc === "panels" ? "~<b>" + fmtN(K.panelTables) + "</b> שולחנות עומדים לפי הפאנלים · נותרו <b>" + fmtN(K.remaining) + "</b> מתוך " + fmtN(K.total) : "נותרו <b>" + fmtN(K.remaining) + "</b> מתוך " + fmtN(K.total) + " · עוד לא דווח ביצוע" : "<b>" + fmtN(K.done) + "</b> מתוך " + fmtN(K.total) + " שולחנות · נותרו <b>" + fmtN(K.remaining) + "</b>") + (K.pace && endTxt ? " · סיום משוער <b>" + endTxt + "</b>" : "");
+  $("#conSub").innerHTML = (K2.doneProxy ? K2.proxySrc === "panels" ? "~<b>" + fmtN(K2.panelTables) + "</b> שולחנות עומדים לפי הפאנלים · נותרו <b>" + fmtN(K2.remaining) + "</b> מתוך " + fmtN(K2.total) : "נותרו <b>" + fmtN(K2.remaining) + "</b> מתוך " + fmtN(K2.total) + " · עוד לא דווח ביצוע" : "<b>" + fmtN(K2.done) + "</b> מתוך " + fmtN(K2.total) + " שולחנות · נותרו <b>" + fmtN(K2.remaining) + "</b>") + (K2.pace && endTxt ? " · סיום משוער <b>" + endTxt + "</b>" : "");
   const cw = $("#conWho");
   cw.innerHTML = "";
-  if (!K.cons.length) cw.innerHTML = '<div class="empty">אין עדיין ניפוקים לקבלן.</div>';
-  K.cons.forEach((c) => {
+  if (!K2.cons.length) cw.innerHTML = '<div class="empty">אין עדיין ניפוקים לקבלן.</div>';
+  K2.cons.forEach((c) => {
     const el = document.createElement("div");
     el.className = "con";
     const at = c.tables - c.done;
-    const single = K.cons.length === 1;
-    const doneShown = c.done || (single && K.doneProxy && K.proxySrc === "panels" ? K.panelTables : 0);
-    const rp = K.total ? Math.min(1, doneShown / K.total) : 0;
-    el.innerHTML = ringHtml(rp, "info", doneShown ? Math.round(rp * 100) + "%" : "—", true) + '<div class="who">' + esc(c.who) + '</div><div class="m num">' + fmtN(c.tables) + '<small>שולחנות נופקו</small></div><div class="kv">' + (c.n ? "<span><b>" + c.n + "</b> ניפוקים</span>" : "") + (c.undecl ? '<span class="gap">' + c.undecl + " בלי מספר שולחנות</span>" : "") + (c.n ? "<span><b>" + c.signed + "</b> מתוך " + c.n + " חתומים</span>" : "") + "<span><b>" + fmtN(c.units) + "</b> יח'</span>" + (c.eqTables ? "<span>לפי " + esc(c.refName) + " שיצאו: שווה ערך ל-<b>" + fmtN(Math.round(c.eqTables)) + "</b> שולחנות</span>" : "") + (c.done ? "<span>קונסטרוקציה <b>" + fmtN(c.done) + "</b>" + (c.donePan ? " · פאנלים <b>" + fmtN(c.donePan) + "</b>" : "") + " · אושרו <b>" + fmtN(c.doneOk) + "</b></span>" : doneShown ? "<span>עומדים לפי פאנלים <b>~" + fmtN(doneShown) + "</b> מתוך " + fmtN(K.total) + "</span>" : "<span>לא דווחו שולחנות גמורים</span>") + (c.done && at > 0 ? '<span class="gap">ברגים ל-' + fmtN(at) + " שולחנות בשטח</span>" : "") + (c.done && at < 0 ? '<span class="gap">דווחו ' + fmtN(-at) + " שולחנות יותר ממה שנופק</span>" : "") + (c.last ? "<span>ניפוק אחרון " + fmtD(c.last) + "</span>" : "") + "</div>";
+    const single = K2.cons.length === 1;
+    const doneShown = c.done || (single && K2.doneProxy && K2.proxySrc === "panels" ? K2.panelTables : 0);
+    const rp = K2.total ? Math.min(1, doneShown / K2.total) : 0;
+    el.innerHTML = ringHtml(rp, "info", doneShown ? Math.round(rp * 100) + "%" : "—", true) + '<div class="who">' + esc(c.who) + '</div><div class="m num">' + fmtN(c.tables) + '<small>שולחנות נופקו</small></div><div class="kv">' + (c.n ? "<span><b>" + c.n + "</b> ניפוקים</span>" : "") + (c.undecl ? '<span class="gap">' + c.undecl + " בלי מספר שולחנות</span>" : "") + (c.n ? "<span><b>" + c.signed + "</b> מתוך " + c.n + " חתומים</span>" : "") + "<span><b>" + fmtN(c.units) + "</b> יח'</span>" + (c.eqTables ? "<span>לפי " + esc(c.refName) + " שיצאו: שווה ערך ל-<b>" + fmtN(Math.round(c.eqTables)) + "</b> שולחנות</span>" : "") + (c.done ? "<span>קונסטרוקציה <b>" + fmtN(c.done) + "</b>" + (c.donePan ? " · פאנלים <b>" + fmtN(c.donePan) + "</b>" : "") + " · אושרו <b>" + fmtN(c.doneOk) + "</b></span>" : doneShown ? "<span>עומדים לפי פאנלים <b>~" + fmtN(doneShown) + "</b> מתוך " + fmtN(K2.total) + "</span>" : "<span>לא דווחו שולחנות גמורים</span>") + (c.done && at > 0 ? '<span class="gap">ברגים ל-' + fmtN(at) + " שולחנות בשטח</span>" : "") + (c.done && at < 0 ? '<span class="gap">דווחו ' + fmtN(-at) + " שולחנות יותר ממה שנופק</span>" : "") + (c.last ? "<span>ניפוק אחרון " + fmtD(c.last) + "</span>" : "") + "</div>";
     cw.appendChild(el);
   });
   const cr = $("#conRate");
   cr.innerHTML = "";
-  const rated = K.parts.filter((p) => p.act != null).sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
+  const rated = K2.parts.filter((p) => p.act != null).sort((a, b) => Math.abs(b.dev) - Math.abs(a.dev));
   if (!rated.length) cr.innerHTML = '<div class="empty">צריך ניפוק אחד לפחות עם מספר שולחנות.</div>';
   {
     const ov = rated.filter((p) => p.dev > 0.05).length;
@@ -5786,7 +6663,7 @@ function renderContractors() {
   }
   const rn = $("#conRun");
   rn.innerHTML = "";
-  const run = K.parts.filter((p) => p.inBom && p.def).sort((a, b) => a.worthAct - a.remaining - (b.worthAct - b.remaining));
+  const run = K2.parts.filter((p) => p.inBom && p.def).sort((a, b) => a.worthAct - a.remaining - (b.worthAct - b.remaining));
   if (!run.length) rn.innerHTML = '<div class="empty">אין מלאי פתיחה לקיט. קלוט את ה-BOM כתעודת משלוח.</div>';
   {
     const bad = run.filter((p) => p.shortAct > 0).length;
@@ -5794,13 +6671,13 @@ function renderContractors() {
   }
   run.slice(0, runMax).forEach((p) => {
     const el = document.createElement("div");
-    el.className = "run" + (!p.issued && K.declTables ? " zero" : "");
+    el.className = "run" + (!p.issued && K2.declTables ? " zero" : "");
     const w = Math.min(p.worthAct, 9999), rem = Math.max(1, p.remaining);
     const bad = p.shortAct > 0, warn = !bad && p.worthAct < rem * 1.08;
     const pct = Math.min(100, w / rem * 100);
     const v = isFinite(p.worthAct) ? "מספיק ל-" + fmtN(Math.floor(w)) + " מתוך " + fmtN(Math.round(p.remaining)) : "—";
-    const s = !p.issued && K.declTables ? "אפס ניפוקים רשומים. או שיוצא בלי רישום, או שעוד לא בשימוש." : bad ? "חסרים <b>" + fmtN(Math.ceil(p.shortAct)) + "</b> יח' בקצב הנוכחי" + (p.shortNorm > 0 ? " (גם בנורמה: " + fmtN(Math.ceil(p.shortNorm)) + ")" : " (בנורמה: מספיק)") + (p.hiddenUse && !p.counted ? " · כולל אומדן ל-" + fmtN(K.hidden) + " שולחנות שנבנו בלי ניפוק רשום. ספירה אחת של הקרטונים סוגרת את זה." : "") : "במחסן " + (p.counted ? "(נספר) " : p.hiddenUse ? "(BOM פחות ניפוקים, פחות אומדן ל-" + fmtN(K.hidden) + " שולחנות שנבנו בלי רישום) " : "(לפי BOM פחות ניפוקים) ") + "<b>" + fmtN(Math.round(p.have)) + "</b> · צריך <b>" + fmtN(Math.round(p.needAct)) + "</b>";
-    el.innerHTML = ringHtml(isFinite(p.worthAct) ? pct / 100 : 1, bad ? "bad" : warn ? "warn" : "", !p.issued && K.declTables ? "0" : null) + '<div class="nm">' + esc(shortName(p.name)) + '</div><div class="v' + (bad ? " bad" : "") + '">' + v + '</div><div class="t"><i class="' + (bad ? "bad" : warn ? "warn" : "") + '" style="width:' + pct + '%"></i></div><div class="s">' + s + "</div>";
+    const s = !p.issued && K2.declTables ? "אפס ניפוקים רשומים. או שיוצא בלי רישום, או שעוד לא בשימוש." : bad ? "חסרים <b>" + fmtN(Math.ceil(p.shortAct)) + "</b> יח' בקצב הנוכחי" + (p.shortNorm > 0 ? " (גם בנורמה: " + fmtN(Math.ceil(p.shortNorm)) + ")" : " (בנורמה: מספיק)") + (p.hiddenUse && !p.counted ? " · כולל אומדן ל-" + fmtN(K2.hidden) + " שולחנות שנבנו בלי ניפוק רשום. ספירה אחת של הקרטונים סוגרת את זה." : "") : "במחסן " + (p.counted ? "(נספר) " : p.hiddenUse ? "(BOM פחות ניפוקים, פחות אומדן ל-" + fmtN(K2.hidden) + " שולחנות שנבנו בלי רישום) " : "(לפי BOM פחות ניפוקים) ") + "<b>" + fmtN(Math.round(p.have)) + "</b> · צריך <b>" + fmtN(Math.round(p.needAct)) + "</b>";
+    el.innerHTML = ringHtml(isFinite(p.worthAct) ? pct / 100 : 1, bad ? "bad" : warn ? "warn" : "", !p.issued && K2.declTables ? "0" : null) + '<div class="nm">' + esc(shortName(p.name)) + '</div><div class="v' + (bad ? " bad" : "") + '">' + v + '</div><div class="t"><i class="' + (bad ? "bad" : warn ? "warn" : "") + '" style="width:' + pct + '%"></i></div><div class="s">' + s + "</div>";
     rn.appendChild(el);
   });
   if (run.length > runMax) {
@@ -5817,9 +6694,9 @@ function renderContractors() {
   const fc = $("#conFlagCard"), ff = $("#conFlags");
   ff.innerHTML = "";
   const flags = [];
-  if (K.undeclN) flags.push({ b: K.undeclN + " ניפוקים נרשמו בלי מספר שולחנות", s: "הכמויות נכללות במלאי, אבל אי אפשר להשוות אותן לנורמה." });
-  if (K.cartons.length) flags.push({ b: K.cartons.length + " שורות קרטון בלי כמות ליחידות", s: K.cartons.map((c) => fmtN(c.qty) + " × " + shortName(c.item) + " (" + fmtD(c.ts) + ")").join(" · ") + ". כשתדע כמה בקרטון, עדכן את הניפוק." });
-  const under = K.parts.filter((p) => p.dev != null && p.dev < -0.05);
+  if (K2.undeclN) flags.push({ b: K2.undeclN + " ניפוקים נרשמו בלי מספר שולחנות", s: "הכמויות נכללות במלאי, אבל אי אפשר להשוות אותן לנורמה." });
+  if (K2.cartons.length) flags.push({ b: K2.cartons.length + " שורות קרטון בלי כמות ליחידות", s: K2.cartons.map((c) => fmtN(c.qty) + " × " + shortName(c.item) + " (" + fmtD(c.ts) + ")").join(" · ") + ". כשתדע כמה בקרטון, עדכן את הניפוק." });
+  const under = K2.parts.filter((p) => p.dev != null && p.dev < -0.05);
   if (under.length) flags.push({ b: under.map((p) => shortName(p.name)).join(", ") + ": יוצא פחות מהנורמה", s: "או שחסר על השולחנות, או שה-BOM מנופח. בדיקה של שולחן גמור אחד עונה על זה." });
   fc.hidden = !flags.length;
   foldSum("flags", flags.length ? flags.length + " נקודות" : "");
@@ -6161,7 +7038,7 @@ function openBarcodeScanner(opts) {
       if (h.n <= 0) hits.delete(b.dataset.dec);
       drawBot();
     });
-    q("#bcBot").querySelectorAll("[data-assign]").forEach((u) => u.onclick = () => assign(u.dataset.assign));
+    q("#bcBot").querySelectorAll("[data-assign]").forEach((u2) => u2.onclick = () => assign(u2.dataset.assign));
     q("#bcBot").querySelectorAll("[data-per]").forEach((i) => i.oninput = (e) => {
       hits.get(i.dataset.per).per = e.target.value;
     });
@@ -6260,13 +7137,13 @@ function openBarcodeScanner(opts) {
         const hints = /* @__PURE__ */ new Map();
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
         const rd = new ZXing.BrowserMultiFormatReader(hints);
-        const u = URL.createObjectURL(blob);
+        const u2 = URL.createObjectURL(blob);
         try {
-          const r = await rd.decodeFromImageUrl(u);
+          const r = await rd.decodeFromImageUrl(u2);
           txt = r && r.getText ? r.getText() : null;
         } catch (e) {
         }
-        URL.revokeObjectURL(u);
+        URL.revokeObjectURL(u2);
       } catch (e) {
       }
     }
@@ -6408,7 +7285,7 @@ function openKitEditor(preset) {
   const q = (s) => scrim.querySelector(s);
   let lines = (preset && preset.lines ? preset.lines : shared.kit).map((k) => ({ ...k, per: typeof k.per === "number" ? Object.fromEntries(shared.kitTypes.map((t) => [t.id, k.per])) : { ...k.per || {} } }));
   if (preset && preset.source) q("#kitSrc").value = preset.source;
-  function draw() {
+  function draw2() {
     const box = q("#kitEd");
     box.innerHTML = "";
     lines.forEach((l, i) => {
@@ -6425,14 +7302,14 @@ function openKitEditor(preset) {
       });
       r.lastChild.onclick = () => {
         lines.splice(i, 1);
-        draw();
+        draw2();
       };
       box.appendChild(r);
     });
   }
   q("#kitAdd").onclick = () => {
     lines.push({ code: "x" + Date.now().toString(36), name: "", per: {}, def: true });
-    draw();
+    draw2();
   };
   q("#kitCancel").onclick = () => scrim.remove();
   scrim.onclick = (e) => {
@@ -6470,7 +7347,7 @@ function openKitEditor(preset) {
     toast("הכמויות לשולחן נשמרו.");
     renderStock();
   };
-  draw();
+  draw2();
 }
 function sigPad(box) {
   const c = box.querySelector("canvas");
@@ -6768,7 +7645,7 @@ async function issuePage(r) {
   x.textAlign = "right";
   const R = W - 80, Lx = 80;
   const d = new Date(r.ts);
-  const dt = d.getDate() + "." + (d.getMonth() + 1) + "." + d.getFullYear() + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const dt2 = d.getDate() + "." + (d.getMonth() + 1) + "." + d.getFullYear() + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   x.fillStyle = "#E40033";
   x.fillRect(0, 0, W, 14);
   x.font = "700 30px Alef, Arial";
@@ -6778,7 +7655,7 @@ async function issuePage(r) {
   x.fillText((r.kind === "tool" ? "ניפוק ציוד" : "ניפוק ברגים") + " · מס׳ " + r.no, R, 140);
   x.fillStyle = "#666B6E";
   x.font = "400 26px Alef, Arial";
-  x.fillText(SITE.name + " · " + dt, R, 185);
+  x.fillText(SITE.name + " · " + dt2, R, 185);
   x.fillStyle = "#121212";
   x.font = "700 34px Alef, Arial";
   x.fillText("מקבל: " + (r.who || "—"), R, 250);
@@ -6960,7 +7837,7 @@ function openQuickCount() {
     const g = t - r.derived;
     return g === 0 ? '<span style="color:var(--sage);font-weight:800">תואם לתיאורטי</span>' : '<span class="gap">פער ' + (g > 0 ? "+" : "−") + fmtN(Math.abs(g)) + " מול תיאורטי " + fmtN(r.derived) + "</span>";
   }
-  function draw() {
+  function draw2() {
     const box = q("#qcRows");
     box.innerHTML = "";
     items.forEach((n, i) => {
@@ -6991,7 +7868,7 @@ function openQuickCount() {
         items.splice(i, 1);
         delete vals[n];
         delete boxes[n];
-        draw();
+        draw2();
         check();
       };
       box.appendChild(r0);
@@ -7018,7 +7895,7 @@ function openQuickCount() {
         items.unshift(r.name);
         q("#qcSearch").value = "";
         sug.innerHTML = "";
-        draw();
+        draw2();
       };
       sug.appendChild(b);
     });
@@ -7031,7 +7908,7 @@ function openQuickCount() {
       boxes[n] = (Number(boxes[n]) || 0) + h.n;
       if (!perBox[n] && Number(h.per) > 0) perBox[n] = Number(h.per);
     });
-    draw();
+    draw2();
     check();
     if (res.some((h) => !h.item)) toast("ברקודים לא מזוהים לא נספרו. הצמד אותם לפריט בסריקה הבאה.");
   } });
@@ -7104,7 +7981,7 @@ function openQuickCount() {
     renderStock();
     toast("נשמרו " + recs.length + " ספירות.");
   };
-  draw();
+  draw2();
   requestAnimationFrame(() => {
     const sh = q(".sheet");
     if (sh) sh.scrollTop = 0;
@@ -7155,14 +8032,14 @@ function periodSummary(days) {
   const cnt = (shared.demoStock ? DEMO_COUNTS : shared.counts).filter(inP);
   if (cnt.length) L.push("", "*ספירות:* " + cnt.length + " פריטים נספרו");
   if (!shared.demoStock) {
-    const K = kitStats();
+    const K2 = kitStats();
     const prog = shared.progress.filter(inP).filter((p) => stageOf(p) === "con").reduce((s, p) => s + (Number(p.tables) || 0), 0);
-    if (K.declTables || !K.doneProxy) {
-      L.push("", "*שולחנות:* " + (K.doneProxy ? "אף שולחן גמור לא דווח" : "קונסטרוקציה " + fmtN(K.done) + (prog ? " (+" + fmtN(prog) + " בתקופה)" : "") + " · פאנלים " + fmtN(K.donePan) + " · אושרו " + fmtN(K.doneOk)) + " מתוך " + fmtN(K.total) + " · נופקו ברגים ל-" + fmtN(K.declTables) + " ברישום" + (K.pace ? " · קצב ניפוק " + fmtN(Math.round(K.pace)) + " לשבוע" : ""));
-      if (!K.doneProxy && K.donePan > K.doneOk) L.push("  - ממתינים לאישור מפקח: " + fmtN(K.donePan - K.doneOk) + " שולחנות");
-      const over = K.parts.filter((p) => p.dev != null && p.dev > 0.05).slice(0, 3);
+    if (K2.declTables || !K2.doneProxy) {
+      L.push("", "*שולחנות:* " + (K2.doneProxy ? "אף שולחן גמור לא דווח" : "קונסטרוקציה " + fmtN(K2.done) + (prog ? " (+" + fmtN(prog) + " בתקופה)" : "") + " · פאנלים " + fmtN(K2.donePan) + " · אושרו " + fmtN(K2.doneOk)) + " מתוך " + fmtN(K2.total) + " · נופקו ברגים ל-" + fmtN(K2.declTables) + " ברישום" + (K2.pace ? " · קצב ניפוק " + fmtN(Math.round(K2.pace)) + " לשבוע" : ""));
+      if (!K2.doneProxy && K2.donePan > K2.doneOk) L.push("  - ממתינים לאישור מפקח: " + fmtN(K2.donePan - K2.doneOk) + " שולחנות");
+      const over = K2.parts.filter((p) => p.dev != null && p.dev > 0.05).slice(0, 3);
       if (over.length) L.push("  - מעל הנורמה: " + over.map((p) => shortName(p.name) + " " + fmtN(Math.round(p.act)) + " לשולחן (BOM " + fmtN(Math.round(p.normRef)) + ")").join(", "));
-      const short = K.parts.filter((p) => p.inBom && p.def && p.issued > 0 && p.shortAct > 0).slice(0, 3);
+      const short = K2.parts.filter((p) => p.inBom && p.def && p.issued > 0 && p.shortAct > 0).slice(0, 3);
       if (short.length) L.push("  - ייגמר לפני הסוף בקצב הנוכחי: " + short.map((p) => shortName(p.name) + " (מספיק ל-" + fmtN(Math.floor(p.worthAct)) + " מתוך " + fmtN(Math.round(p.remaining)) + ")").join(", "));
     }
     const pb = curPb();
@@ -7987,13 +8864,13 @@ function openNote() {
     const b = q("#bSaveNote");
     b.disabled = true;
     b.textContent = "שומר…";
-    const dt = parseDate(q("#iDate").value.trim());
+    const dt2 = parseDate(q("#iDate").value.trim());
     const rec = {
       id: "n" + Date.now() + Math.random().toString(36).slice(2, 6),
       supplier: q("#iSup").value.trim(),
       noteNo: q("#iNo").value.trim(),
-      dateText: dt ? dt.text : q("#iDate").value.trim(),
-      ts: dt ? dt.ts : Date.now(),
+      dateText: dt2 ? dt2.text : q("#iDate").value.trim(),
+      ts: dt2 ? dt2.ts : Date.now(),
       photoAsset: "",
       photoUrl: "",
       pages: [],
@@ -8159,17 +9036,17 @@ function parseChat(txt) {
 }
 function loadImg(blob) {
   return new Promise((res, rej) => {
-    const u = URL.createObjectURL(blob);
+    const u2 = URL.createObjectURL(blob);
     const im = new Image();
     im.onload = () => {
-      URL.revokeObjectURL(u);
+      URL.revokeObjectURL(u2);
       res(im);
     };
     im.onerror = () => {
-      URL.revokeObjectURL(u);
+      URL.revokeObjectURL(u2);
       rej(new Error("decode"));
     };
-    im.src = u;
+    im.src = u2;
   });
 }
 async function prepImage(blob) {
@@ -8186,15 +9063,15 @@ async function prepImage(blob) {
   small.height = 12;
   small.getContext("2d").drawImage(c, 0, 0, 12, 12);
   const d = small.getContext("2d").getImageData(0, 0, 12, 12).data;
-  const px = [];
+  const px2 = [];
   let sum = 0;
   for (let i = 0; i < d.length; i += 4) {
     const v = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1e3;
-    px.push(v);
+    px2.push(v);
     sum += v;
   }
-  const avg = sum / px.length;
-  const bits = px.map((v) => v > avg ? "1" : "0").join("");
+  const avg = sum / px2.length;
+  const bits = px2.map((v) => v > avg ? "1" : "0").join("");
   const out = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
   return { blob: out, bits, url: URL.createObjectURL(out) };
 }
@@ -8371,15 +9248,15 @@ function openImport() {
         n2.pageIds.push(it.id);
         return;
       }
-      const dt = parseDate(d.date) || it.meta && parseDate(it.meta.date) || null;
+      const dt2 = parseDate(d.date) || it.meta && parseDate(it.meta.date) || null;
       const exists = shared.deliveries.some((x) => d.noteNo && x.noteNo && String(x.noteNo).trim() === String(d.noteNo).trim() && String(x.supplier || "").slice(0, 6) === String(d.supplier || "").slice(0, 6));
       const n = {
         id: it.id,
         it,
         supplier: String(d.supplier || "").trim(),
         noteNo: String(d.noteNo || "").trim(),
-        dateText: dt ? dt.text : it.meta ? it.meta.date : "",
-        ts: dt ? dt.ts : Date.now(),
+        dateText: dt2 ? dt2.text : it.meta ? it.meta.date : "",
+        ts: dt2 ? dt2.ts : Date.now(),
         lines,
         pages: 1,
         pageIds: [],
@@ -8552,14 +9429,14 @@ function openImport() {
 function concreteFromAi(d, it) {
   const m32 = Number(d.m3);
   if (!isFinite(m32) || m32 <= 0) return null;
-  const dt = parseDate(d.date) || it && it.meta && parseDate(it.meta.date) || null;
+  const dt2 = parseDate(d.date) || it && it.meta && parseDate(it.meta.date) || null;
   const cum = Number(d.cum), ordered = Number(d.ordered);
   const extra = [d.driver ? "נהג " + String(d.driver).trim() : "", d.times ? String(d.times).trim() : ""].filter(Boolean).join(" · ");
   const rec = {
     supplier: String(d.supplier || "").trim(),
     noteNo: String(d.noteNo || "").trim(),
-    dateText: dt ? dt.text : it && it.meta ? it.meta.date : fmtD(Date.now()),
-    ts: dt ? dt.ts : Date.now(),
+    dateText: dt2 ? dt2.text : it && it.meta ? it.meta.date : fmtD(Date.now()),
+    ts: dt2 ? dt2.ts : Date.now(),
     m3: m32,
     mix: d.mix ? String(d.mix).trim() : "",
     element: d.element ? String(d.element).trim() : "",
@@ -8605,9 +9482,9 @@ function openConcreteNote() {
       if (out) {
         if (out.supplier) q("#cnSup").value = out.supplier;
         if (out.noteNo) q("#cnNo").value = String(out.noteNo);
-        const dt = parseDate(out.date);
-        if (dt) {
-          const d = new Date(dt.ts);
+        const dt2 = parseDate(out.date);
+        if (dt2) {
+          const d = new Date(dt2.ts);
           q("#cnDate").value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
         }
         if (isFinite(Number(out.m3)) && Number(out.m3) > 0) q("#cnM3").value = out.m3;
@@ -8827,8 +9704,8 @@ function renderOverview() {
   const cM3 = cons.reduce((s, c) => s + (Number(c.m3) || 0), 0);
   const cDays = new Set(cons.map((c) => c.dateText)).size;
   const lastC = cons.slice().sort((a, b) => b.ts - a.ts)[0];
-  const lastDay = lastC ? cons.filter((c) => c.dateText === lastC.dateText) : [];
-  if ($("#ovConcrete")) $("#ovConcrete").innerHTML = cons.length ? '<div><span class="n">' + fmtM3(cM3) + '</span><span class="k">מ״ק סה״כ</span></div><div><span class="n">' + fmtN(cons.length) + '</span><span class="k">משאיות</span></div><div><span class="n">' + fmtN(cDays) + '</span><span class="k">ימי יציקה</span></div><div><span class="n">' + fmtM3(lastDay.reduce((s, c) => s + (Number(c.m3) || 0), 0)) + '</span><span class="k">מ״ק ביום האחרון · ' + esc(fmtDT(lastC.dateText)) + "</span></div>" + (() => {
+  const lastDay2 = lastC ? cons.filter((c) => c.dateText === lastC.dateText) : [];
+  if ($("#ovConcrete")) $("#ovConcrete").innerHTML = cons.length ? '<div><span class="n">' + fmtM3(cM3) + '</span><span class="k">מ״ק סה״כ</span></div><div><span class="n">' + fmtN(cons.length) + '</span><span class="k">משאיות</span></div><div><span class="n">' + fmtN(cDays) + '</span><span class="k">ימי יציקה</span></div><div><span class="n">' + fmtM3(lastDay2.reduce((s, c) => s + (Number(c.m3) || 0), 0)) + '</span><span class="k">מ״ק ביום האחרון · ' + esc(fmtDT(lastC.dateText)) + "</span></div>" + (() => {
     const m = missingConcrete(cons);
     return m.trucks ? '<div><span class="n" style="color:var(--clay)">' + m.trucks + '</span><span class="k">משאיות ללא תעודה מצולמת</span></div>' : "";
   })() : '<div class="empty" style="width:100%;padding:16px">אין עדיין תעודות בטון.</div>';
@@ -8889,7 +9766,7 @@ function openNoteDetail(id) {
     const c = CATS.find((x) => x.id === l.cat);
     return '<div class="' + (Number(l.qty) < 0 ? "neg" : "") + '"><span>' + esc(l.name) + (c ? ' <small style="color:var(--ink3)">· ' + c.label + "</small>" : "") + "</span><b>" + fmtN(l.qty) + " " + esc(l.unit || "") + "</b></div>";
   }).join("");
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת משלוח"><div class="grab"></div><h2>' + esc(n.supplier || "ספק לא ידוע") + '</h2><div class="kv"><span>תעודה <b>' + esc(n.noteNo || "—") + "</b></span><span>תאריך <b>" + esc(fmtDT(n.dateText) || fmtD(n.ts)) + "</b></span><span><b>" + (n.lines || []).length + "</b> שורות</span>" + (srcs.length > 1 ? "<span><b>" + srcs.length + "</b> עמודים</span>" : "") + (n.by ? "<span>קלט <b>" + esc(n.by) + "</b></span>" : "") + "</div>" + (n.note ? '<div class="note-card">' + esc(n.note) + "</div>" : "") + srcs.map((u, i) => '<img class="dphoto" src="' + u + '" alt="צילום התעודה' + (srcs.length > 1 ? " עמוד " + (i + 1) : "") + '">').join("") + '<div class="dlines">' + (lines || "<div><span>אין שורות</span><b></b></div>") + '</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>' + (srcs.length ? '<button class="ghost" type="button" id="ndPdf" style="flex:1">PDF</button>' : "") + "</div></div>");
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת משלוח"><div class="grab"></div><h2>' + esc(n.supplier || "ספק לא ידוע") + '</h2><div class="kv"><span>תעודה <b>' + esc(n.noteNo || "—") + "</b></span><span>תאריך <b>" + esc(fmtDT(n.dateText) || fmtD(n.ts)) + "</b></span><span><b>" + (n.lines || []).length + "</b> שורות</span>" + (srcs.length > 1 ? "<span><b>" + srcs.length + "</b> עמודים</span>" : "") + (n.by ? "<span>קלט <b>" + esc(n.by) + "</b></span>" : "") + "</div>" + (n.note ? '<div class="note-card">' + esc(n.note) + "</div>" : "") + srcs.map((u2, i) => '<img class="dphoto" src="' + u2 + '" alt="צילום התעודה' + (srcs.length > 1 ? " עמוד " + (i + 1) : "") + '">').join("") + '<div class="dlines">' + (lines || "<div><span>אין שורות</span><b></b></div>") + '</div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button>' + (srcs.length ? '<button class="ghost" type="button" id="ndPdf" style="flex:1">PDF</button>' : "") + "</div></div>");
   const close = closer(scrim);
   scrim.querySelector(".cancel").onclick = close;
   const pdf = scrim.querySelector("#ndPdf");
@@ -8912,7 +9789,7 @@ function openAllNotes() {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="כל התעודות"><div class="grab"></div><h2>כל התעודות</h2><div class="search"><input type="text" id="anQ" placeholder="ספק, מספר תעודה או פריט" autocomplete="off" aria-label="חיפוש תעודה"><span class="ico">⌕</span></div><div class="sechead"><span id="anCount"></span></div><div class="stock" id="anList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
   const close = closer(scrim);
   const list = scrim.querySelector("#anList");
-  function draw() {
+  function draw2() {
     const all = curNotes().slice().sort((a, b) => b.ts - a.ts).filter((n) => !q || hit(n.supplier, q) || hit(n.noteNo, q) || hit(n.note, q) || (n.lines || []).some((l) => hit(l.name, q)));
     scrim.querySelector("#anCount").textContent = all.length + " תעודות";
     list.innerHTML = "";
@@ -8938,7 +9815,7 @@ function openAllNotes() {
       m.textContent = "הצג עוד " + Math.min(30, all.length - max);
       m.onclick = () => {
         max += 30;
-        draw();
+        draw2();
       };
       list.appendChild(m);
     }
@@ -8946,14 +9823,14 @@ function openAllNotes() {
   scrim.querySelector("#anQ").oninput = (e) => {
     q = e.target.value.trim().toLowerCase();
     max = 30;
-    draw();
+    draw2();
   };
   list.onclick = (e) => {
     const c = e.target.closest(".dnote[data-id]");
     if (c) openNoteDetail(c.dataset.id);
   };
   scrim.querySelector(".acts .cancel").onclick = close;
-  draw();
+  draw2();
 }
 function __init$2() {
   DEMO_NOTES = [
@@ -9387,7 +10264,7 @@ function openLog() {
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
-  async function draw() {
+  async function draw2() {
     const present = [...new Set(shared.logs.map((l) => l.kind))];
     q("#lgChips").innerHTML = '<button type="button" class="chip2" data-k="all" aria-pressed="' + (kind === "all") + '">הכל <span class="num">' + shared.logs.length + "</span></button>" + present.map((k) => '<button type="button" class="chip2" data-k="' + esc(k) + '" aria-pressed="' + (kind === k) + '">' + esc(LOG_KINDS[k] || k) + "</button>").join("");
     const rows = shared.logs.filter((l) => kind === "all" || l.kind === kind).slice().sort((a, b) => b.ts - a.ts);
@@ -9413,8 +10290,8 @@ function openLog() {
       const el = document.createElement("div");
       el.className = "logrow";
       el.innerHTML = "<b>" + esc(l.summary || "") + '</b><span class="k ' + esc(l.action || "") + '">' + esc(LOG_KINDS[l.kind] || l.kind || "") + (l.action === "delete" ? " · מחיקה" : l.action === "edit" ? " · עדכון" : "") + '</span><span class="w">' + fmtD(d) + " " + d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) + " · " + esc(who) + (l.dev === "mobile" ? " · טלפון" : "") + (l.data ? ' · <u style="cursor:pointer" data-show="' + esc(l.id) + '">מה נמחק</u>' : "") + "</span>";
-      const u = el.querySelector("[data-show]");
-      if (u) u.onclick = () => {
+      const u2 = el.querySelector("[data-show]");
+      if (u2) u2.onclick = () => {
         try {
           const o = JSON.parse(l.data);
           alertSheet("מה נמחק", '<pre style="white-space:pre-wrap;font-size:.78rem;direction:rtl">' + esc(JSON.stringify(o, null, 1).slice(0, 4e3)) + "</pre>");
@@ -9430,7 +10307,7 @@ function openLog() {
       m.textContent = "עוד " + (rows.length - max);
       m.onclick = () => {
         max += 100;
-        draw();
+        draw2();
       };
       box.appendChild(m);
     }
@@ -9440,9 +10317,9 @@ function openLog() {
     if (!b) return;
     kind = b.dataset.k;
     max = 60;
-    draw();
+    draw2();
   };
-  draw();
+  draw2();
 }
 function alertSheet(title, html) {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>' + esc(title) + "</h2>" + html + '<div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
@@ -9678,8 +10555,8 @@ function openSheet() {
 }
 function __init$1() {
   shared = {};
-  unitMult = (u) => /אלף/.test(String(u || "")) ? 1e3 : /^\s*מאה\s*$/.test(String(u || "")) ? 100 : 1;
-  unitOf = (u) => unitMult(u) > 1 ? "יח'" : u || "";
+  unitMult = (u2) => /אלף/.test(String(u2 || "")) ? 1e3 : /^\s*מאה\s*$/.test(String(u2 || "")) ? 100 : 1;
+  unitOf = (u2) => unitMult(u2) > 1 ? "יח'" : u2 || "";
   BLAME = [
     { id: "supplier", label: "ספק / יצרן", cls: "c-supplier", color: "var(--sage-fill)", claim: true },
     { id: "carrier", label: "מוביל", cls: "c-carrier", color: "var(--info-fill)", claim: true },
@@ -9931,8 +10808,8 @@ function wrData(endIso) {
     const k = shortSup(n.supplier) || "ספק לא ידוע";
     sup.set(k, (sup.get(k) || 0) + 1);
   });
-  const today = isoOf(Date.now()), M = requestMatch(), reqOpen = M.rows.filter((r) => r.k !== "ok");
-  const reqBad = M.rows.filter((r) => ["none", "hold", "short", "late"].includes(r.k));
+  const today = isoOf(Date.now()), M2 = requestMatch(), reqOpen = M2.rows.filter((r) => r.k !== "ok");
+  const reqBad = M2.rows.filter((r) => ["none", "hold", "short", "late"].includes(r.k));
   const poLate = shared.POS.filter((p) => poStatus(p).k === "late");
   const eta = etaRows().filter((r) => !r.arrived), etaLate = eta.filter((r) => r.late), etaSoon = eta.filter((r) => !r.late && r.date && r.date >= today && r.date <= isoOf(Date.now() + 14 * 864e5));
   const flags = [];
@@ -9983,8 +10860,8 @@ function wrHtml(mode, D, o) {
   if (C) {
     if (act3.length) h += '<div class="tiles">' + act3.map((a) => tile(P(a.pct), a.name)).join("") + "</div>";
   } else h += '<div class="tiles">' + tile(D.panA ? NP(D.panA.week) : "—", "פאנלים " + (D.panA ? D.panA.weekLabel : "השבוע")) + tile(N2(D.con.wn) + ' <small style="font-size:.8rem">תעודות</small>', "בטון השבוע · " + fmtN(D.con.wm3) + " מ״ק") + tile(N2(D.iss.wt), "שולחנות נופקו השבוע") + tile(N2(D.notes.length), "תעודות משלוח השבוע") + "</div>";
-  const fig = (src, cap) => '<figure class="ph"><img src="' + e(src) + '" alt="תמונת רחפן של האתר"><figcaption>' + cap + "</figcaption></figure>", dt = (x) => '<span class="n">' + e(isoText(x)) + "</span>";
-  if (o.img || !C) h += "<h3>האתר מהאוויר</h3>" + (!o.img ? '<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>' : o.prev ? '<div class="cmp">' + fig(o.prev, "אז · " + dt(o.prevDate)) + fig(o.img, "עכשיו · " + dt(o.imgDate)) + "</div>" : fig(o.img, "תמונת רחפן · " + dt(o.imgDate) + (o.imgDate < D.startIso ? " · הצילום האחרון" : "")));
+  const fig = (src, cap) => '<figure class="ph"><img src="' + e(src) + '" alt="תמונת רחפן של האתר"><figcaption>' + cap + "</figcaption></figure>", dt2 = (x) => '<span class="n">' + e(isoText(x)) + "</span>";
+  if (o.img || !C) h += "<h3>האתר מהאוויר</h3>" + (!o.img ? '<div class="empty">כאן תופיע תמונת הרחפן השבועית. מעלים אותה בחלון «דוח שבועי» באפליקציה.</div>' : o.prev ? '<div class="cmp">' + fig(o.prev, "אז · " + dt2(o.prevDate)) + fig(o.img, "עכשיו · " + dt2(o.imgDate)) + "</div>" : fig(o.img, "תמונת רחפן · " + dt2(o.imgDate) + (o.imgDate < D.startIso ? " · הצילום האחרון" : "")));
   h += "<h3>התקדמות לפי פעילות</h3>";
   if (!D.acts.length) h += '<div class="empty">אין עדיין סטטוס התקדמות באפליקציה.</div>';
   D.acts.forEach((a) => {
@@ -10087,7 +10964,7 @@ function openWeekly() {
       } catch (e) {
         toast("ההעלאה נכשלה.");
       }
-      draw();
+      draw2();
     };
   };
   const drawPlan = () => {
@@ -10096,28 +10973,28 @@ function openWeekly() {
     const A = shared.STATUS.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
     el.innerHTML = A.length ? A.map((a) => '<div class="wr-prow"><span>' + esc(a.name) + '</span><input type="date" data-id="' + esc(a.id) + '" value="' + esc(a.planEnd || "") + '"></div>').join("") : '<div class="note">אין פעילויות בסטטוס.</div>';
   };
-  const draw = () => {
+  const draw2 = () => {
     const D = wrData(endIso), p = photo();
     q("#wrFrame").srcdoc = wrHtml(mode, D, imgOpts(p, prevShot(p)));
     drawDrone();
   };
-  wrRedraw = draw;
+  wrRedraw = draw2;
   scrim.querySelectorAll("#wrMode [data-m]").forEach((b) => b.onclick = () => {
     mode = b.dataset.m;
     scrim.querySelectorAll("#wrMode [data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    draw();
+    draw2();
   });
   q("#wrEnd").onchange = (ev) => {
     if (ev.target.value) {
       endIso = ev.target.value;
-      draw();
+      draw2();
     }
   };
   let lt = null;
   q("#wrLead").oninput = (ev) => {
     lead = ev.target.value.trim();
     clearTimeout(lt);
-    lt = setTimeout(draw, 400);
+    lt = setTimeout(draw2, 400);
   };
   const ps = q("#wrPlanSave");
   if (ps) ps.onclick = async () => {
@@ -10133,7 +11010,7 @@ function openWeekly() {
     }
     ps.disabled = false;
     toast(n ? "נשמרו " + n + " תאריכי יעד." : "לא היה שינוי.");
-    draw();
+    draw2();
   };
   q("#wrDl").onclick = async () => {
     const b = q("#wrDl");
@@ -10168,7 +11045,7 @@ function openWeekly() {
     }
   };
   drawPlan();
-  draw();
+  draw2();
 }
 function __init() {
   DRONE = [];
@@ -10226,7 +11103,7 @@ const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   wrShrink,
   wrText
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* ברנד: BELECTRIC (אדום #E40033, אפור #666B6E, ענבר #FFAA00, ירוק #9AC339, כחול #3199CC, פונט עברי Alef) · אנרגיה: בילטון (לבן/שחור, FAB צהוב, טבעות אחוז ירוקות) */
@@ -10868,7 +11745,43 @@ body.net-off .tabs{top:var(--netH,0px)}
 .wr-frame{display:block;width:100%;height:62vh;min-height:360px;border:1px solid var(--line);border-radius:6px;background:#fff;margin-top:12px}
 .wr-thumb{display:flex;align-items:center;gap:10px;margin:4px 0 8px}.wr-thumb img{width:96px;height:64px;object-fit:cover;border-radius:4px}.wr-thumb span{color:var(--ink3);font-size:.86rem}
 .wr-plan{margin:12px 0 0;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 12px}.wr-plan summary{font-weight:700;cursor:pointer;min-height:32px}
-.wr-prow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}.wr-prow input{max-width:170px}</style>
+.wr-prow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}.wr-prow input{max-width:170px}
+
+/* האתר נבנה (19-site-build.js): כותרת גדולה, שרטוט, ציר זמן, ארבעה כרטיסי שלב, אבני דרך */
+.sb-lead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.sb-big{font-family:var(--display);font-weight:700;font-size:2.4rem;line-height:1;color:var(--clay);letter-spacing:-.02em}
+.sb-cap{font-size:.92rem;color:var(--ink2);padding-bottom:4px}
+.sb-sub{margin:6px 0 10px;font-size:.87rem;color:var(--ink3)} .sb-sub b{color:var(--ink2)}
+.sb-ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 2px}
+.sb-date{font-family:var(--display);font-weight:700;font-size:1.35rem;line-height:1}
+.sb-today{font-size:.74rem;font-weight:700;border-radius:99px;padding:3px 10px;background:var(--pv);color:#fff;transition:opacity .25s}
+.sb-cvw{position:relative;width:100%;max-width:100%;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;margin-top:6px}
+.sb-cvw:active{cursor:grabbing} .sb-cvw canvas{display:block;width:100%;height:auto}
+.sb-keys{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--ink2);padding:6px 2px 0}
+.sb-keys i{display:inline-block;width:12px;height:9px;border-radius:2px;margin-inline-end:6px;vertical-align:middle}
+.sb-rail{position:relative;height:58px;margin:8px 14px 0;touch-action:none;cursor:pointer;outline:none;user-select:none;-webkit-user-select:none}
+.sb-rail .track{position:absolute;top:20px;left:0;right:0;height:6px;border-radius:99px;background:var(--line2)}
+.sb-rail .fill{position:absolute;top:20px;right:0;height:6px;border-radius:99px;background:var(--pv)}
+.sb-rail .tk{position:absolute;top:30px;width:1px;height:6px;background:var(--line)}
+.sb-rail .lab{position:absolute;top:36px;transform:translateX(50%);font-size:.74rem;color:var(--ink3);white-space:nowrap}
+.sb-rail .lab.now{color:var(--pv);font-weight:700}
+.sb-rail .knob{position:absolute;top:9px;width:28px;height:28px;margin-right:-14px;border-radius:50%;background:var(--paper);border:3px solid var(--pv);box-shadow:0 2px 8px rgba(18,18,18,.25)}
+.sb-ctrl{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:0 2px 8px}
+.sb-ctrl .hint{font-size:.8rem;color:var(--ink3)} .sb-btns{display:flex;gap:8px}
+.sb-btns .ghost{flex:0 0 auto;padding:0 14px;font-size:.88rem}
+.sb-go{background:var(--pv);color:#fff;border:0;border-radius:4px;padding:0 16px;font-weight:700;font-size:.92rem;min-height:44px} .sb-go:hover{background:var(--clay)}
+.sb-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
+@media (min-width:640px){.sb-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.sb-stat{background:var(--sand);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.sb-stat .k{font-size:.76rem;color:var(--ink3);font-weight:700;display:flex;align-items:center;gap:6px} .sb-stat .k i{width:10px;height:8px;border-radius:2px;display:inline-block}
+.sb-stat .v{font-family:var(--display);font-weight:700;font-size:1.4rem;line-height:1.1} .sb-stat .of{font-size:.74rem;color:var(--ink3)}
+.sb-stat .bar{height:6px;border-radius:99px;background:var(--line2);overflow:hidden} .sb-stat .bar span{display:block;height:100%;width:0;border-radius:99px}
+.sb-stat .asof{font-size:.72rem;color:var(--ink3);min-height:1.2em} .sb-stat .asof.old{color:var(--amber);font-weight:700}
+.sb-nomap{margin-top:10px;padding:12px 14px;border:1px dashed var(--ink3);border-radius:var(--r);font-size:.86rem;color:var(--ink2);line-height:1.5}
+.sb-ms{display:flex;flex-direction:column;gap:6px;list-style:none;margin:12px 0 0;padding:0}
+.sb-ms button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;min-height:44px;font-family:inherit}
+.sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
+.sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}</style>
 </head><body>
 <title>יומן אתר</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -10927,6 +11840,13 @@ body.net-off .tabs{top:var(--netH,0px)}
     <h3>מסלול השולחן</h3>
     <div class="note">כל שולחן עובר ארבע תחנות. המספר הוא כמה שולחנות עברו כל תחנה, מתוך סך השולחנות באתר.</div>
     <div class="hbars" id="conPipe"></div>
+  </div>
+
+  <div class="card" id="buildCard" data-fold="build" data-open="1">
+    <h3>האתר נבנה</h3>
+    <div class="note">השרטוט של האתר לאורך זמן, מהסטטוס: קידוחים, עמודים יצוקים, קונסטרוקציה ופאנלים, על מפת השולחנות. היום משמאל; גררו ימינה כדי לראות איך זה נבנה מההתחלה.</div>
+    <div class="empty" id="sbEmpty" style="padding:12px 0 4px">אין עדיין סטטוס התקדמות. כשיהיו רישומים של קידוחים, יציקות, קונסטרוקציה או פאנלים, השרטוט יופיע כאן.</div>
+    <div id="sbBody" hidden></div>
   </div>
 
   <div class="card" id="statusCard" data-fold="status" data-open="1">
