@@ -20,6 +20,7 @@ import * as m16 from "./16-status.js";
 import * as m17 from "./17-eta.js";
 import * as m18 from "./18-identity.js";
 import * as m19 from "./19-site-build.js";
-const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19];
+import * as m20 from "./20-work-map.js";
+const mods=[m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];

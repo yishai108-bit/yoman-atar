@@ -6,6 +6,7 @@ import { N, curPb, pbCalc, prevPb, ringHtml } from "./05-panels.js";
 import { SHOW_PRICES, showTab } from "./08-settings.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
+import { locText, mountLocation, renderPlans, renderWorkMap } from "./20-work-map.js";
 export let shortName, shortSup, emptyWho, STAGES, stageOf, stageLabel, moneyMax, rateMax, runMax;
 export function kitStats(){
   const mvs=shared.demoStock?[]:shared.moves, iss=shared.demoStock?[]:shared.issues, prog=shared.demoStock?[]:shared.progress;
@@ -331,9 +332,10 @@ export function renderContractors(){
     const st=stageOf(p);
     el.innerHTML='<b>'+fmtN(p.tables)+' שולחנות · <span style="color:'+(st==="ok"?"var(--sage)":st==="pan"?"var(--info)":"var(--amber)")+'">'+esc(stageLabel(st))+'</span>'+(p.who?' · '+esc(p.who):'')+(p.ttype?' · '+esc(typeLabel(p.ttype)):'')+'</b>'
       +'<button class="del" type="button" data-delprog="'+esc(p.id)+'">מחק</button>'
-      +'<span>'+esc(fmtDT(p.dateText)||fmtD(p.ts))+(p.by?' · דיווח: '+esc(p.by):'')+(p.note?' · '+esc(p.note):'')+'</span>';
+      +'<span>'+esc(fmtDT(p.dateText)||fmtD(p.ts))+(locText(p)?' · '+esc(locText(p)):'')+(p.by?' · דיווח: '+esc(p.by):'')+(p.note?' · '+esc(p.note):'')+'</span>';
     pg.appendChild(el);
   });
+  renderWorkMap(); renderPlans();
 }
 /* ---- דיווח שולחנות שהושלמו ---- */
 export function openProgress(opt){
@@ -354,10 +356,12 @@ export function openProgress(opt){
       +'<datalist id="pgWhoList">'+whos.map(w=>'<option value="'+esc(w)+'"></option>').join("")+'</datalist></div>'
     +'<div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="'+iso+'"></div>'
     +'<div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="'+esc(ls.get("issuer")||"")+'"></div>'
-    +'<div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שדה 2 שורות 15–16"></div>'
+    +'<div class="f" id="pgLocF"></div>'
+    +'<div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שולחנות ליד הדרך"></div>'
     +'<div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
   const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
+  const loc=mountLocation(q("#pgLocF"),opt||{});
   const setT=n=>{ n=Math.max(1,Math.round(Number(n)||0)); tables=n; q("#pgTables").value=n; };
   q("#pgMinus").onclick=()=>setT(tables-1); q("#pgPlus").onclick=()=>setT(tables+1); q("#pgTables").onchange=e=>setT(e.target.value);
   q("#pgTypes").onclick=e=>{ const b=e.target.closest("[data-t]"); if(!b) return; ttype=b.dataset.t; scrim.querySelectorAll("#pgTypes .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
@@ -372,10 +376,10 @@ export function openProgress(opt){
     if(dv){ const d=new Date(dv+"T12:00:00"); if(!isNaN(d)){ ts=d.getTime(); dateText=fmtD(ts); } }
     const b=q("#pgSave"); b.disabled=true; b.textContent="שומר…";
     const id="pg"+Date.now();
-    const doc={id,ts,dateText,who,tables,ttype,by,stage,note:q("#pgNote").value.trim(),source:"app"};
+    const doc={id,ts,dateText,who,tables,ttype,by,stage,note:q("#pgNote").value.trim(),source:"app",...loc.get()};
     try{ if(shared.DB) await shared.DB.doc("progress/"+id).set(doc); else { shared.progress.push(doc); ls.set("progress",JSON.stringify(shared.progress)); } }
     catch(e){ b.disabled=false; b.textContent="שמור דיווח"; toast("השמירה נכשלה."); return; }
-    logAct("progress","add","דיווח ביצוע: "+fmtN(tables)+" שולחנות · "+stageLabel(stage)+(who?" · "+who:"")+(ttype?" · "+typeLabel(ttype):"")+" · "+dateText,id,by);
+    logAct("progress","add","דיווח ביצוע: "+fmtN(tables)+" שולחנות · "+stageLabel(stage)+(who?" · "+who:"")+(ttype?" · "+typeLabel(ttype):"")+(locText(doc)?" · "+locText(doc):"")+" · "+dateText,id,by);
     if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderOverview(); toast("הדיווח נשמר.");
   };

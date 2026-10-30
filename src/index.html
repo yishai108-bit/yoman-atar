@@ -66,6 +66,21 @@
     <div id="sbBody" hidden></div>
   </div>
 
+  <div class="card" id="workCard" data-fold="work" data-open="1">
+    <h3>מה בוצע במפה</h3>
+    <div class="note">שלושת שלבי השולחן (קונסטרוקציה, פאנלים, אישור מפקח) על שורות השדה, רק מדיווחי ביצוע שנרשם להם מיקום. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה ומאפשרת לדווח שם. דיווח בלי מיקום נספר בכמויות ולא במפה.</div>
+    <div class="empty" id="wmEmpty" style="padding:12px 0 4px">אין עדיין מבנה אתר (שדות ושורות). לאתר עם מפת שולחנות הוא נבנה לבד; אחרת קובעים אותו מהמספרים או מתוכנית.</div>
+    <button class="ghost" id="wmSetup" type="button" style="width:100%;margin:4px 0 8px" hidden>מבנה האתר</button>
+    <div id="wmBody" hidden></div>
+  </div>
+
+  <div class="card" id="plansCard" data-fold="plans" data-open="1">
+    <h3>תוכניות</h3>
+    <div class="note">תוכניות האתר (PDF או תמונה) במופע, לפתיחה בלחיצה מהשטח. תמונת תוכנית יכולה גם לקבוע את מבנה האתר למפה.</div>
+    <div class="stock" id="plansList"></div>
+    <button class="addline" id="btnAddPlan" data-w="edit" type="button" style="margin-top:8px">+ תוכנית</button>
+  </div>
+
   <div class="card" id="statusCard" data-fold="status" data-open="1">
     <h3>סטטוס התקדמות — כל הפעילויות</h3>
     <div class="note">קובץ הסטטוס של החברה, באפליקציה: לכל פעילות (קלונסאות, קידוחים, יציקות, קונסטרוקציה, פאנלים, TML) כמה בוצע מתוך הסה״כ, ימי עבודה שנותרו, וכמה צריך ליום כדי לעמוד בלו״ז. מזינים כמות יומית בלחיצה על הפעילות. ייבוא/עדכון מהקובץ בהגדרות.</div>

@@ -7,6 +7,7 @@ import { FAB_LABEL } from "./05-panels.js";
 import { saveBoq } from "./13-purchasing.js";
 import { openImportChooser, saveCba } from "./14-cba.js";
 import { ROLE } from "./18-identity.js";
+import { locText, openLayout } from "./20-work-map.js";
 export let KIT_SOURCE_DEFAULT, APP_VERSION, SHOW_PRICES, SITE, csvOf;
 export function applySite(d){
   if(!d) return;
@@ -28,6 +29,7 @@ export function openSettings(){
       +'<button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button>'
       +'<button class="ghost" type="button" id="stZip">ייצוא לאקסל<small>כל הטבלאות ב-ZIP</small></button>'
       +'<button class="ghost" type="button" id="stBom">ייבוא BOM / EBOQ / CBA<small>קונסטרוקציה · חשמל · מסחרי</small></button>'
+      +'<button class="ghost" type="button" id="stLayout">מבנה האתר<small>שדות ושורות למפת הביצוע</small></button>'
     +'</div>'
     +F("stName","שם האתר",SITE.name,"","למשל: אתר הקמה עין תמר")
     +F("stCo","חברה",SITE.company,"","BELECTRIC")
@@ -58,6 +60,7 @@ export function openSettings(){
   q("#stBackup").onclick=()=>exportBackup();
   q("#stZip").onclick=()=>exportAllCsv();
   q("#stBom").onclick=()=>{ scrim.remove(); openImportChooser(); };
+  q("#stLayout").onclick=()=>{ scrim.remove(); openLayout(); };
   q("#stRestore").onclick=()=>{ scrim.remove(); openRestore(); };
   q("#stDemo").onclick=()=>{ ["demoDone","demoDoneS"].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); location.reload(); };
   const showAdmin=ROLE==="owner"; q("#stDanger").hidden=!showAdmin;
@@ -109,7 +112,7 @@ export async function exportAllCsv(){
   z.file("תנועות.csv",csvOf(["תאריך","פריט","כמות","כיוון","מי","חתימה","הערה"],shared.moves.map(m=>[d(m.ts),m.item,m.qty,m.dir==="in"?"החזרה":"הוצאה",m.who||"",m.dir==="in"?"":(m.sigAsset||m.sigUrl||m.sigData)?"כן":"לא",m.note||""])));
   z.file("ספירות.csv",csvOf(["תאריך","פריט","נספר","מי ספר","הערה"],shared.counts.map(c=>[d(c.ts),c.item,c.qty,c.who||"",c.note||""])));
   z.file("בטון.csv",csvOf(["תאריך","מספר תעודה","ספק","מ\"ק","מצטבר","סוג","נוצק ב","משאית","הערות"],shared.concrete.map(c=>[c.dateText,c.noteNo,c.supplier,c.m3,c.cum??"",c.mix,c.element,c.truck,c.note])));
-  z.file("דיווחי-ביצוע.csv",csvOf(["תאריך","קבלן","שולחנות","סוג","מדווח","הערה"],shared.progress.map(p=>[p.dateText||d(p.ts),p.who,p.tables,p.ttype?typeLabel(p.ttype):"",p.by||"",p.note||""])));
+  z.file("דיווחי-ביצוע.csv",csvOf(["תאריך","קבלן","שולחנות","שלב","סוג","מיקום","מדווח","הערה"],shared.progress.map(p=>[p.dateText||d(p.ts),p.who,p.tables,p.stage||"con",p.ttype?typeLabel(p.ttype):"",locText(p),p.by||"",p.note||""])));
   z.file("מאזן-פאנלים.csv",csvOf(["תאריך","הוזמנו","נדרש","התקבלו","משטחים סגורים","בודדים","מותקנים","מפוזרים","שבורים","יצאו לאתרים אחרים","מי ספר"],shared.panelBal.slice().sort((a,b)=>a.ts-b.ts).map(b=>[b.dateText,b.ordered,b.required,b.received,b.closed,b.singles,b.installed,b.scattered,b.broken,(b.takenOut||[]).map(t=>t.site+" "+t.qty).join(" · "),b.by||""])));
   z.file("פאנלים-שבורים.csv",csvOf(["תאריך","מספר סידורי","מי שבר","הערה"],shared.records.map(r=>[d(r.ts),r.serial,(byId(BLAME,r.blame)||{}).label||r.blame,r.note||""])));
   z.file("יומן-פעולות.csv",csvOf(["תאריך","שעה","מי","סוג","פעולה","תיאור"],shared.logs.slice().sort((a,b)=>a.ts-b.ts).map(l=>[d(l.ts),new Date(l.ts).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),l.who||"",LOG_KINDS[l.kind]||l.kind,l.action,l.summary])));
@@ -288,7 +291,7 @@ export function showTab(which){
 export function __init(){
 /* ================= הגדרות אתר, גיבוי, ייבוא BOM ================= */
 KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-APP_VERSION = "56";
+APP_VERSION = "57";
 SHOW_PRICES = false;
    // בלי מחירים באפליקציה: שום ₪ לא מוצג (מחירים שנשמרו נשארים מוסתרים)
 SITE = {name:"אתר הקמה עין תמר",company:"BELECTRIC",panelsPerTable:81,custom:false};

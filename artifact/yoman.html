@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$j() {
+function __init$k() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$j,
+  __init: __init$k,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -870,7 +870,7 @@ function openStatusImport() {
     renderStatus();
   };
 }
-function __init$i() {
+function __init$j() {
   isWorkday = (iso) => (/* @__PURE__ */ new Date(iso + "T12:00:00")).getDay() <= 4;
   $("#btnStatusImp").onclick = openStatusImport;
   $("#btnStatusCsv").onclick = () => {
@@ -890,7 +890,7 @@ function __init$i() {
 }
 const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$i,
+  __init: __init$j,
   get isWorkday() {
     return isWorkday;
   },
@@ -902,6 +902,838 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   statusCalc,
   statusHolidays,
   workdaysBetween
+}, Symbol.toStringTag, { value: "Module" }));
+const COL = { con: "#FFAA00", pan: "#3199CC", ok: "#9AC339" }, ORDER = ["con", "pan", "ok"];
+const PLAN_W = 620;
+const PLAN_PROMPT = 'בתמונה תוכנית של אתר סולארי (מבט מלמעלה): שדות של שולחנות פאנלים בשורות. בנה ממנה מבנה סכמתי למעקב ביצוע. קואורדינטות x ו-y מ-0 עד 1000 על פני התמונה (0,0 בפינה השמאלית העליונה). החזר רק JSON, בלי הסברים: {"fence":[x,y,w,h] או null,"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע, אחרת מערב/מזרח או A, B…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות בשדה>,"tables":<שולחנות בשורה טיפוסית>}]}. שדה = גוש שורות רציף; דרך רחבה בין גושים מפרידה שדות.';
+const num = (v) => Number.isFinite(Number(v)) ? Number(v) : NaN;
+const validId = (v) => {
+  v = v == null ? "" : String(v).trim();
+  return /^[A-Za-z0-9_\-.:~֐-׿]{1,40}$/.test(v) ? v : "";
+};
+function evenRows(f, n, tables) {
+  const out = [];
+  const h = f.h / n;
+  for (let i = 0; i < n; i++) {
+    const y = f.y + f.h - (i + 1) * h;
+    out.push({ n: i + 1, x: f.x, y: y + h * 0.2, w: f.w, h: h * 0.6, tables });
+  }
+  return out;
+}
+function normLayout(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const box = (o) => {
+    const x = num(o.x), y = num(o.y), w = num(o.w), h = num(o.h);
+    return [x, y, w, h].every(Number.isFinite) && w > 0 && h > 0 ? { x, y, w, h } : null;
+  };
+  const fields = (Array.isArray(raw.fields) ? raw.fields : []).map((f, i) => {
+    const b = box(f || {});
+    if (!b) return null;
+    return { ...b, id: validId(f.id) || "f" + (i + 1), name: String(f.name || "שדה " + String.fromCharCode(65 + i)).slice(0, 30), rows: Math.max(1, Math.min(80, Math.round(num(f.rows) || Math.max(2, b.h / 20)))), tables: Math.max(1, Math.min(60, Math.round(num(f.tables) || 1))) };
+  }).filter(Boolean).slice(0, 40);
+  if (!fields.length) return null;
+  const used = /* @__PURE__ */ new Set();
+  fields.forEach((f) => {
+    let id = f.id, n = 1;
+    while (used.has(id)) id = f.id + "~" + ++n;
+    f.id = id;
+    used.add(id);
+  });
+  let fx, fy, fw, fh;
+  const fb = Array.isArray(raw.fence) && raw.fence.length === 4 && raw.fence.map(num);
+  if (fb && fb.every(Number.isFinite) && fb[2] > 0 && fb[3] > 0) [fx, fy, fw, fh] = fb;
+  else {
+    const xs = fields.flatMap((f) => [f.x, f.x + f.w]), ys = fields.flatMap((f) => [f.y, f.y + f.h]);
+    fx = Math.min(...xs);
+    fy = Math.min(...ys);
+    fw = Math.max(...xs) - fx || 1;
+    fh = Math.max(...ys) - fy || 1;
+  }
+  const M2 = 16, k = (PLAN_W - 2 * M2) / fw, X = (x) => M2 + (x - fx) * k, Y = (y) => M2 + (y - fy) * k;
+  const F = fields.map((f) => {
+    const g = { id: f.id, name: f.name, x: X(f.x), y: Y(f.y), w: f.w * k, h: f.h * k };
+    g.rows = evenRows(g, f.rows, f.tables);
+    return g;
+  });
+  return { w: PLAN_W, h: Math.round(fh * k + 2 * M2), fields: F, src: "plan" };
+}
+function genLayout(g) {
+  const fields = Math.max(1, Math.min(12, Math.round(num(g && g.fields) || 1))), rows = Math.max(1, Math.min(80, Math.round(num(g && g.rows) || 10))), tables = Math.max(1, Math.min(60, Math.round(num(g && g.tables) || 10)));
+  const names = String(g && g.names || "").split(/[,،\n]/).map((s) => s.trim()).filter(Boolean);
+  const M2 = 16, cols = fields > 1 ? 2 : 1, gut = 24, fw = (PLAN_W - 2 * M2 - (cols - 1) * gut) / cols, fh = rows * 14 + 8;
+  const F = [];
+  for (let i = 0; i < fields; i++) {
+    const c = i % cols, r = Math.floor(i / cols);
+    const f = { id: "f" + (i + 1), name: names[i] || "שדה " + String.fromCharCode(65 + i), x: M2 + c * (fw + gut), y: M2 + r * (fh + gut), w: fw, h: fh };
+    f.rows = evenRows(f, rows, tables);
+    F.push(f);
+  }
+  const rowsN = Math.ceil(fields / cols);
+  return { w: PLAN_W, h: Math.round(M2 * 2 + rowsN * fh + (rowsN - 1) * gut), fields: F, src: "gen" };
+}
+function layoutFromTables(map) {
+  const T = map && Array.isArray(map.tables) ? map.tables.filter((t) => Array.isArray(t) && t.length >= 4) : [];
+  if (T.length < 4) return null;
+  const rowsY = [...new Set(T.map((t) => t[1]))].sort((a, b) => b - a);
+  const gapAt = {};
+  let withGap = 0;
+  rowsY.forEach((y) => {
+    const r = T.filter((t) => t[1] === y).sort((a, b) => a[0] - b[0]);
+    let g = 0, c = null;
+    for (let i = 1; i < r.length; i++) {
+      const d = r[i][0] - (r[i - 1][0] + r[i - 1][2]);
+      if (d > g) {
+        g = d;
+        c = r[i - 1][0] + r[i - 1][2] + d / 2;
+      }
+    }
+    if (g > 6) {
+      gapAt[y] = c;
+      withGap++;
+    }
+  });
+  const split = withGap >= rowsY.length * 0.6;
+  const gapOf = (y) => {
+    if (gapAt[y] != null) return gapAt[y];
+    let best = null, bd = Infinity;
+    for (const k in gapAt) {
+      const d = Math.abs(k - y);
+      if (d < bd) {
+        bd = d;
+        best = gapAt[k];
+      }
+    }
+    return best;
+  };
+  const west = (t) => !split || t[0] + t[2] / 2 < gapOf(t[1]);
+  const rowNo = new Map(rowsY.map((y, i) => [y, i + 1]));
+  const mk = (id, name, sel2) => {
+    const S = T.filter(sel2);
+    if (!S.length) return null;
+    const ys = [...new Set(S.map((t) => t[1]))].sort((a, b) => b - a);
+    const rows = ys.map((y2) => {
+      const r = S.filter((t) => t[1] === y2);
+      const x0 = Math.min(...r.map((t) => t[0])), x12 = Math.max(...r.map((t) => t[0] + t[2])), h = Math.max(...r.map((t) => t[3]));
+      return { n: rowNo.get(y2), x: x0, y: y2, w: x12 - x0, h, tables: r.length };
+    });
+    const x = Math.min(...rows.map((r) => r.x)), x1 = Math.max(...rows.map((r) => r.x + r.w)), y = Math.min(...rows.map((r) => r.y)), y1 = Math.max(...rows.map((r) => r.y + r.h));
+    return { id, name, x, y, w: x1 - x, h: y1 - y, rows };
+  };
+  const F = split ? [mk("west", "מערב", west), mk("east", "מזרח", (t) => !west(t))].filter(Boolean) : [mk("field", "השדה", () => true)];
+  return { w: map.w || Math.max(...T.map((t) => t[0] + t[2])) + 20, h: map.h || Math.max(...T.map((t) => t[1] + t[3])) + 20, fields: F, src: "map", fill: "top" };
+}
+function layoutDoc() {
+  return shared.LAYOUT || null;
+}
+function currentLayout() {
+  const d = layoutDoc();
+  if (d && d.layout) {
+    const L = normLayout(d.layout);
+    if (L) {
+      L.planId = d.planId || "";
+      return L;
+    }
+  }
+  if (d && d.gen) return genLayout(d.gen);
+  return layoutFromTables(siteMap());
+}
+const layoutSummary = (L) => L ? L.fields.length + " שדות · " + L.fields.reduce((a, f) => a + f.rows.length, 0) + " שורות · " + fmtN(L.fields.reduce((a, f) => a + f.rows.reduce((s, r) => s + r.tables, 0), 0)) + " שולחנות" : "";
+const layoutSrcText = (L) => !L ? "אין עדיין מבנה אתר" : L.src === "map" ? "לפי מפת השולחנות של האתר" : L.src === "plan" ? "לפי תוכנית שנקראה" : "לפי המספרים בהגדרות";
+async function saveLayout(doc) {
+  doc = { ...doc, ts: Date.now(), by: actorName() };
+  if (shared.DB) await shared.DB.doc("settings/layout").set(doc);
+  else {
+    shared.LAYOUT = doc;
+    ls.set("layout", JSON.stringify(doc));
+    renderWorkMap();
+  }
+}
+const rowsOf = (p) => Array.isArray(p && p.rows) && p.rows.length === 2 && p.rows.every((n) => Number.isFinite(Number(n))) ? [Math.min(...p.rows.map(Number)), Math.max(...p.rows.map(Number))] : null;
+const locText = (p) => p && p.areaId ? (p.area || p.areaId) + (rowsOf(p) ? " · שורות " + rowsOf(p)[0] + (rowsOf(p)[1] !== rowsOf(p)[0] ? "–" + rowsOf(p)[1] : "") : "") : "";
+function placeReports(L, prog, untilTs) {
+  const F = {};
+  const unplaced = [];
+  let placed = 0;
+  if (!L) return { F, unplaced: prog.slice(), placed: 0 };
+  L.fields.forEach((f) => {
+    F[f.id] = {};
+    f.rows.forEach((r) => {
+      F[f.id][r.n] = { con: 0, pan: 0, ok: 0, last: {} };
+    });
+  });
+  prog.slice().sort((a, b) => a.ts - b.ts).forEach((p) => {
+    if (untilTs && p.ts > untilTs) return;
+    const f = p.areaId && L.fields.find((x) => x.id === p.areaId);
+    if (!f) {
+      unplaced.push(p);
+      return;
+    }
+    const k = stageOf(p), rr = rowsOf(p);
+    let rows = f.rows.filter((r) => !rr || r.n >= rr[0] && r.n <= rr[1]);
+    if (!rows.length) {
+      unplaced.push(p);
+      return;
+    }
+    if (L.fill === "top") rows = rows.slice().reverse();
+    let left = Number(p.tables) || 0;
+    placed++;
+    for (const r of rows) {
+      const cell = F[f.id][r.n];
+      const room = Math.max(0, r.tables - cell[k]);
+      const g = Math.min(room, left);
+      if (g > 0) {
+        cell[k] += g;
+        cell.last[k] = p.ts;
+        left -= g;
+      }
+      if (left <= 0) break;
+    }
+    if (left > 0 && rows.length) {
+      const cell = F[f.id][rows[rows.length - 1].n];
+      cell[k] += left;
+      cell.last[k] = p.ts;
+    }
+  });
+  return { F, unplaced, placed };
+}
+function pendingRuns(L, F) {
+  const out = [];
+  if (!L) return out;
+  const runs = (f, test) => {
+    const r = [];
+    let s = null, prev = null;
+    f.rows.forEach((row) => {
+      const ok = test(F[f.id][row.n], row);
+      if (ok) {
+        if (s === null) s = row.n;
+        prev = row.n;
+      } else if (s !== null) {
+        r.push([s, prev]);
+        s = null;
+      }
+    });
+    if (s !== null) r.push([s, prev]);
+    return r;
+  };
+  const fmt2 = (rs) => rs.map(([a, b]) => a === b ? String(a) : a + "–" + b).join(", ");
+  const nT = (f, rs) => f.rows.filter((r) => rs.some(([a, b]) => r.n >= a && r.n <= b)).reduce((s, r) => s + r.tables, 0);
+  L.fields.forEach((f) => {
+    const none = runs(f, (c) => c.con <= 0 && c.pan <= 0 && c.ok <= 0), noPan = runs(f, (c, r) => c.con >= r.tables && c.pan < r.tables), noOk = runs(f, (c, r) => c.pan >= r.tables && c.ok < r.tables);
+    if (none.length) out.push({ f, k: "none", rows: none, text: "שורות " + fmt2(none) + ": עוד לא התחילו", tables: nT(f, none) });
+    if (noPan.length) out.push({ f, k: "pan", rows: noPan, text: "שורות " + fmt2(noPan) + ": קונסטרוקציה גמורה, מחכות לפאנלים", tables: nT(f, noPan) });
+    if (noOk.length) out.push({ f, k: "ok", rows: noOk, text: "שורות " + fmt2(noOk) + ": פאנלים עליהן, מחכות לאישור מפקח", tables: nT(f, noOk) });
+  });
+  return out;
+}
+let focus = null, sel = null, built$1 = false;
+function geom(cv2, L, f) {
+  const W = cv2.clientWidth || 360;
+  if (f) {
+    const rowH = Math.min(22, Math.max(12, Math.floor(300 / f.rows.length)));
+    const h = f.rows.length * rowH + 40;
+    return { W, H: h, rowH, zoom: true, f, rows: f.rows.map((r, i) => ({ r, x: 44, y: 30 + (f.rows.length - 1 - i) * rowH, w: W - 60, h: rowH * 0.62 })) };
+  }
+  const s = W / L.w;
+  return { W, H: Math.round(L.h * s) + 8, s, zoom: false };
+}
+function paint(cv2, L, F, opts) {
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  const g = geom(cv2, L, focus && L.fields.find((x) => x.id === focus));
+  const ctx2 = cv2.getContext("2d");
+  cv2.width = Math.round(g.W * dpr);
+  cv2.height = Math.round(g.H * dpr);
+  cv2.style.height = g.H + "px";
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx2.fillStyle = "#fff";
+  ctx2.fillRect(0, 0, g.W, g.H);
+  ctx2.font = "700 11px Alef, Heebo, Arial";
+  ctx2.textBaseline = "middle";
+  const bar = (x, y, w, h, cell, tables, n, big) => {
+    ctx2.fillStyle = "#ECEDED";
+    ctx2.fillRect(x, y, w, h);
+    ORDER.forEach((k) => {
+      const fr = Math.min(1, cell[k] / tables);
+      if (fr > 0) {
+        ctx2.fillStyle = COL[k];
+        ctx2.fillRect(x, y, w * fr, h);
+      }
+    });
+    if (cell.con > tables || cell.pan > tables || cell.ok > tables) {
+      ctx2.strokeStyle = "#B30027";
+      ctx2.lineWidth = 1.5;
+      ctx2.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+    }
+    const recent = Object.values(cell.last).some((t) => t > Date.now() - 7 * 864e5);
+    if (recent) {
+      ctx2.strokeStyle = "#E40033";
+      ctx2.lineWidth = 1.5;
+      ctx2.strokeRect(x - 1, y - 1, w + 2, h + 2);
+    }
+    if (sel && sel.n === n && sel.f === (big ? g.f.id : sel.f)) {
+      ctx2.strokeStyle = "#121212";
+      ctx2.lineWidth = 2;
+      ctx2.strokeRect(x - 2, y - 2, w + 4, h + 4);
+    }
+  };
+  if (g.zoom) {
+    const f = g.f;
+    ctx2.fillStyle = "#3F4447";
+    ctx2.textAlign = "right";
+    ctx2.fillText(f.name + " · " + f.rows.length + " שורות", g.W - 8, 14);
+    g.rows.forEach(({ r, x, y, w, h }) => {
+      const cell = F[f.id][r.n];
+      bar(x, y, w, h, cell, r.tables, r.n, true);
+      ctx2.fillStyle = "#666B6E";
+      ctx2.textAlign = "right";
+      ctx2.fillText(String(r.n), g.W - 14, y + h / 2);
+      ctx2.textAlign = "left";
+      ctx2.fillStyle = "#9A9EA1";
+      ctx2.font = "600 10px Alef, Heebo, Arial";
+      ctx2.fillText(fmtN(r.tables), x - 40, y + h / 2);
+      ctx2.font = "700 11px Alef, Heebo, Arial";
+    });
+    return g;
+  }
+  const s = g.s;
+  ctx2.setLineDash([3, 3]);
+  ctx2.strokeStyle = "#C9CBCC";
+  ctx2.lineWidth = 1;
+  L.fields.forEach((f) => {
+    ctx2.strokeRect(f.x * s - 3, f.y * s - 3, f.w * s + 6, f.h * s + 6);
+    ctx2.fillStyle = "#3F4447";
+    ctx2.textAlign = "center";
+    ctx2.setLineDash([]);
+    ctx2.fillText(f.name, (f.x + f.w / 2) * s, Math.max(8, f.y * s - 10));
+    ctx2.setLineDash([3, 3]);
+    f.rows.forEach((r) => {
+      const cell = F[f.id][r.n];
+      const h = Math.max(2.5, r.h * s * 0.7);
+      bar(r.x * s, r.y * s + (r.h * s - h) / 2, r.w * s, h, cell, r.tables, r.n, false);
+    });
+    ctx2.setLineDash([]);
+    ctx2.fillStyle = "#9A9EA1";
+    ctx2.font = "600 9px Alef, Heebo, Arial";
+    ctx2.textAlign = "left";
+    const every = f.rows.length > 14 ? 5 : 1;
+    f.rows.forEach((r) => {
+      if (r.n === 1 || r.n % every === 0) ctx2.fillText(String(r.n), (r.x + r.w) * s + 3, (r.y + r.h / 2) * s);
+    });
+    ctx2.font = "700 11px Alef, Heebo, Arial";
+    ctx2.setLineDash([3, 3]);
+  });
+  ctx2.setLineDash([]);
+  return g;
+}
+function pickRow(L, g, x, y) {
+  if (g.zoom) {
+    let best2 = null, bd2 = Infinity;
+    g.rows.forEach(({ r, y: ry, h }) => {
+      const d = Math.abs(y - (ry + h / 2));
+      if (d < bd2) {
+        bd2 = d;
+        best2 = r;
+      }
+    });
+    return best2 ? { f: g.f, r: best2 } : null;
+  }
+  const s = g.s;
+  const f = L.fields.find((f2) => x >= f2.x * s - 6 && x <= (f2.x + f2.w) * s + 6 && y >= f2.y * s - 6 && y <= (f2.y + f2.h) * s + 6);
+  if (!f) return null;
+  let best = null, bd = Infinity;
+  f.rows.forEach((r) => {
+    const d = Math.abs(y - (r.y + r.h / 2) * s);
+    if (d < bd) {
+      bd = d;
+      best = r;
+    }
+  });
+  return { f, r: best };
+}
+function drawMini(cv2, L, F, areaId, rows, zoomField) {
+  const keep = [focus, sel];
+  focus = zoomField || null;
+  sel = null;
+  const g = paint(cv2, L, F);
+  const ctx2 = cv2.getContext("2d");
+  const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const f = areaId && L.fields.find((x) => x.id === areaId);
+  if (f) {
+    ctx2.strokeStyle = "#121212";
+    ctx2.lineWidth = 2;
+    if (g.zoom) {
+      g.rows.forEach(({ r, x, y, w, h }) => {
+        if (rows && r.n >= rows[0] && r.n <= rows[1]) ctx2.strokeRect(x - 2, y - 2, w + 4, h + 4);
+      });
+    } else {
+      ctx2.strokeRect(f.x * g.s - 5, f.y * g.s - 5, f.w * g.s + 10, f.h * g.s + 10);
+      if (rows) f.rows.forEach((r) => {
+        if (r.n >= rows[0] && r.n <= rows[1]) {
+          ctx2.strokeRect(r.x * g.s - 2, r.y * g.s - 1, r.w * g.s + 4, r.h * g.s + 2);
+        }
+      });
+    }
+  }
+  [focus, sel] = keep;
+  return g;
+}
+function buildDom$1() {
+  const box = $("#wmBody");
+  if (!box || built$1) return;
+  built$1 = true;
+  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="wmBig">0</span><span class="sb-cap" id="wmCap">שורות עם פאנלים</span></div><div class="sb-sub" id="wmSub"></div><div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה"></canvas></div><div class="sb-keys"><span><i style="background:#ECEDED;border:1px solid #C9CBCC"></i>מתוכנן</span><span><i style="background:' + COL.con + '"></i>קונסטרוקציה</span><span><i style="background:' + COL.pan + '"></i>פאנלים</span><span><i style="background:' + COL.ok + '"></i>אושר ע״י מפקח</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>דווח בשבוע האחרון</span></div><div class="wm-zoom" id="wmZoom" hidden></div><div class="wm-unp" id="wmUnp" hidden></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="wmPendN"></span></div><div class="wm-pend" id="wmPend"></div><div class="hint" id="wmSrc" style="margin-top:8px"></div>';
+  const cv2 = $("#wmCv");
+  cv2.onclick = (e) => {
+    const L = currentLayout();
+    if (!L) return;
+    const r = cv2.getBoundingClientRect();
+    const g = geom(cv2, L, focus && L.fields.find((x) => x.id === focus));
+    const hit2 = pickRow(L, g, e.clientX - r.left, e.clientY - r.top);
+    if (!hit2) {
+      if (focus) {
+        focus = null;
+        sel = null;
+        renderWorkMap();
+      }
+      return;
+    }
+    if (!focus) {
+      focus = hit2.f.id;
+      sel = null;
+    } else sel = { f: hit2.f.id, n: hit2.r.n };
+    renderWorkMap();
+  };
+  addEventListener("resize", () => {
+    clearTimeout(buildDom$1.t);
+    buildDom$1.t = setTimeout(renderWorkMap, 80);
+  });
+}
+function renderWorkMap() {
+  const card = $("#workCard");
+  if (!card) return;
+  buildDom$1();
+  const L = currentLayout(), prog = shared.demoStock ? [] : shared.progress || [];
+  $("#wmEmpty").hidden = !!L;
+  $("#wmBody").hidden = !L;
+  $("#wmSetup").hidden = !!L || ROLE !== "owner";
+  if (!L) {
+    foldSum("work", "");
+    return;
+  }
+  if (focus && !L.fields.some((f) => f.id === focus)) {
+    focus = null;
+    sel = null;
+  }
+  const { F, unplaced, placed } = placeReports(L, prog);
+  const rowsAll = L.fields.flatMap((f) => f.rows.map((r) => ({ f, r, c: F[f.id][r.n] })));
+  const done = (k) => rowsAll.filter((x) => x.c[k] >= x.r.tables).length, sum = (k) => rowsAll.reduce((s, x) => s + Math.min(x.r.tables, x.c[k]), 0);
+  $("#wmBig").textContent = fmtN(done("pan")) + " / " + fmtN(rowsAll.length);
+  $("#wmSub").innerHTML = "שולחנות ממוקמים במפה: קונסטרוקציה <b>" + fmtN(sum("con")) + "</b> · פאנלים <b>" + fmtN(sum("pan")) + "</b> · אושרו <b>" + fmtN(sum("ok")) + "</b>" + (placed ? " · מתוך " + placed + " דיווחים עם מיקום" : "");
+  paint($("#wmCv"), L, F);
+  const z = $("#wmZoom");
+  z.hidden = !focus;
+  if (focus) {
+    const f = L.fields.find((x) => x.id === focus);
+    const r = sel && f.rows.find((x) => x.n === sel.n);
+    const reps = prog.filter((p) => p.areaId === f.id && (!r || !rowsOf(p) || r.n >= rowsOf(p)[0] && r.n <= rowsOf(p)[1])).sort((a, b) => b.ts - a.ts);
+    const cell = r ? F[f.id][r.n] : null;
+    z.innerHTML = '<div class="zm-head"><b>' + esc(f.name) + (r ? " · שורה " + r.n + " · " + fmtN(r.tables) + " שולחנות" : " · לחצו על שורה לפירוט") + '</b><button class="linkbtn" type="button" id="wmBack">חזרה למפה ‹</button></div>' + (cell ? '<div class="zm-ph">' + ORDER.map((k) => {
+      const st = STAGES.find((s) => s[0] === k);
+      const v = cell[k];
+      return '<div class="zm-row' + (v >= r.tables ? " done" : v > 0 ? " on" : "") + '"><i style="background:' + COL[k] + '"></i><span>' + esc(st ? st[1] : k) + '</span><span class="num">' + fmtN(v) + " / " + fmtN(r.tables) + '</span><span class="d">' + (cell.last[k] ? esc(fmtD(cell.last[k])) : v > 0 ? "" : "עוד לא") + "</span></div>";
+    }).join("") + "</div>" : "") + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 12).map((p) => {
+      const st = STAGES.find((s) => s[0] === stageOf(p));
+      return '<div class="zm-rep"><span class="num">' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + "</span><span>" + fmtN(p.tables) + " שולחנות · " + esc(st ? st[1] : "") + (rowsOf(p) ? " · שורות " + rowsOf(p)[0] + (rowsOf(p)[1] !== rowsOf(p)[0] ? "–" + rowsOf(p)[1] : "") : "") + (p.who ? " · " + esc(p.who) : "") + (p.note ? " · " + esc(p.note) : "") + "</span></div>";
+    }).join("") + (reps.length > 12 ? '<div class="hint">מוצגים 12 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן.</div>') + (ROLE !== "viewer" ? '<button class="ghost" type="button" id="wmHere" style="width:100%;margin-top:8px">דיווח ביצוע כאן</button>' : "");
+    $("#wmBack").onclick = () => {
+      focus = null;
+      sel = null;
+      renderWorkMap();
+    };
+    const hb = $("#wmHere");
+    if (hb) hb.onclick = () => openProgress({ areaId: f.id, rows: r ? [r.n, r.n] : null });
+  }
+  const u2 = $("#wmUnp");
+  u2.hidden = !unplaced.length;
+  if (unplaced.length) u2.innerHTML = "<span><b>" + unplaced.length + "</b> דיווחי ביצוע בלי מיקום: נספרים בכמויות, לא במפה.</span>" + (ROLE !== "viewer" ? '<button class="linkbtn" type="button" id="wmPlace">מקם ›</button>' : "");
+  const pb = $("#wmPlace");
+  if (pb) pb.onclick = () => openUnplaced(L, unplaced);
+  const pend = pendingRuns(L, F);
+  const pe = $("#wmPend");
+  pe.innerHTML = "";
+  if (!pend.length) pe.innerHTML = '<div class="empty" style="padding:8px 0">' + (placed ? "כל השורות במפה אושרו." : "עוד לא דווח ביצוע עם מיקום. בדיווח הבא בוחרים שדה ושורות, והמפה מתחילה להיצבע.") + "</div>";
+  pend.forEach((x) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "slip wm-pd " + x.k;
+    b.innerHTML = "<b>" + esc(x.f.name) + ' <small style="color:var(--ink3)">' + fmtN(x.tables) + " שולחנות</small></b><span>" + esc(x.text) + "</span>";
+    b.onclick = () => {
+      focus = x.f.id;
+      sel = { f: x.f.id, n: x.rows[0][0] };
+      renderWorkMap();
+      $("#wmCv").scrollIntoView({ block: "nearest", behavior: "smooth" });
+    };
+    pe.appendChild(b);
+  });
+  $("#wmPendN").textContent = pend.length ? fmtN(pend.reduce((s, x) => s + x.tables, 0)) + " שולחנות" : "";
+  $("#wmSrc").textContent = layoutSrcText(L) + " · " + layoutSummary(L) + (ROLE === "owner" ? " · שינוי בהגדרות ← מבנה האתר" : "");
+  foldSum("work", fmtN(done("pan")) + " / " + fmtN(rowsAll.length) + " שורות" + (unplaced.length ? " · " + unplaced.length + " בלי מיקום" : ""));
+}
+function mountLocation(box, preset) {
+  const L = currentLayout();
+  preset = preset || {};
+  if (!L) {
+    box.innerHTML = '<label>מיקום</label><div class="hint">אין עדיין מבנה אתר, אז הדיווח נספר בכמויות בלי מפה.' + (ROLE === "owner" ? " מבנה האתר נקבע בהגדרות." : "") + "</div>";
+    return { get: () => ({}) };
+  }
+  const { F } = placeReports(L, shared.demoStock ? [] : shared.progress || []);
+  let areaId = preset.areaId && L.fields.some((f) => f.id === preset.areaId) ? preset.areaId : "", rows = rowsOf(preset) || null;
+  box.innerHTML = '<label>איפה</label><div class="chips" id="lcF" style="margin-bottom:6px"><button type="button" class="chip2" data-f="" aria-pressed="' + !areaId + '">בלי מיקום</button>' + L.fields.map((f) => '<button type="button" class="chip2" data-f="' + esc(f.id) + '" aria-pressed="' + (f.id === areaId) + '">' + esc(f.name) + "</button>").join("") + '</div><div id="lcRowsF" hidden><input type="text" id="lcRows" inputmode="numeric" placeholder="שורות, למשל 12 או 12–14" value="' + (rows ? rows[0] + (rows[1] !== rows[0] ? "–" + rows[1] : "") : "") + '" aria-label="שורות"><div class="hint">שורה 1 למטה, כמו בשטח. לחיצה על שורה במפה מסמנת אותה; לחיצה שנייה סוגרת טווח. בלי שורות, הדיווח ממלא את השדה בסדר הבנייה' + (L.fill === "top" ? " (מלמעלה)" : " (משורה 1)") + '.</div></div><div class="wm-mini"><canvas id="lcCv"></canvas></div><div class="hint" id="lcHint"></div>';
+  const cv2 = box.querySelector("#lcCv");
+  const parse = (v) => {
+    const m = /(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v || ""));
+    if (!m) return null;
+    const a = Number(m[1]), b = m[2] ? Number(m[2]) : a;
+    return a > 0 ? [Math.min(a, b), Math.max(a, b)] : null;
+  };
+  const sync = () => {
+    box.querySelectorAll("#lcF .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.f === areaId)));
+    box.querySelector("#lcRowsF").hidden = !areaId;
+    box.querySelector("#lcHint").textContent = areaId ? "" : "בלי מיקום הדיווח נספר בכמויות, אבל לא נצבע במפה.";
+    if (cv2.clientWidth) drawMini(cv2, L, F, areaId, rows, areaId || null);
+  };
+  box.querySelector("#lcF").onclick = (e) => {
+    const b = e.target.closest("[data-f]");
+    if (!b) return;
+    areaId = b.dataset.f;
+    rows = null;
+    box.querySelector("#lcRows").value = "";
+    sync();
+  };
+  box.querySelector("#lcRows").oninput = (e) => {
+    rows = parse(e.target.value);
+    sync();
+  };
+  cv2.onclick = (e) => {
+    const r = cv2.getBoundingClientRect();
+    const g = geom(cv2, L, areaId && L.fields.find((x) => x.id === areaId));
+    const hit2 = pickRow(L, g, e.clientX - r.left, e.clientY - r.top);
+    if (!hit2) return;
+    if (!areaId || hit2.f.id !== areaId) {
+      areaId = hit2.f.id;
+      rows = null;
+      box.querySelector("#lcRows").value = "";
+    } else {
+      const n = hit2.r.n;
+      rows = !rows ? [n, n] : rows[0] === rows[1] && rows[0] !== n ? [Math.min(rows[0], n), Math.max(rows[0], n)] : [n, n];
+      box.querySelector("#lcRows").value = rows[0] + (rows[1] !== rows[0] ? "–" + rows[1] : "");
+    }
+    sync();
+  };
+  setTimeout(sync, 30);
+  setTimeout(sync, 300);
+  return { get: () => {
+    const f = L.fields.find((x) => x.id === areaId);
+    return f ? { areaId: f.id, area: f.name, rows: rows || null } : { areaId: "", area: "", rows: null };
+  } };
+}
+function openUnplaced(L, list) {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווחים בלי מיקום"><div class="grab"></div><h2>דיווחים בלי מיקום</h2><div class="hint" style="margin-bottom:8px">לחיצה על דיווח פותחת בחירת שדה ושורות. הכמות והתאריך לא משתנים.</div><div class="stock" id="upList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close = closer(scrim);
+  scrim.querySelector(".cancel").onclick = close;
+  const box = scrim.querySelector("#upList");
+  list.slice().sort((a, b) => b.ts - a.ts).forEach((p) => {
+    const st = STAGES.find((s) => s[0] === stageOf(p));
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "slip";
+    b.innerHTML = "<b>" + fmtN(p.tables) + " שולחנות · " + esc(st ? st[1] : "") + "</b><span>" + esc(fmtDT(p.dateText) || fmtD(p.ts)) + (p.who ? " · " + esc(p.who) : "") + (p.note ? " · " + esc(p.note) : "") + "</span>";
+    b.onclick = () => {
+      close();
+      openPlace(p);
+    };
+    box.appendChild(b);
+  });
+}
+function openPlace(p) {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מיקום לדיווח"><div class="grab"></div><h2>איפה זה היה?</h2><div class="note-card">' + fmtN(p.tables) + " שולחנות · " + esc((STAGES.find((s) => s[0] === stageOf(p)) || [])[1] || "") + " · " + esc(fmtDT(p.dateText) || fmtD(p.ts)) + (p.note ? "<br><small>" + esc(p.note) + "</small>" : "") + '</div><div class="f" id="plLoc"></div><div class="acts"><button class="save" id="plSave" type="button">שמור מיקום</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  scrim.querySelector(".cancel").onclick = close;
+  const loc = mountLocation(scrim.querySelector("#plLoc"), p);
+  scrim.querySelector("#plSave").onclick = async () => {
+    const l = loc.get();
+    if (!l.areaId) {
+      toast("איזה שדה?");
+      return;
+    }
+    const doc = { ...p, ...l };
+    try {
+      if (shared.DB) await shared.DB.doc("progress/" + p.id).set(doc);
+      else {
+        const i = shared.progress.findIndex((x) => x.id === p.id);
+        if (i >= 0) shared.progress[i] = doc;
+        ls.set("progress", JSON.stringify(shared.progress));
+        renderWorkMap();
+      }
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("progress", "edit", "מיקום לדיווח ביצוע: " + locText(doc), p.id);
+    close();
+    toast("המיקום נשמר.");
+  };
+}
+function openLayout() {
+  const d = layoutDoc() || {}, g = { fields: 1, rows: 10, tables: 10, names: "", ...d.gen || {} }, L = currentLayout(), hasMap = !!layoutFromTables(siteMap());
+  const N2 = (id, l, v) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="number" inputmode="numeric" min="1" id="' + id + '" value="' + esc(v) + '"></div>';
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה האתר"><div class="grab"></div><h2>מבנה האתר</h2><div class="hint" style="margin:0 0 10px">המפה ב«מה בוצע במפה» ובדיווח הביצוע. <b>עכשיו: ' + esc(layoutSrcText(L)) + (L ? " · " + esc(layoutSummary(L)) : "") + ".</b> סדר עדיפות: תוכנית שנקראה, אחר כך המספרים כאן, אחר כך מפת השולחנות המובנית של האתר.</div>" + (d.layout ? '<div class="note-card">המבנה הנוכחי נקרא מתוכנית' + (d.planId ? " («" + esc((shared.PLANS || []).find((p) => p.id === d.planId)?.name || d.planId) + "»)" : "") + '. <button class="linkbtn" type="button" id="lyClearPlan" style="min-height:0;padding:0 4px">הסר ›</button></div>' : '<div class="hint" style="margin-bottom:10px">קריאת מבנה מתוכנית: בכרטיס «תוכניות», על תמונת תוכנית, «קרא מבנה».</div>') + '<div class="f"><label><input type="checkbox" id="lyUseGen"' + (d.gen ? " checked" : "") + "> לקבוע את המבנה מהמספרים האלה</label></div>" + N2("lyFields", "שדות", g.fields) + N2("lyRows", "שורות בכל שדה", g.rows) + N2("lyTables", "שולחנות בשורה", g.tables) + '<div class="f"><label for="lyNames">שמות השדות (מופרדים בפסיק)</label><input type="text" id="lyNames" value="' + esc(g.names) + '" placeholder="מערב, מזרח"></div>' + (hasMap ? '<div class="hint">לאתר הזה יש מפת שולחנות מובנית (השורות האמיתיות). בלי תוכנית ובלי סימון המספרים, היא המבנה.</div>' : "") + '<div class="acts"><button class="save" id="lySave" type="button">שמור</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  let plan = d.layout || null, planId = d.planId || "";
+  const cp = q("#lyClearPlan");
+  if (cp) cp.onclick = () => {
+    plan = null;
+    planId = "";
+    cp.parentElement.textContent = "התוכנית תוסר בשמירה.";
+  };
+  if (ROLE !== "owner") {
+    q("#lySave").hidden = true;
+    scrim.querySelectorAll("input").forEach((i) => i.disabled = true);
+  }
+  q("#lySave").onclick = async () => {
+    const b = q("#lySave");
+    b.disabled = true;
+    const gen = q("#lyUseGen").checked ? { fields: +q("#lyFields").value, rows: +q("#lyRows").value, tables: +q("#lyTables").value, names: q("#lyNames").value.trim() } : null;
+    const doc = { ...gen ? { gen } : {}, ...plan ? { layout: plan, planId } : {} };
+    try {
+      await saveLayout(doc);
+    } catch (e) {
+      b.disabled = false;
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("settings", "edit", "מבנה האתר: " + layoutSrcText(currentLayout()) + " · " + layoutSummary(currentLayout()), "settings/layout");
+    close();
+    toast("מבנה האתר נשמר.");
+  };
+}
+const KINDS = ["קונסטרוקציה", "חשמל", "אזרחי", "כללי"];
+function renderPlans() {
+  const box = $("#plansList");
+  if (!box) return;
+  const P = (shared.PLANS || []).slice().sort((a, b) => b.ts - a.ts);
+  box.innerHTML = "";
+  if (!P.length) {
+    box.innerHTML = '<div class="empty">אין עדיין תוכניות במופע. «+ תוכנית» מעלה PDF או תמונה, והיא נפתחת מכאן בלחיצה.</div>';
+    foldSum("plans", "");
+    return;
+  }
+  P.forEach((p) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "slip";
+    b.innerHTML = "<b>" + esc(p.name) + (p.rev ? ' <small style="color:var(--ink3)">' + esc(p.rev) + "</small>" : "") + "</b><span>" + esc(p.kind || "") + (p.kind ? " · " : "") + (/pdf/i.test(p.mime || "") ? "PDF" : "תמונה") + " · " + esc(fmtD(p.ts)) + (p.by ? " · " + esc(p.by) : "") + "</span>";
+    b.onclick = () => openPlan(p);
+    box.appendChild(b);
+  });
+  foldSum("plans", P.length + " תוכניות");
+}
+const planUrl = (p) => p.asset ? "/_blob/" + p.asset : p.url || "";
+async function planBlob(p) {
+  const r = await fetch(planUrl(p));
+  if (!r.ok) throw new Error("fetch");
+  return await r.blob();
+}
+function openPlan(p) {
+  const img = !/pdf/i.test(p.mime || "");
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תוכנית"><div class="grab"></div><h2>' + esc(p.name) + '</h2><div class="hint">' + esc([p.kind, p.rev, fmtD(p.ts), p.by].filter(Boolean).join(" · ")) + "</div>" + (img ? '<div class="wm-plan"><img src="' + esc(planUrl(p)) + '" alt="' + esc(p.name) + '"></div>' : '<div class="note-card">קובץ PDF. «פתח» שומר/פותח אותו במכשיר.</div>') + '<div class="acts" style="flex-wrap:wrap"><button class="save" id="plOpen" type="button">' + (img ? "שמור במכשיר" : "פתח") + "</button>" + (img && ROLE === "owner" ? '<button class="ghost" id="plRead" type="button">קרא מבנה</button>' : "") + (ROLE === "owner" ? '<button class="cancel danger" id="plDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">סגור</button></div><div class="hint" id="plSt"></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel:not(.danger)").onclick = close;
+  q("#plOpen").onclick = async () => {
+    try {
+      const b = await planBlob(p);
+      await saveFile(p.name + (/\.\w{2,4}$/.test(p.name) ? "" : img ? ".jpg" : ".pdf"), b);
+    } catch (e) {
+      toast("הקובץ לא נפתח.");
+    }
+  };
+  const rd = q("#plRead");
+  if (rd) rd.onclick = async () => {
+    if (!shared.SAMPLE) {
+      toast("קריאה אוטומטית לא זמינה כאן.");
+      return;
+    }
+    rd.disabled = true;
+    q("#plSt").textContent = "קורא את התוכנית…";
+    try {
+      const b = await planBlob(p);
+      const im = await createImageBitmap(b);
+      const k = Math.min(1, 1600 / Math.max(im.width, im.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(im.width * k);
+      c.height = Math.round(im.height * k);
+      const x = c.getContext("2d");
+      x.fillStyle = "#fff";
+      x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(im, 0, 0, c.width, c.height);
+      const jpg = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85));
+      const out = await shared.SAMPLE.json(PLAN_PROMPT, { images: jpg });
+      const L = normLayout(out);
+      if (!L) {
+        q("#plSt").textContent = "לא נמצאו שדות בתוכנית. אפשר להשתמש במספרים בהגדרות.";
+        rd.disabled = false;
+        return;
+      }
+      if (!await ask("נמצאו " + layoutSummary(L) + ". לקבוע את זה כמבנה האתר?", "קבע", "var(--pv)", "המבנה הקודם מוחלף. דיווחים שמוקמו לפי שמות שדות אחרים יופיעו כ«בלי מיקום».")) {
+        rd.disabled = false;
+        q("#plSt").textContent = "";
+        return;
+      }
+      const d = layoutDoc() || {};
+      await saveLayout({ ...d.gen ? { gen: d.gen } : {}, layout: out, planId: p.id });
+      logAct("settings", "edit", "מבנה האתר מתוכנית «" + p.name + "»: " + layoutSummary(L), "settings/layout");
+      close();
+      toast("מבנה האתר נקבע מהתוכנית.");
+    } catch (e) {
+      q("#plSt").textContent = "הקריאה נכשלה. אפשר לנסות שוב או להשתמש במספרים.";
+      rd.disabled = false;
+    }
+  };
+  const del = q("#plDel");
+  if (del) del.onclick = async () => {
+    if (!await ask("למחוק את התוכנית «" + p.name + "»?")) return;
+    try {
+      if (shared.DB) await shared.DB.doc("plans/" + p.id).delete();
+      else {
+        shared.PLANS = (shared.PLANS || []).filter((x) => x.id !== p.id);
+        ls.set("plans", JSON.stringify(shared.PLANS));
+        renderPlans();
+      }
+    } catch (e) {
+      toast("המחיקה נכשלה.");
+      return;
+    }
+    logAct("settings", "delete", "נמחקה תוכנית " + p.name, p.id);
+    close();
+  };
+}
+function openAddPlan() {
+  let kind = KINDS[0], file = null;
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תוכנית חדשה"><div class="grab"></div><h2>תוכנית חדשה</h2><div class="f"><label>קובץ</label><label class="pbtn" for="apFile" id="apPick">בחירת PDF או תמונה</label><input type="file" id="apFile" accept="image/*,application/pdf" hidden></div><div class="f"><label for="apName">שם</label><input type="text" id="apName" placeholder="למשל: מפת קונסטרוקציה EIT_M_90"></div><div class="f"><label>תחום</label><div class="chips" id="apKind" style="margin-bottom:0">' + KINDS.map((k) => '<button type="button" class="chip2" data-k="' + k + '" aria-pressed="' + (k === kind) + '">' + k + "</button>").join("") + '</div></div><div class="f"><label for="apRev">גרסה / מהדורה</label><input type="text" id="apRev" placeholder="rev00"></div><div class="acts"><button class="save" id="apSave" type="button">שמור תוכנית</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  q("#apKind").onclick = (e) => {
+    const b = e.target.closest("[data-k]");
+    if (!b) return;
+    kind = b.dataset.k;
+    scrim.querySelectorAll("#apKind .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
+  };
+  q("#apFile").onchange = () => {
+    file = q("#apFile").files[0] || null;
+    if (file) {
+      q("#apPick").textContent = file.name + " · " + Math.round(file.size / 1024) + "K";
+      if (!q("#apName").value) q("#apName").value = file.name.replace(/\.\w{2,4}$/, "");
+    }
+  };
+  q("#apSave").onclick = async () => {
+    const name = q("#apName").value.trim();
+    if (!file) {
+      toast("איזה קובץ?");
+      return;
+    }
+    if (!name) {
+      toast("שם?");
+      return;
+    }
+    const b = q("#apSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    const id = "pl" + Date.now().toString(36);
+    const doc = { id, name, kind, rev: q("#apRev").value.trim(), mime: file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : "image/jpeg"), size: file.size, ts: Date.now(), by: actorName(), asset: "", url: "" };
+    try {
+      if (shared.ASSETS) {
+        const a = await shared.ASSETS.upload(file);
+        doc.asset = a.id;
+        doc.url = a.url || "";
+      } else if (file.size <= 15e5) {
+        doc.url = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+      } else throw new Error("big");
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "שמור תוכנית";
+      toast(e && e.message === "big" ? "בלי אחסון קבצים אפשר לשמור כאן רק קובץ עד 1.5MB." : "העלאת הקובץ נכשלה.");
+      return;
+    }
+    try {
+      if (shared.DB) await shared.DB.doc("plans/" + id).set(doc);
+      else {
+        shared.PLANS = (shared.PLANS || []).concat(doc);
+        ls.set("plans", JSON.stringify(shared.PLANS));
+        renderPlans();
+      }
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "שמור תוכנית";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("settings", "add", "תוכנית: " + name + " · " + kind + (doc.rev ? " · " + doc.rev : ""), id);
+    close();
+    toast("התוכנית נשמרה.");
+  };
+}
+function __init$i() {
+  shared.LAYOUT = null;
+  shared.PLANS = [];
+  try {
+    const v = ls.get("layout");
+    if (v) shared.LAYOUT = JSON.parse(v);
+  } catch (e) {
+  }
+  try {
+    const v = ls.get("plans");
+    if (v) shared.PLANS = JSON.parse(v);
+  } catch (e) {
+  }
+  const ap = $("#btnAddPlan");
+  if (ap) ap.onclick = openAddPlan;
+  const st = $("#wmSetup");
+  if (st) st.onclick = openLayout;
+}
+const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  PLAN_PROMPT,
+  __init: __init$i,
+  currentLayout,
+  drawMini,
+  genLayout,
+  layoutDoc,
+  layoutFromTables,
+  layoutSrcText,
+  layoutSummary,
+  locText,
+  mountLocation,
+  normLayout,
+  openAddPlan,
+  openLayout,
+  openPlace,
+  openPlan,
+  pendingRuns,
+  pickRow,
+  placeReports,
+  renderPlans,
+  renderWorkMap,
+  rowsOf,
+  saveLayout
 }, Symbol.toStringTag, { value: "Module" }));
 let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 function applyRole() {
@@ -1410,6 +2242,14 @@ function __init$h() {
         shared.STATUS = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
         renderStatus();
       });
+      watch(shared.DB.collection("plans"), (snap) => {
+        shared.PLANS = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderPlans();
+      });
+      watch(shared.DB.doc("settings/layout"), (snap) => {
+        shared.LAYOUT = snap && snap.exists ? snap.data() : null;
+        renderWorkMap();
+      });
       watch(shared.DB.doc("settings/boq"), (snap) => {
         const d = snap && snap.exists ? snap.data() : null;
         if (d && Array.isArray(d.lines)) {
@@ -1765,8 +2605,8 @@ function openWorker(w) {
       if (!q("#wkMach").value) q("#wkMach").value = c.machine;
     }
   };
-  const seg = (sel, val, inp, bad) => {
-    q(sel).querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.v === val)));
+  const seg = (sel2, val, inp, bad) => {
+    q(sel2).querySelectorAll(".opt").forEach((o) => o.setAttribute("aria-pressed", String(o.dataset.v === val)));
     q(inp).hidden = val !== bad;
   };
   seg("#wkArr", arrive, "#wkLate", "late");
@@ -2345,7 +3185,7 @@ async function saveBoq(lines, source) {
 }
 function parseEboq(rows) {
   const clean = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
-  const num = (v) => {
+  const num2 = (v) => {
     const mm = clean(v).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
     return mm ? Number(mm[0]) : 0;
   };
@@ -2399,11 +3239,11 @@ function parseEboq(rows) {
       prev = null;
       continue;
     }
-    let unit = clean(v(cUnit)), qty = num(v(cNote)), sup = clean(v(cSup)), po = clean(v(cPoNo)), sku = clean(v(cSku)), rem = clean(v(cRem));
+    let unit = clean(v(cUnit)), qty = num2(v(cNote)), sup = clean(v(cSup)), po = clean(v(cPoNo)), sku = clean(v(cSku)), rem = clean(v(cRem));
     const poRaw = clean(v(cPo));
-    let poQty = HEB.test(poRaw) ? 0 : num(poRaw);
+    let poQty = HEB.test(poRaw) ? 0 : num2(poRaw);
     if (!qty && /^\d+(\.\d+)?$/.test(desc)) {
-      qty = num(desc);
+      qty = num2(desc);
       desc = "";
     }
     if (!po) {
@@ -2438,7 +3278,7 @@ function parseEboq(rows) {
       }
     }
     const rm = rem.match(/(\d[\d,\.]*)\s*מתוך\s*(\d[\d,\.]*)/);
-    const received = rm ? num(rm[1]) : null;
+    const received = rm ? num2(rm[1]) : null;
     lines.push({ name, en, code, qty, unit, cat, supplier: sup, po, poQty: poQty || (po ? qty : 0), sku, group: section, note: [desc, calc, rem].filter(Boolean).join(" · "), received });
   }
   return lines.length ? { lines } : null;
@@ -3364,7 +4204,7 @@ function openOrder(existing) {
         r.className = "dline";
         r.style.gridTemplateColumns = "1fr 44px";
         r.innerHTML = '<div><b style="font-size:.9rem">' + esc(l.name) + "</b>" + (l.boq || l.code ? ' <small style="color:var(--ink3)">' + esc(l.boq ? "סעיף " + l.boq : l.code) + "</small>" : "") + (l.sku ? ' <small style="color:var(--ink3)">· מק״ט ספק ' + esc(l.sku) + "</small>" : "") + '</div><button class="x" type="button" aria-label="הסר">×</button><div class="r2" style="grid-template-columns:80px 70px 1fr"><input type="text" inputmode="decimal" value="' + esc(l.qty) + '" aria-label="כמות" placeholder="כמות"><input type="text" value="' + esc(l.unit) + '" aria-label="יחידה" placeholder="יח׳"><select aria-label="קטגוריה">' + ["civil", "construction", "electrical", "staging", "safety", "panels", "tools", "containers"].map((c) => '<option value="' + c + '"' + (l.cat === c ? " selected" : "") + ">" + catLabel(c) + "</option>").join("") + '</select></div><div class="r2" style="grid-template-columns:1fr 1fr"><input type="text" list="orSups" value="' + esc(l.supplier) + '" placeholder="ספק" aria-label="ספק"><input type="text" value="' + esc(l.note || "") + '" placeholder="הערה לשורה" aria-label="הערה"></div>';
-        const [qty, unit, sel] = r.querySelectorAll(".r2")[0].children;
+        const [qty, unit, sel2] = r.querySelectorAll(".r2")[0].children;
         const [sup2, note] = r.querySelectorAll(".r2")[1].children;
         qty.oninput = (e) => {
           l.qty = Number(String(e.target.value).replace(/[^\d.]/g, "")) || 0;
@@ -3373,7 +4213,7 @@ function openOrder(existing) {
         unit.oninput = (e) => {
           l.unit = e.target.value;
         };
-        sel.onchange = (e) => {
+        sel2.onchange = (e) => {
           l.cat = e.target.value;
         };
         sup2.onchange = (e) => {
@@ -4344,7 +5184,7 @@ function openPanelBal() {
   };
   q("#pbCancel").onclick = close;
   q("#pbSave").onclick = async () => {
-    const num = (id2) => {
+    const num2 = (id2) => {
       const v = Number(String(q("#" + id2).value).replace(/[^\d.\-]/g, ""));
       return isFinite(v) ? v : 0;
     };
@@ -4369,17 +5209,17 @@ function openPanelBal() {
       id,
       ts,
       dateText,
-      ordered: num("pbOrd"),
-      required: num("pbReq"),
-      requiredPallets: num("pbReqP"),
-      received: num("pbRec"),
-      receivedPallets: num("pbRecP"),
-      perPallet: num("pbPer") || 33,
-      closed: num("pbClosed"),
-      singles: num("pbSingles"),
-      installed: num("pbInst"),
-      scattered: num("pbScat"),
-      broken: num("pbBroken"),
+      ordered: num2("pbOrd"),
+      required: num2("pbReq"),
+      requiredPallets: num2("pbReqP"),
+      received: num2("pbRec"),
+      receivedPallets: num2("pbRecP"),
+      perPallet: num2("pbPer") || 33,
+      closed: num2("pbClosed"),
+      singles: num2("pbSingles"),
+      installed: num2("pbInst"),
+      scattered: num2("pbScat"),
+      broken: num2("pbBroken"),
       brokenReasons: reasons.filter((r) => String(r.reason).trim() && Number(r.qty) > 0).map((r) => ({ reason: String(r.reason).trim(), qty: Number(r.qty) })),
       takenOut: taken.filter((t) => String(t.site).trim() && Number(t.qty) > 0).map((t) => ({ site: String(t.site).trim(), pallets: Number(t.pallets) || 0, qty: Number(t.qty) })),
       note: q("#pbNote").value.trim(),
@@ -4659,7 +5499,7 @@ async function saveSite(doc) {
 function openSettings() {
   let types = shared.kitTypes.map((t) => ({ ...t }));
   const F = (id, l, v, hint, ph) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="text" id="' + id + '" value="' + esc(v ?? "") + '" placeholder="' + esc(ph || "") + '" autocomplete="off">' + (hint ? '<div class="hint">' + hint + "</div>" : "") + "</div>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2><div class="setgrid"><button class="ghost" type="button" id="stLog">יומן פעולות<small>מי שמר, מתי ומה</small></button><button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button><button class="ghost" type="button" id="stZip">ייצוא לאקסל<small>כל הטבלאות ב-ZIP</small></button><button class="ghost" type="button" id="stBom">ייבוא BOM / EBOQ / CBA<small>קונסטרוקציה · חשמל · מסחרי</small></button></div>' + F("stName", "שם האתר", SITE.name, "", "למשל: אתר הקמה עין תמר") + F("stCo", "חברה", SITE.company, "", "BELECTRIC") + F("stMe", "השם שלך", ls.get("issuer") || "", "נשמר במכשיר הזה וממולא אוטומטית כמנפיק / סופר / מדווח.", "השם שלך") + '<div class="f"><label>סוגי שולחנות וכמות באתר</label><div class="kitrows" id="stTypes"></div><button class="addline" type="button" id="stAddType" style="margin-top:8px">+ סוג שולחן</button><div class="hint">סה״כ שולחנות באתר הוא הסכום. ממנו מחושבים «נותרו» ו«לכמה שולחנות המלאי מספיק».</div></div>' + F("stPpt", "פאנלים לשולחן", SITE.panelsPerTable, "משמש להערכת כמה שולחנות עומדים לפי הפאנלים המותקנים.", "81") + '<div class="f" id="stDanger" hidden><label>ניהול</label><div class="setgrid"><button class="ghost danger" type="button" id="stRestore">שחזור מגיבוי<small>כותב את כל הנתונים מקובץ JSON</small></button><button class="ghost" type="button" id="stDemo">איפוס תצוגת דוגמה<small>מציג שוב נתוני דוגמה במכשיר הזה</small></button></div></div><div class="acts"><button class="save" id="stSave" type="button">שמור הגדרות</button><button class="cancel" id="stCancel" type="button">סגור</button></div><div class="hint" style="text-align:center;margin-top:14px">יומן אתר · גרסה ' + APP_VERSION + " · הנתונים נשמרים במרחב של האפליקציה ונגישים לכל מי שקיבל קישור" + (shared.DB ? "" : " · <b>כרגע במכשיר הזה בלבד</b>") + "</div></div>");
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2><div class="setgrid"><button class="ghost" type="button" id="stLog">יומן פעולות<small>מי שמר, מתי ומה</small></button><button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button><button class="ghost" type="button" id="stZip">ייצוא לאקסל<small>כל הטבלאות ב-ZIP</small></button><button class="ghost" type="button" id="stBom">ייבוא BOM / EBOQ / CBA<small>קונסטרוקציה · חשמל · מסחרי</small></button><button class="ghost" type="button" id="stLayout">מבנה האתר<small>שדות ושורות למפת הביצוע</small></button></div>' + F("stName", "שם האתר", SITE.name, "", "למשל: אתר הקמה עין תמר") + F("stCo", "חברה", SITE.company, "", "BELECTRIC") + F("stMe", "השם שלך", ls.get("issuer") || "", "נשמר במכשיר הזה וממולא אוטומטית כמנפיק / סופר / מדווח.", "השם שלך") + '<div class="f"><label>סוגי שולחנות וכמות באתר</label><div class="kitrows" id="stTypes"></div><button class="addline" type="button" id="stAddType" style="margin-top:8px">+ סוג שולחן</button><div class="hint">סה״כ שולחנות באתר הוא הסכום. ממנו מחושבים «נותרו» ו«לכמה שולחנות המלאי מספיק».</div></div>' + F("stPpt", "פאנלים לשולחן", SITE.panelsPerTable, "משמש להערכת כמה שולחנות עומדים לפי הפאנלים המותקנים.", "81") + '<div class="f" id="stDanger" hidden><label>ניהול</label><div class="setgrid"><button class="ghost danger" type="button" id="stRestore">שחזור מגיבוי<small>כותב את כל הנתונים מקובץ JSON</small></button><button class="ghost" type="button" id="stDemo">איפוס תצוגת דוגמה<small>מציג שוב נתוני דוגמה במכשיר הזה</small></button></div></div><div class="acts"><button class="save" id="stSave" type="button">שמור הגדרות</button><button class="cancel" id="stCancel" type="button">סגור</button></div><div class="hint" style="text-align:center;margin-top:14px">יומן אתר · גרסה ' + APP_VERSION + " · הנתונים נשמרים במרחב של האפליקציה ונגישים לכל מי שקיבל קישור" + (shared.DB ? "" : " · <b>כרגע במכשיר הזה בלבד</b>") + "</div></div>");
   const q = (s) => scrim.querySelector(s);
   function drawTypes() {
     const box = q("#stTypes");
@@ -4703,6 +5543,10 @@ function openSettings() {
   q("#stBom").onclick = () => {
     scrim.remove();
     openImportChooser();
+  };
+  q("#stLayout").onclick = () => {
+    scrim.remove();
+    openLayout();
   };
   q("#stRestore").onclick = () => {
     scrim.remove();
@@ -4845,7 +5689,7 @@ async function exportAllCsv() {
   z.file("תנועות.csv", csvOf(["תאריך", "פריט", "כמות", "כיוון", "מי", "חתימה", "הערה"], shared.moves.map((m) => [d(m.ts), m.item, m.qty, m.dir === "in" ? "החזרה" : "הוצאה", m.who || "", m.dir === "in" ? "" : m.sigAsset || m.sigUrl || m.sigData ? "כן" : "לא", m.note || ""])));
   z.file("ספירות.csv", csvOf(["תאריך", "פריט", "נספר", "מי ספר", "הערה"], shared.counts.map((c) => [d(c.ts), c.item, c.qty, c.who || "", c.note || ""])));
   z.file("בטון.csv", csvOf(["תאריך", "מספר תעודה", "ספק", 'מ"ק', "מצטבר", "סוג", "נוצק ב", "משאית", "הערות"], shared.concrete.map((c) => [c.dateText, c.noteNo, c.supplier, c.m3, c.cum ?? "", c.mix, c.element, c.truck, c.note])));
-  z.file("דיווחי-ביצוע.csv", csvOf(["תאריך", "קבלן", "שולחנות", "סוג", "מדווח", "הערה"], shared.progress.map((p) => [p.dateText || d(p.ts), p.who, p.tables, p.ttype ? typeLabel(p.ttype) : "", p.by || "", p.note || ""])));
+  z.file("דיווחי-ביצוע.csv", csvOf(["תאריך", "קבלן", "שולחנות", "שלב", "סוג", "מיקום", "מדווח", "הערה"], shared.progress.map((p) => [p.dateText || d(p.ts), p.who, p.tables, p.stage || "con", p.ttype ? typeLabel(p.ttype) : "", locText(p), p.by || "", p.note || ""])));
   z.file("מאזן-פאנלים.csv", csvOf(["תאריך", "הוזמנו", "נדרש", "התקבלו", "משטחים סגורים", "בודדים", "מותקנים", "מפוזרים", "שבורים", "יצאו לאתרים אחרים", "מי ספר"], shared.panelBal.slice().sort((a, b) => a.ts - b.ts).map((b) => [b.dateText, b.ordered, b.required, b.received, b.closed, b.singles, b.installed, b.scattered, b.broken, (b.takenOut || []).map((t) => t.site + " " + t.qty).join(" · "), b.by || ""])));
   z.file("פאנלים-שבורים.csv", csvOf(["תאריך", "מספר סידורי", "מי שבר", "הערה"], shared.records.map((r) => [d(r.ts), r.serial, (byId(BLAME, r.blame) || {}).label || r.blame, r.note || ""])));
   z.file("יומן-פעולות.csv", csvOf(["תאריך", "שעה", "מי", "סוג", "פעולה", "תיאור"], shared.logs.slice().sort((a, b) => a.ts - b.ts).map((l) => [d(l.ts), new Date(l.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }), l.who || "", LOG_KINDS[l.kind] || l.kind, l.action, l.summary])));
@@ -5190,7 +6034,7 @@ function showTab(which) {
 }
 function __init$a() {
   KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-  APP_VERSION = "56";
+  APP_VERSION = "57";
   SHOW_PRICES = false;
   SITE = { name: "אתר הקמה עין תמר", company: "BELECTRIC", panelsPerTable: 81, custom: false };
   $("#btnSettings").onclick = openSettings;
@@ -6092,8 +6936,8 @@ function renderSiteBuild() {
   });
   const nm = $("#sbNoMap");
   nm.hidden = M.hasMap;
-  ["#sbCvw", ".sb-keys", "#sbRail", ".sb-ctrl", "#sbDate", "#sbToday"].forEach((sel) => {
-    const e = card.querySelector(sel);
+  ["#sbCvw", ".sb-keys", "#sbRail", ".sb-ctrl", "#sbDate", "#sbToday"].forEach((sel2) => {
+    const e = card.querySelector(sel2);
     if (e) e.hidden = !M.hasMap;
   });
   if (!M.hasMap) {
@@ -6734,18 +7578,21 @@ function renderContractors() {
     el.className = "slip";
     el.style.cursor = "default";
     const st = stageOf(p);
-    el.innerHTML = "<b>" + fmtN(p.tables) + ' שולחנות · <span style="color:' + (st === "ok" ? "var(--sage)" : st === "pan" ? "var(--info)" : "var(--amber)") + '">' + esc(stageLabel(st)) + "</span>" + (p.who ? " · " + esc(p.who) : "") + (p.ttype ? " · " + esc(typeLabel(p.ttype)) : "") + '</b><button class="del" type="button" data-delprog="' + esc(p.id) + '">מחק</button><span>' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + (p.by ? " · דיווח: " + esc(p.by) : "") + (p.note ? " · " + esc(p.note) : "") + "</span>";
+    el.innerHTML = "<b>" + fmtN(p.tables) + ' שולחנות · <span style="color:' + (st === "ok" ? "var(--sage)" : st === "pan" ? "var(--info)" : "var(--amber)") + '">' + esc(stageLabel(st)) + "</span>" + (p.who ? " · " + esc(p.who) : "") + (p.ttype ? " · " + esc(typeLabel(p.ttype)) : "") + '</b><button class="del" type="button" data-delprog="' + esc(p.id) + '">מחק</button><span>' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + (locText(p) ? " · " + esc(locText(p)) : "") + (p.by ? " · דיווח: " + esc(p.by) : "") + (p.note ? " · " + esc(p.note) : "") + "</span>";
     pg.appendChild(el);
   });
+  renderWorkMap();
+  renderPlans();
 }
 function openProgress(opt) {
   const whos = [...new Set([...(shared.demoStock ? [] : shared.issues).map((i) => i.who), ...(shared.demoStock ? [] : shared.progress).map((p) => p.who)].filter(Boolean))];
   let tables = 5, ttype = "", stage = opt && opt.stage || "con";
   const today = /* @__PURE__ */ new Date();
   const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>דיווח ביצוע</h2><div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.' + ((shared.demoStock ? [] : shared.progress).length ? "" : " <b>דיווח ראשון: המצב המצטבר עד היום.</b>") + '</div><div class="f"><label>שלב</label><div class="chips" id="pgStage" style="margin-bottom:0">' + STAGES.map((x) => '<button type="button" class="chip2" data-s="' + x[0] + '" aria-pressed="' + (x[0] === stage) + '">' + x[1] + "</button>").join("") + '</div><div class="hint" id="pgStageHint"></div></div><div class="f"><label>כמה שולחנות</label><div class="stepper"><button type="button" id="pgMinus" aria-label="פחות">−</button><div class="val"><input type="text" inputmode="numeric" id="pgTables" value="' + tables + '" aria-label="מספר שולחנות"><small id="pgUnit">שולחנות</small></div><button type="button" id="pgPlus" aria-label="יותר">+</button></div></div><div class="f"><label>סוג שולחן (אם ידוע)</label><div class="chips" id="pgTypes" style="margin-bottom:0"><button type="button" class="chip2" data-t="" aria-pressed="true">מעורב / לא ידוע</button>' + shared.kitTypes.map((t) => '<button type="button" class="chip2" data-t="' + t.id + '" aria-pressed="false">' + esc(t.label) + "</button>").join("") + '</div></div><div class="f"><label for="pgWho">קבלן</label><input type="text" id="pgWho" list="pgWhoList" placeholder="הקבלן (עאטף)" autocomplete="off" value="' + esc(whos[0] || "") + '"><datalist id="pgWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="' + iso + '"></div><div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שדה 2 שורות 15–16"></div><div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>דיווח ביצוע</h2><div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.' + ((shared.demoStock ? [] : shared.progress).length ? "" : " <b>דיווח ראשון: המצב המצטבר עד היום.</b>") + '</div><div class="f"><label>שלב</label><div class="chips" id="pgStage" style="margin-bottom:0">' + STAGES.map((x) => '<button type="button" class="chip2" data-s="' + x[0] + '" aria-pressed="' + (x[0] === stage) + '">' + x[1] + "</button>").join("") + '</div><div class="hint" id="pgStageHint"></div></div><div class="f"><label>כמה שולחנות</label><div class="stepper"><button type="button" id="pgMinus" aria-label="פחות">−</button><div class="val"><input type="text" inputmode="numeric" id="pgTables" value="' + tables + '" aria-label="מספר שולחנות"><small id="pgUnit">שולחנות</small></div><button type="button" id="pgPlus" aria-label="יותר">+</button></div></div><div class="f"><label>סוג שולחן (אם ידוע)</label><div class="chips" id="pgTypes" style="margin-bottom:0"><button type="button" class="chip2" data-t="" aria-pressed="true">מעורב / לא ידוע</button>' + shared.kitTypes.map((t) => '<button type="button" class="chip2" data-t="' + t.id + '" aria-pressed="false">' + esc(t.label) + "</button>").join("") + '</div></div><div class="f"><label for="pgWho">קבלן</label><input type="text" id="pgWho" list="pgWhoList" placeholder="הקבלן (עאטף)" autocomplete="off" value="' + esc(whos[0] || "") + '"><datalist id="pgWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="' + iso + '"></div><div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f" id="pgLocF"></div><div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שולחנות ליד הדרך"></div><div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
+  const loc = mountLocation(q("#pgLocF"), opt || {});
   const setT = (n) => {
     n = Math.max(1, Math.round(Number(n) || 0));
     tables = n;
@@ -6796,7 +7643,7 @@ function openProgress(opt) {
     b.disabled = true;
     b.textContent = "שומר…";
     const id = "pg" + Date.now();
-    const doc = { id, ts, dateText, who, tables, ttype, by, stage, note: q("#pgNote").value.trim(), source: "app" };
+    const doc = { id, ts, dateText, who, tables, ttype, by, stage, note: q("#pgNote").value.trim(), source: "app", ...loc.get() };
     try {
       if (shared.DB) await shared.DB.doc("progress/" + id).set(doc);
       else {
@@ -6809,7 +7656,7 @@ function openProgress(opt) {
       toast("השמירה נכשלה.");
       return;
     }
-    logAct("progress", "add", "דיווח ביצוע: " + fmtN(tables) + " שולחנות · " + stageLabel(stage) + (who ? " · " + who : "") + (ttype ? " · " + typeLabel(ttype) : "") + " · " + dateText, id, by);
+    logAct("progress", "add", "דיווח ביצוע: " + fmtN(tables) + " שולחנות · " + stageLabel(stage) + (who ? " · " + who : "") + (ttype ? " · " + typeLabel(ttype) : "") + (locText(doc) ? " · " + locText(doc) : "") + " · " + dateText, id, by);
     if (shared.demoStock) {
       shared.demoStock = false;
       ls.set("demoDoneS", "1");
@@ -6834,16 +7681,16 @@ function openPrices() {
     if (e.target === scrim) scrim.remove();
   };
   q("#prSave").onclick = async () => {
-    const num = (v) => {
+    const num2 = (v) => {
       const n = Number(String(v).replace(/[^\d.]/g, ""));
       return isFinite(n) && n > 0 ? n : 0;
     };
     const parts = {};
     scrim.querySelectorAll("input[data-code]").forEach((i) => {
-      const v = num(i.value);
+      const v = num2(i.value);
       if (v) parts[i.dataset.code] = v;
     });
-    const doc = { concreteM3: num(q("#prC").value), dieselL: num(q("#prD").value), panel: num(q("#prP").value), parts, ts: Date.now() };
+    const doc = { concreteM3: num2(q("#prC").value), dieselL: num2(q("#prD").value), panel: num2(q("#prP").value), parts, ts: Date.now() };
     try {
       if (shared.DB) await shared.DB.doc("settings/prices").set(doc);
       else {
@@ -8600,14 +9447,14 @@ function renderStock() {
   if (!allSups.includes(supFilter)) {
     if (supFilter !== "all") supFilter = "all";
   }
-  const sel = $("#supSel");
+  const sel2 = $("#supSel");
   const want = '<option value="all">כל הספקים</option>' + allSups.map((x) => '<option value="' + esc(x) + '">' + esc(x) + "</option>").join("");
   const supKey2 = allSups.join("");
-  if (sel.dataset.built !== supKey2) {
-    sel.innerHTML = want;
-    sel.dataset.built = supKey2;
+  if (sel2.dataset.built !== supKey2) {
+    sel2.innerHTML = want;
+    sel2.dataset.built = supKey2;
   }
-  sel.value = supFilter;
+  sel2.value = supFilter;
   $("#supClr").hidden = supFilter === "all";
   const cb = $("#catBar");
   cb.innerHTML = "";
@@ -8763,10 +9610,10 @@ function openNote() {
       row.className = "dline";
       row.innerHTML = '<input type="text" value="' + esc(l.name) + '" placeholder="שם הפריט" aria-label="שם פריט" list="boqNames" autocomplete="off"><button class="x" type="button" aria-label="מחק שורה">×</button><div class="r2"><input type="text" inputmode="text" value="' + esc(l.qty) + '" placeholder="כמות" aria-label="כמות"><select aria-label="קטגוריה">' + CATS.map((c) => '<option value="' + c.id + '"' + (l.cat === c.id ? " selected" : "") + ">" + c.label + "</option>").join("") + "</select></div>";
       const n = row.children[0], x = row.children[1];
-      const qn = row.children[2].children[0], sel = row.children[2].children[1];
+      const qn = row.children[2].children[0], sel2 = row.children[2].children[1];
       if (!l.cat) {
         l.cat = "construction";
-        sel.value = "construction";
+        sel2.value = "construction";
       }
       n.oninput = (e) => {
         lines[i].name = e.target.value;
@@ -8776,7 +9623,7 @@ function openNote() {
         lines[i].qty = e.target.value;
         check();
       };
-      sel.onchange = (e) => {
+      sel2.onchange = (e) => {
         lines[i].cat = e.target.value;
       };
       x.onclick = () => {
@@ -10445,8 +11292,8 @@ function openSheet() {
     if (e.target === scrim) close();
   };
   document.addEventListener("keydown", esckey);
-  function opts(sel, items, key) {
-    const box = scrim.querySelector(sel);
+  function opts(sel2, items, key) {
+    const box = scrim.querySelector(sel2);
     items.forEach((it) => {
       const b = document.createElement("button");
       b.className = "opt";
@@ -11121,7 +11968,7 @@ const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   wrShrink,
   wrText
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* ברנד: BELECTRIC (אדום #E40033, אפור #666B6E, ענבר #FFAA00, ירוק #9AC339, כחול #3199CC, פונט עברי Alef) · אנרגיה: בילטון (לבן/שחור, FAB צהוב, טבעות אחוז ירוקות) */
@@ -11799,7 +12646,20 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ms{display:flex;flex-direction:column;gap:6px;list-style:none;margin:12px 0 0;padding:0}
 .sb-ms button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;min-height:44px;font-family:inherit}
 .sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
-.sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}</style>
+.sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
+
+/* מעקב ביצוע במפה (20-work-map.js) ותוכניות */
+.wm-cvw{width:100%;max-width:100%;margin-top:6px} .wm-cvw canvas,.wm-mini canvas{display:block;width:100%;height:auto;border-radius:var(--r);cursor:pointer;touch-action:manipulation}
+.wm-mini{margin-top:8px;border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:4px}
+.wm-zoom{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:10px 12px;margin-top:8px;font-size:.9rem}
+.zm-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:1rem} .zm-head .linkbtn{min-height:0;padding:0 4px;white-space:nowrap}
+.zm-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:3px 0;color:var(--ink3)}
+.zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .num{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
+.zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
+.wm-unp{background:var(--amber-soft);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin:8px 0 0;font-size:.9rem;display:flex;gap:8px;align-items:center;justify-content:space-between} .wm-unp .linkbtn{min-height:0;padding:0 4px}
+.wm-pend{display:grid;gap:6px} .slip.wm-pd{border-inline-start:4px solid var(--line)} .slip.wm-pd.none{border-inline-start-color:#C9CBCC} .slip.wm-pd.pan{border-inline-start-color:#FFAA00} .slip.wm-pd.ok{border-inline-start-color:#3199CC}
+.wm-plan{border:1px solid var(--line);border-radius:var(--r);overflow:auto;max-height:60vh;background:#fff;margin:8px 0} .wm-plan img{display:block;max-width:100%;height:auto}
+.pbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px dashed var(--line);border-radius:var(--r);color:var(--ink2);font-weight:600;cursor:pointer;background:var(--paper);max-width:100%;overflow-wrap:anywhere}</style>
 </head><body>
 <title>יומן אתר</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -11865,6 +12725,21 @@ body.net-off .tabs{top:var(--netH,0px)}
     <div class="note">השרטוט של האתר לאורך זמן, מהסטטוס: קידוחים, עמודים יצוקים, קונסטרוקציה ופאנלים, על מפת השולחנות. היום משמאל; גררו ימינה כדי לראות איך זה נבנה מההתחלה.</div>
     <div class="empty" id="sbEmpty" style="padding:12px 0 4px">אין עדיין סטטוס התקדמות. כשיהיו רישומים של קידוחים, יציקות, קונסטרוקציה או פאנלים, השרטוט יופיע כאן.</div>
     <div id="sbBody" hidden></div>
+  </div>
+
+  <div class="card" id="workCard" data-fold="work" data-open="1">
+    <h3>מה בוצע במפה</h3>
+    <div class="note">שלושת שלבי השולחן (קונסטרוקציה, פאנלים, אישור מפקח) על שורות השדה, רק מדיווחי ביצוע שנרשם להם מיקום. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה ומאפשרת לדווח שם. דיווח בלי מיקום נספר בכמויות ולא במפה.</div>
+    <div class="empty" id="wmEmpty" style="padding:12px 0 4px">אין עדיין מבנה אתר (שדות ושורות). לאתר עם מפת שולחנות הוא נבנה לבד; אחרת קובעים אותו מהמספרים או מתוכנית.</div>
+    <button class="ghost" id="wmSetup" type="button" style="width:100%;margin:4px 0 8px" hidden>מבנה האתר</button>
+    <div id="wmBody" hidden></div>
+  </div>
+
+  <div class="card" id="plansCard" data-fold="plans" data-open="1">
+    <h3>תוכניות</h3>
+    <div class="note">תוכניות האתר (PDF או תמונה) במופע, לפתיחה בלחיצה מהשטח. תמונת תוכנית יכולה גם לקבוע את מבנה האתר למפה.</div>
+    <div class="stock" id="plansList"></div>
+    <button class="addline" id="btnAddPlan" data-w="edit" type="button" style="margin-top:8px">+ תוכנית</button>
   </div>
 
   <div class="card" id="statusCard" data-fold="status" data-open="1">
