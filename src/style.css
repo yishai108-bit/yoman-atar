@@ -674,3 +674,16 @@ body.net-off .tabs{top:var(--netH,0px)}
 .sb-ms button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:62px minmax(0,1fr);gap:4px 10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;min-height:44px;font-family:inherit}
 .sb-ms button:hover{border-color:var(--pv)} .sb-ms button.on{border-inline-start:4px solid var(--pv)}
 .sb-ms .when{font-weight:700;color:var(--pv)} .sb-ms .what{font-weight:700;font-size:.9rem;min-width:0}
+
+/* מעקב ביצוע במפה (20-work-map.js) ותוכניות */
+.wm-cvw{width:100%;max-width:100%;margin-top:6px} .wm-cvw canvas,.wm-mini canvas{display:block;width:100%;height:auto;border-radius:var(--r);cursor:pointer;touch-action:manipulation}
+.wm-mini{margin-top:8px;border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:4px}
+.wm-zoom{border:1px solid var(--line);border-radius:var(--r);background:#fff;padding:10px 12px;margin-top:8px;font-size:.9rem}
+.zm-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:1rem} .zm-head .linkbtn{min-height:0;padding:0 4px;white-space:nowrap}
+.zm-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:3px 0;color:var(--ink3)}
+.zm-row i{width:10px;height:10px;border-radius:2px;display:block} .zm-row.on,.zm-row.done{color:var(--ink)} .zm-row.done .num{font-weight:700} .zm-row .d{font-size:.76rem;color:var(--ink3);min-width:3em;text-align:left}
+.zm-reps{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;display:grid;gap:4px} .zm-rep{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:.84rem} .zm-rep .num{color:var(--ink3)}
+.wm-unp{background:var(--amber-soft);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px;margin:8px 0 0;font-size:.9rem;display:flex;gap:8px;align-items:center;justify-content:space-between} .wm-unp .linkbtn{min-height:0;padding:0 4px}
+.wm-pend{display:grid;gap:6px} .slip.wm-pd{border-inline-start:4px solid var(--line)} .slip.wm-pd.none{border-inline-start-color:#C9CBCC} .slip.wm-pd.pan{border-inline-start-color:#FFAA00} .slip.wm-pd.ok{border-inline-start-color:#3199CC}
+.wm-plan{border:1px solid var(--line);border-radius:var(--r);overflow:auto;max-height:60vh;background:#fff;margin:8px 0} .wm-plan img{display:block;max-width:100%;height:auto}
+.pbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px dashed var(--line);border-radius:var(--r);color:var(--ink2);font-weight:600;cursor:pointer;background:var(--paper);max-width:100%;overflow-wrap:anywhere}
