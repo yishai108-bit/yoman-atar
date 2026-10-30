@@ -64,7 +64,8 @@ export function layoutFromTables(map){
     const x=Math.min(...rows.map(r=>r.x)),x1=Math.max(...rows.map(r=>r.x+r.w)),y=Math.min(...rows.map(r=>r.y)),y1=Math.max(...rows.map(r=>r.y+r.h));
     return {id,name,x,y,w:x1-x,h:y1-y,rows}; };
   const F=split?[mk("west","מערב",west),mk("east","מזרח",t=>!west(t))].filter(Boolean):[mk("field","השדה",()=>true)];
-  return {w:map.w||Math.max(...T.map(t=>t[0]+t[2]))+20,h:map.h||Math.max(...T.map(t=>t[1]+t[3]))+20,fields:F,src:"map"};
+  // fill:"top": סדר הבנייה באתר הוא מהשורות העליונות (האחרונות) כלפי מטה, כמו ב«האתר נבנה»; דיווח בלי שורות ממלא מלמעלה
+  return {w:map.w||Math.max(...T.map(t=>t[0]+t[2]))+20,h:map.h||Math.max(...T.map(t=>t[1]+t[3]))+20,fields:F,src:"map",fill:"top"};
 }
 export function layoutDoc(){ return shared.LAYOUT||null; }
 // המבנה בתוקף: מסמך שמור (מתוכנית / מספרים), אחרת המפה המובנית של האתר, אחרת אין
@@ -84,7 +85,7 @@ export async function saveLayout(doc){
 /* ---------- דיווחים → שורות ---------- */
 export const rowsOf=p=>Array.isArray(p&&p.rows)&&p.rows.length===2&&p.rows.every(n=>Number.isFinite(Number(n)))?[Math.min(...p.rows.map(Number)),Math.max(...p.rows.map(Number))]:null;
 export const locText=p=>p&&p.areaId?(p.area||p.areaId)+(rowsOf(p)?" · שורות "+rowsOf(p)[0]+(rowsOf(p)[1]!==rowsOf(p)[0]?"–"+rowsOf(p)[1]:""):""):"";
-// לכל שדה ושורה: כמה שולחנות דווחו בכל שלב, במילוי מלמטה (שורה 1) למעלה, או בתוך טווח השורות שנרשם
+// לכל שדה ושורה: כמה שולחנות דווחו בכל שלב, במילוי לפי סדר הבנייה של האתר (fill) או בתוך טווח השורות שנרשם
 export function placeReports(L,prog,untilTs){
   const F={}; const unplaced=[]; let placed=0;
   if(!L) return {F,unplaced:prog.slice(),placed:0};
@@ -92,7 +93,8 @@ export function placeReports(L,prog,untilTs){
   prog.slice().sort((a,b)=>a.ts-b.ts).forEach(p=>{
     if(untilTs&&p.ts>untilTs) return;
     const f=p.areaId&&L.fields.find(x=>x.id===p.areaId); if(!f){ unplaced.push(p); return; }
-    const k=stageOf(p), rr=rowsOf(p), rows=f.rows.filter(r=>!rr||(r.n>=rr[0]&&r.n<=rr[1])); if(!rows.length){ unplaced.push(p); return; }
+    const k=stageOf(p), rr=rowsOf(p); let rows=f.rows.filter(r=>!rr||(r.n>=rr[0]&&r.n<=rr[1])); if(!rows.length){ unplaced.push(p); return; }
+    if(L.fill==="top") rows=rows.slice().reverse();   // סדר הבנייה: מהשורה הגבוהה לנמוכה
     let left=Number(p.tables)||0; placed++;
     for(const r of rows){ const cell=F[f.id][r.n]; const room=Math.max(0,r.tables-cell[k]); const g=Math.min(room,left); if(g>0){ cell[k]+=g; cell.last[k]=p.ts; left-=g; } if(left<=0) break; }
     if(left>0&&rows.length){ const cell=F[f.id][rows[rows.length-1].n]; cell[k]+=left; cell.last[k]=p.ts; }   // יותר ממה שיש בשורות: נשאר על השורה האחרונה (יוצג כחריגה)
@@ -217,7 +219,7 @@ export function mountLocation(box,preset){
   const {F}=placeReports(L,shared.demoStock?[]:shared.progress||[]);
   let areaId=preset.areaId&&L.fields.some(f=>f.id===preset.areaId)?preset.areaId:"", rows=rowsOf(preset)||null;
   box.innerHTML='<label>איפה</label><div class="chips" id="lcF" style="margin-bottom:6px"><button type="button" class="chip2" data-f="" aria-pressed="'+(!areaId)+'">בלי מיקום</button>'+L.fields.map(f=>'<button type="button" class="chip2" data-f="'+esc(f.id)+'" aria-pressed="'+(f.id===areaId)+'">'+esc(f.name)+'</button>').join("")+'</div>'
-    +'<div id="lcRowsF" hidden><input type="text" id="lcRows" inputmode="numeric" placeholder="שורות, למשל 12 או 12–14" value="'+(rows?rows[0]+(rows[1]!==rows[0]?"–"+rows[1]:""):"")+'" aria-label="שורות"><div class="hint">שורה 1 למטה, כמו בשטח. לחיצה על שורה במפה מסמנת אותה; לחיצה שנייה סוגרת טווח.</div></div>'
+    +'<div id="lcRowsF" hidden><input type="text" id="lcRows" inputmode="numeric" placeholder="שורות, למשל 12 או 12–14" value="'+(rows?rows[0]+(rows[1]!==rows[0]?"–"+rows[1]:""):"")+'" aria-label="שורות"><div class="hint">שורה 1 למטה, כמו בשטח. לחיצה על שורה במפה מסמנת אותה; לחיצה שנייה סוגרת טווח. בלי שורות, הדיווח ממלא את השדה בסדר הבנייה'+(L.fill==="top"?" (מלמעלה)":" (משורה 1)")+'.</div></div>'
     +'<div class="wm-mini"><canvas id="lcCv"></canvas></div><div class="hint" id="lcHint"></div>';
   const cv=box.querySelector("#lcCv"); const parse=v=>{ const m=/(\d{1,3})(?:\s*(?:[-–]|עד)\s*(\d{1,3}))?/.exec(String(v||"")); if(!m) return null; const a=Number(m[1]),b=m[2]?Number(m[2]):a; return a>0?[Math.min(a,b),Math.max(a,b)]:null; };
   const sync=()=>{ box.querySelectorAll("#lcF .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.f===areaId))); box.querySelector("#lcRowsF").hidden=!areaId;

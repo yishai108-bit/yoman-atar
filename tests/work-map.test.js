@@ -40,21 +40,22 @@ test("דיווחים עם מיקום נצבעים לפי שורות, בלי מי
   const r = await page.evaluate(() => {
     const L = currentLayout(), P = placeReports(L, shared.progress); const w = L.fields[0];
     const cap = n => w.rows.find(r => r.n === n).tables;
-    return { unplaced: P.unplaced.map(p => p.id), placed: P.placed, con3: P.F.west[3].con, con4: P.F.west[4].con, cap3: cap(3), cap4: cap(4), pan3: P.F.west[3].pan, pan4: P.F.west[4].pan,
+    return { fill: L.fill, unplaced: P.unplaced.map(p => p.id), placed: P.placed, con3: P.F.west[3].con, con4: P.F.west[4].con, cap3: cap(3), cap4: cap(4), pan23: P.F.west[23].pan, pan22: P.F.west[22].pan, cap23: cap(23), pan3: P.F.west[3].pan,
       big: document.querySelector("#wmBig").textContent, sub: document.querySelector("#wmSub").textContent, unp: document.querySelector("#wmUnp").textContent,
       pend: [...document.querySelectorAll("#wmPend .slip")].map(e => e.textContent), sum: document.querySelector("#sum_work").textContent,
       list: [...document.querySelectorAll("#conProg .slip span")].map(e => e.textContent), cvw: document.querySelector("#wmCv").width,
       overflow: document.documentElement.scrollWidth - window.innerWidth };
   });
   assert.deepStrictEqual(r.unplaced, ["p3"]); assert.strictEqual(r.placed, 2);
-  // 12 שולחנות קונסטרוקציה בשורות 3–4: ממלאים את שורה 3 ואז את 4; 7 פאנלים בלי שורות: מלמטה (שורה 3)
-  assert.strictEqual(r.con3, r.cap3); assert.strictEqual(r.con4, 12 - r.cap3, "העודף מעבר לקיבולת השורות נשאר על השורה האחרונה ומסומן כחריגה");
-  assert.ok(r.con4 > r.cap4);
-  assert.strictEqual(r.pan3, Math.min(7, r.cap3)); assert.strictEqual(r.pan4, Math.max(0, 7 - r.cap3));
+  // סדר הבנייה בעין תמר מלמעלה: 12 שולחנות קונסטרוקציה בשורות 3–4 ממלאים את 4 ואז את 3; 7 פאנלים בלי שורות מתחילים בשורה 23
+  assert.strictEqual(r.fill, "top");
+  assert.strictEqual(r.con4, r.cap4); assert.strictEqual(r.con3, 12 - r.cap4, "העודף מעבר לקיבולת השורות נשאר על השורה האחרונה שמולאה ומסומן כחריגה");
+  assert.ok(r.con3 > r.cap3);
+  assert.strictEqual(r.pan23, Math.min(7, r.cap23)); assert.strictEqual(r.pan22, Math.max(0, 7 - r.cap23)); assert.strictEqual(r.pan3, 0);
   assert.match(r.big, /^\d+ \/ 44$/); assert.match(r.sub, /קונסטרוקציה 7 · פאנלים 7 · אושרו 0 · מתוך 2 דיווחים/);
   assert.match(r.unp, /1 דיווחי ביצוע בלי מיקום/); assert.match(r.sum, /1 בלי מיקום/);
   assert.ok(r.pend.some(t => /מזרח/.test(t) && /שורות 1–23: עוד לא התחילו/.test(t)), r.pend.join(" | "));
-  assert.ok(r.pend.some(t => /מערב/.test(t) && /עוד לא התחילו/.test(t)));
+  assert.ok(r.pend.some(t => /מערב/.test(t) && /שורות 5–21: עוד לא התחילו/.test(t)), r.pend.join(" | "));
   assert.ok(r.list.some(t => /מערב · שורות 3–4/.test(t)), "המיקום מופיע ברשימת הדיווחים");
   assert.ok(r.cvw > 0); assert.ok(r.overflow <= 0, "גלילה אופקית: " + r.overflow + "px");
   await ctx.close();
