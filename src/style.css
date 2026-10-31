@@ -687,3 +687,17 @@ body.net-off .tabs{top:var(--netH,0px)}
 .wm-pend{display:grid;gap:6px} .slip.wm-pd{border-inline-start:4px solid var(--line)} .slip.wm-pd.none{border-inline-start-color:#C9CBCC} .slip.wm-pd.pan{border-inline-start-color:#FFAA00} .slip.wm-pd.ok{border-inline-start-color:#3199CC}
 .wm-plan{border:1px solid var(--line);border-radius:var(--r);overflow:auto;max-height:60vh;background:#fff;margin:8px 0} .wm-plan img{display:block;max-width:100%;height:auto}
 .pbtn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px dashed var(--line);border-radius:var(--r);color:var(--ink2);font-weight:600;cursor:pointer;background:var(--paper);max-width:100%;overflow-wrap:anywhere}
+
+/* חשמל לפי ממיר (58) */
+.el-st{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);color:var(--ink);font-family:inherit;text-align:start;cursor:pointer;min-height:44px}
+.el-st b{font-size:.95rem} .el-st small{color:var(--ink3);font-weight:600;margin-inline-start:4px}
+.el-flags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end} .el-flags i{font-style:normal;font-size:.7rem;font-weight:700;color:var(--ink3);border:1px solid var(--line);border-radius:99px;padding:2px 7px;background:#fff} .el-flags i.on{color:#fff;background:#5B9A3C;border-color:#5B9A3C}
+.el-st.done{border-color:#5B9A3C} .el-st.recent,.el-inv.recent{box-shadow:0 0 0 1.5px #E40033}
+.el-icb{font-size:.78rem;color:var(--ink3);margin:8px 2px 4px} .el-icb b{color:var(--ink2)}
+.el-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.el-inv{display:grid;gap:3px;padding:6px 6px 5px;border:1px solid var(--line);border-radius:var(--r);background:#fff;color:var(--ink);font-family:inherit;cursor:pointer;min-height:44px;text-align:center}
+.el-inv b{font-size:.84rem} .el-inv.on{border-color:#2F80ED} .el-inv.done{background:#EEF6EA;border-color:#5B9A3C}
+.el-bar{display:block;height:6px;border-radius:3px;background:#ECEDED;overflow:hidden} .el-bar i{display:block;height:100%}
+.el-n{font-size:.68rem;color:var(--ink3);font-variant-numeric:tabular-nums}
+.el-dots{display:flex;justify-content:center;gap:4px} .el-dots i{width:9px;height:9px;border-radius:50%;border:1px solid #C9CBCC;background:#fff;display:block}
+.slip.el-none{border-inline-start-color:#C9CBCC} .slip.el-dc{border-inline-start-color:#2F80ED} .slip.el-disc{border-inline-start-color:#FFAA00} .slip.el-ac{border-inline-start-color:#5B9A3C} .slip.el-com{border-inline-start-color:#7E57C2} .slip.el-st{border-inline-start-color:#3F4447}

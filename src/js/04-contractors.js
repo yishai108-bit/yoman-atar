@@ -7,6 +7,7 @@ import { SHOW_PRICES, showTab } from "./08-settings.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { locText, mountLocation, renderPlans, renderWorkMap } from "./20-work-map.js";
+import { renderElec } from "./21-elec.js";
 export let shortName, shortSup, emptyWho, STAGES, stageOf, stageLabel, moneyMax, rateMax, runMax;
 export function kitStats(){
   const mvs=shared.demoStock?[]:shared.moves, iss=shared.demoStock?[]:shared.issues, prog=shared.demoStock?[]:shared.progress;
@@ -335,7 +336,7 @@ export function renderContractors(){
       +'<span>'+esc(fmtDT(p.dateText)||fmtD(p.ts))+(locText(p)?' · '+esc(locText(p)):'')+(p.by?' · דיווח: '+esc(p.by):'')+(p.note?' · '+esc(p.note):'')+'</span>';
     pg.appendChild(el);
   });
-  renderWorkMap(); renderPlans();
+  renderWorkMap(); renderPlans(); renderElec();
 }
 /* ---- דיווח שולחנות שהושלמו ---- */
 export function openProgress(opt){
