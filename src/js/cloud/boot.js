@@ -10,13 +10,21 @@ import { makeBackend } from "./supabase-db.js";
 import { $, esc, shared, toast } from "../core.js";
 import { siteBuildSeries } from "../19-site-build.js";
 
-const CFG={ url:(import.meta.env&&import.meta.env.VITE_SUPABASE_URL)||window.__SB_URL||"", key:(import.meta.env&&import.meta.env.VITE_SUPABASE_ANON_KEY)||window.__SB_KEY||"" };
-const ready=v=>{ if(window.__backendReady) window.__backendReady(v); };
+/* שני צדדים של אותה אפליקציה (ישי 30.10): יומן אתר של בלקטריק ויומן אתר של קבלן החשמל (S.E.E). אותו קוד, אותה פריסה,
+   שני פרויקטים נפרדים ב-Supabase (הנתונים לא נוגעים). הצד נקבע לפי הדומיין (yoman-hashmal… = S.E.E) או ?org=see. */
+const ENV=(import.meta.env||{});
+const ORGS={
+  belectric:{ id:"belectric", brand:"BELECTRIC", url:ENV.VITE_SUPABASE_URL||window.__SB_URL||"",         key:ENV.VITE_SUPABASE_ANON_KEY||window.__SB_KEY||"" },
+  see:      { id:"see",       brand:"S.E.E",     url:ENV.VITE_SEE_SUPABASE_URL||window.__SB_SEE_URL||"", key:ENV.VITE_SEE_SUPABASE_ANON_KEY||window.__SB_SEE_KEY||"" },
+};
 const qs=new URLSearchParams(location.search);
+const ORG=(/hashmal|-see\b|^see\./.test(location.hostname)?ORGS.see:null)||ORGS[qs.get("org")]||ORGS.belectric;
+const CFG={ url:ORG.url, key:ORG.key };
+const ready=v=>{ if(window.__backendReady) window.__backendReady(v); };
 const LS={ get:k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set:(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} }, del:k=>{ try{ localStorage.removeItem(k); }catch(e){} } };
 
 function screen(html){ document.querySelectorAll(".cloud-screen").forEach(e=>e.remove()); const el=document.createElement("div"); el.className="lock cloud-screen"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.innerHTML=html; document.body.appendChild(el); return el; }
-const brand=()=>'<div class="brand">'+esc((shared.CLOUD&&shared.CLOUD.company)||"BELECTRIC")+'</div>';
+const brand=()=>'<div class="brand">'+esc((shared.CLOUD&&shared.CLOUD.company)||ORG.brand)+'</div>';
 
 /* ---------- כניסה ---------- */
 function login(sb){
@@ -55,10 +63,11 @@ function newPassword(sb){
 
 /* ---------- האתרים של המשתמש ---------- */
 async function mySites(sb){
-  const { data, error } = await sb.from("members").select("role, site:sites(id,slug,name)");
+  let { data, error } = await sb.from("members").select("role, site:sites(id,slug,name,company,ord)");
+  if(error&&/company|ord/.test(error.message||"")){ ({ data, error } = await sb.from("members").select("role, site:sites(id,slug,name)")); }   // סכמה בלי העמודות החדשות
   if(error) throw error;
   const order={ "ein-tamar":0, moledet:1, "beer-tuvia":2 };
-  return (data||[]).filter(r=>r.site).map(r=>({ id:r.site.id, slug:r.site.slug, name:r.site.name, role:r.role })).sort((a,b)=>(order[a.slug]??9)-(order[b.slug]??9)||a.name.localeCompare(b.name,"he"));
+  return (data||[]).filter(r=>r.site).map(r=>({ id:r.site.id, slug:r.site.slug, name:r.site.name, company:r.site.company||ORG.brand, role:r.role, ord:Number(r.site.ord)||(order[r.site.slug]??9) })).sort((a,b)=>a.ord-b.ord||a.name.localeCompare(b.name,"he"));
 }
 
 /* ---------- מסך חברה: שורה לכל אתר, כמו שמנהל רואה 10 אתרים במבט אחד ---------- */
@@ -81,8 +90,9 @@ const PAGE_SMALL=1000;
 const ago=ts=>{ if(!ts) return "אין עדיין פעילות"; const d=(Date.now()-ts)/36e5; if(d<1) return "לפני פחות משעה"; if(d<24) return "לפני "+Math.round(d)+" שעות"; const dd=Math.round(d/24); return dd===1?"אתמול":"לפני "+dd+" ימים"; };
 
 function openCompany(sb,sites,current,onPick){
+  const mixed=new Set(sites.map(s=>s.company)).size>1;
   const el=screen(brand()+'<h2>כל האתרים</h2><div class="sub">'+sites.length+' אתרים · לחיצה פותחת את היומן של האתר</div><div class="cloud-sites" id="cfSites">'
-    +sites.map(s=>'<button type="button" class="cloud-site" data-slug="'+esc(s.slug)+'"'+(current&&current.slug===s.slug?' aria-current="true"':'')+'><span class="cs-name">'+esc(s.name)+'<i class="role-badge role-'+esc(s.role)+'">'+(ROLE_HE[s.role]||s.role)+'</i></span>'
+    +sites.map(s=>'<button type="button" class="cloud-site" data-slug="'+esc(s.slug)+'"'+(current&&current.slug===s.slug?' aria-current="true"':'')+'><span class="cs-name">'+(mixed?'<small class="cs-co">'+esc(s.company)+'</small>':'')+esc(s.name)+'<i class="role-badge role-'+esc(s.role)+'">'+(ROLE_HE[s.role]||s.role)+'</i></span>'
       +'<span class="cs-pct"><b class="num">…</b></span><span class="cs-sub">טוען…</span></button>').join("")
     +'</div>'+(current?'<button type="button" class="linkbtn" id="cfBack">חזרה ל'+esc(current.name)+'</button>':'')+'<button type="button" class="linkbtn" id="cfOut">יציאה</button>');
   el.querySelector("#cfSites").onclick=e=>{ const b=e.target.closest("[data-slug]"); if(!b) return; const s=sites.find(x=>x.slug===b.dataset.slug); if(s) onPick(s); };
@@ -100,9 +110,9 @@ async function signOut(sb){ try{ await sb.auth.signOut(); }catch(e){} LS.del("cl
 
 /* ---------- עלייה ---------- */
 (async()=>{
-  if(!CFG.url||!CFG.key){ screen(brand()+'<h2>יומן אתר</h2><div class="sub">החיבור למאגר עוד לא הוגדר בגרסה הזאת (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).</div>'); ready(null); return; }
-  const sb=(window.__createSupabase||createClient)(CFG.url,CFG.key,{ auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
-  shared.CLOUD={ sb, url:CFG.url, company:"BELECTRIC", sites:[], site:null, openCompany:()=>{}, signOut:()=>signOut(sb) };
+  if(!CFG.url||!CFG.key){ screen(brand()+'<h2>יומן אתר</h2><div class="sub">החיבור למאגר של '+esc(ORG.brand)+' עוד לא הוגדר בגרסה הזאת ('+(ORG.id==="see"?"VITE_SEE_SUPABASE_URL / VITE_SEE_SUPABASE_ANON_KEY":"VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY")+').</div>'); ready(null); return; }
+  const sb=(window.__createSupabase||createClient)(CFG.url,CFG.key,{ auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"sb-"+ORG.id } });
+  shared.CLOUD={ sb, org:ORG.id, url:CFG.url, company:ORG.brand, sites:[], site:null, openCompany:()=>{}, signOut:()=>signOut(sb) };
   let session=null;
   try{ session=(await sb.auth.getSession()).data.session; }catch(e){}
   const recovering=/type=recovery/.test(location.hash||"");
@@ -120,6 +130,7 @@ async function signOut(sb){ try{ await sb.auth.signOut(); }catch(e){} LS.del("cl
   shared.CLOUD.site=site; shared.CLOUD.openCompany=()=>openCompany(sb,sites,site,s=>{ if(s.slug===site.slug){ document.querySelectorAll(".cloud-screen").forEach(e=>e.remove()); return; } pick(s); });
   const be=makeBackend(sb,{ siteId:site.id, siteSlug:site.slug, role:site.role, user:session.user, url:CFG.url });
   shared.BLOB_BASE=be.blobBase;
+  shared.CLOUD.company=site.company||ORG.brand;
   const sn=$("#siteName"); if(sn){ sn.innerHTML='<b>'+esc(shared.CLOUD.company)+'</b>'+esc(site.name); sn.style.cursor="pointer"; sn.title="כל האתרים"; sn.onclick=()=>shared.CLOUD.openCompany(); }
   document.title="יומן אתר · "+site.name;
   sb.auth.onAuthStateChange((ev)=>{ if(ev==="SIGNED_OUT") location.replace(location.pathname); });

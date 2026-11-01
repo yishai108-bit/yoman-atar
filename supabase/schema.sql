@@ -9,8 +9,12 @@ create table if not exists sites (
   id          uuid primary key default gen_random_uuid(),
   slug        text unique not null,              -- ein-tamar, moledet, beer-tuvia
   name        text not null,                     -- «אתר הקמה עין תמר»
+  company     text,                              -- מה שמופיע בכותרת (BELECTRIC / S.E.E); ריק = ברירת המחדל של הפריסה
+  ord         int,                               -- סדר במסך החברה
   created_at  timestamptz not null default now()
 );
+alter table sites add column if not exists company text;
+alter table sites add column if not exists ord int;
 
 create table if not exists members (
   site_id  uuid not null references sites(id) on delete cascade,

@@ -128,3 +128,35 @@ test("צופה במולדת: בלי כפתורי עריכה, כתיבה נדחי
     await ctx.close();
   } finally { await browser.close(); }
 });
+
+test("הצד של קבלן החשמל (S.E.E): ?org=see → מאגר נפרד, מותג S.E.E בכניסה ובכותרת, מסך חברה עם האתרים שלו", async () => {
+  const browser = await launch();
+  try {
+    const seed = { users: [{ id: "u7", email: "see@test.local", password: "secret12", name: "מנהל" }],
+      sites: [{ id: "e1", slug: "see-atar-1", name: "S.E.E · אתר 1", company: "S.E.E", ord: 1 }, { id: "e2", slug: "see-atar-2", name: "S.E.E · אתר 2", company: "S.E.E", ord: 2 }],
+      members: [{ site_id: "e1", user_id: "u7", role: "owner" }, { site_id: "e2", user_id: "u7", role: "editor" }],
+      docs: [{ site_id: "e1", coll: "settings", id: "site", data: { name: "S.E.E · אתר 1", company: "S.E.E", panelsPerTable: 81, ts: 1 } }] };
+    const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, locale: "he-IL" });
+    const page = await ctx.newPage(); const errors = []; page.on("pageerror", e => errors.push(String(e)));
+    await page.route(/^https?:\/\//, r => r.abort());
+    // רק המאגר של S.E.E מוגדר; של בלקטריק לא
+    await page.addInitScript(`window.__SB_SEE_URL="https://see.supabase.co";window.__SB_SEE_KEY="anon2";window.__SB__=${JSON.stringify(seed)};\n${MOCK}`);
+    await page.goto("file://" + FILE + "?org=see");
+    await page.waitForSelector("#cfLogin");
+    assert.equal(await page.textContent(".cloud-screen .brand"), "S.E.E");
+    await page.fill("#cfEmail", "see@test.local"); await page.fill("#cfPass", "secret12"); await page.click("#cfGo");
+    await page.waitForSelector("#cfSites");
+    assert.equal((await page.$$("[data-slug]")).length, 2);
+    assert.match(await page.textContent("#cfSites"), /S\.E\.E · אתר 1/);
+    await page.click('[data-slug="see-atar-1"]');
+    await page.waitForFunction(() => location.search.includes("site=see-atar-1") && window.shared && window.shared.DB, null, { timeout: 8000 });
+    assert.equal(await page.textContent("#siteName"), "S.E.ES.E.E · אתר 1");
+    assert.equal(await page.evaluate(() => window.blobUrl("x")), "https://see.supabase.co/storage/v1/object/public/assets/x");
+    // בלי ?org ובלי מאגר של בלקטריק: מסך «לא הוגדר» של בלקטריק, לא של S.E.E
+    await page.goto("file://" + FILE);
+    await page.waitForSelector(".cloud-screen");
+    assert.match(await page.textContent(".cloud-screen"), /VITE_SUPABASE_URL/);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  } finally { await browser.close(); }
+});

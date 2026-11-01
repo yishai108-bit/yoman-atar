@@ -738,3 +738,4 @@ body.net-off .tabs{top:var(--netH,0px)}
 .cloud-site .cs-open{font-weight:700;color:var(--ink2)}
 .cloud-site .cs-open.late{color:var(--clay)}
 .cloud-site .cs-open.ok{color:var(--sage,#4F7D5D)}
+.cloud-site .cs-co{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:var(--pv);width:100%}
