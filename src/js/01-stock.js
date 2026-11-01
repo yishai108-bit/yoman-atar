@@ -455,7 +455,7 @@ export async function collectFiles(files){
   }
   return out;
 }
-export function openImport(){
+export function openImport(pre){
   let ctl=null, items=[], results=[], stage="pick";
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא מוואטסאפ">'
   +'<div class="grab"></div><h2>ייבוא מוואטסאפ</h2>'
@@ -469,6 +469,7 @@ export function openImport(){
   const close=closer(scrim,()=>{ if(ctl) ctl.abort(); });
   q("#impCancel").onclick=close;
   q("#impFile").onchange=e=>{ const fs=[...e.target.files]; if(fs.length) run(fs); };
+  if(Array.isArray(pre)&&pre.length) setTimeout(()=>run(pre),0);   // מהקמת האתר: ייצוא וואטסאפ שנמצא בתיקיית הפרויקט
 
   async function run(files){
     if(!shared.SAMPLE){ body().innerHTML='<div class="empty">קריאה אוטומטית לא זמינה בתצוגה הזאת.</div>'; return; }

@@ -9,6 +9,7 @@ import { openImportChooser, saveCba } from "./14-cba.js";
 import { ROLE } from "./18-identity.js";
 import { locText, openLayout } from "./20-work-map.js";
 import { taskWhere } from "./22-tasks.js";
+import { openZipSetup } from "./23-zip-setup.js";
 export let KIT_SOURCE_DEFAULT, APP_VERSION, SHOW_PRICES, SITE, csvOf;
 export function applySite(d){
   if(!d) return;
@@ -29,6 +30,7 @@ export function openSettings(){
       +'<button class="ghost" type="button" id="stLog">יומן פעולות<small>מי שמר, מתי ומה</small></button>'
       +'<button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button>'
       +'<button class="ghost" type="button" id="stZip">ייצוא לאקסל<small>כל הטבלאות ב-ZIP</small></button>'
+      +'<button class="ghost" type="button" id="stZip2">הקמה מתיקיית הפרויקט<small>ZIP או תיקייה: הכל בפעם אחת</small></button>'
       +'<button class="ghost" type="button" id="stBom">ייבוא BOM / EBOQ / CBA<small>קונסטרוקציה · חשמל · מסחרי</small></button>'
       +'<button class="ghost" type="button" id="stLayout">מבנה האתר<small>שדות ושורות למפת הביצוע</small></button>'
     +'</div>'
@@ -61,11 +63,12 @@ export function openSettings(){
   q("#stBackup").onclick=()=>exportBackup();
   q("#stZip").onclick=()=>exportAllCsv();
   q("#stBom").onclick=()=>{ scrim.remove(); openImportChooser(); };
+  q("#stZip2").onclick=()=>{ scrim.remove(); openZipSetup(); };
   q("#stLayout").onclick=()=>{ scrim.remove(); openLayout(); };
   q("#stRestore").onclick=()=>{ scrim.remove(); openRestore(); };
   q("#stDemo").onclick=()=>{ ["demoDone","demoDoneS"].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); location.reload(); };
   const showAdmin=ROLE==="owner"; q("#stDanger").hidden=!showAdmin;
-  if(ROLE!=="owner"){ ["#stSave","#stAddType","#stBom"].forEach(x=>{ const e=q(x); if(e) e.hidden=true; }); scrim.querySelectorAll("#stTypes input,#stName,#stCo,#stPpt").forEach(i=>i.disabled=true); }
+  if(ROLE!=="owner"){ ["#stSave","#stAddType","#stBom","#stZip2"].forEach(x=>{ const e=q(x); if(e) e.hidden=true; }); scrim.querySelectorAll("#stTypes input,#stName,#stCo,#stPpt").forEach(i=>i.disabled=true); }
   q("#stCancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   q("#stSave").onclick=async()=>{
     const me=q("#stMe").value.trim(); if(me) ls.set("issuer",me);
@@ -294,7 +297,7 @@ export function showTab(which){
 export function __init(){
 /* ================= הגדרות אתר, גיבוי, ייבוא BOM ================= */
 KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-APP_VERSION = "61";
+APP_VERSION = "62";
 SHOW_PRICES = false;
    // בלי מחירים באפליקציה: שום ₪ לא מוצג (מחירים שנשמרו נשארים מוסתרים)
 SITE = {name:"אתר הקמה עין תמר",company:"BELECTRIC",panelsPerTable:81,custom:false};

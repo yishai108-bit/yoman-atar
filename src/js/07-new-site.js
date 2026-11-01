@@ -3,18 +3,22 @@ import { openImport } from "./01-stock.js";
 import { openPanelBal } from "./05-panels.js";
 import { KIT_SOURCE_DEFAULT, SITE, openBomImport, openSettings } from "./08-settings.js";
 import { ROLE } from "./18-identity.js";
-/* ================= אתר חדש: צעדי התחלה ================= */
+import { currentElec, openElecSetup } from "./21-elec.js";
+/* ================= אתר חדש: הקמה מתיקיית הפרויקט, או צעד אחר צעד =================
+   מגרסה 62 הדרך הראשית היא «הקמה מתיקיית הפרויקט» (23-zip-setup.js); הצעדים נשארים למי שמעדיף ידנית ולמה שחסר בתיקייה.
+   הכרטיס מוצג לבעלים גם כשמוצגים נתוני דוגמה, כל עוד אין באתר נתונים אמיתיים: אתר חדש מתחיל כאן. */
 export function renderOnboarding(){
   const card=$("#onbCard"), box=$("#onbSteps"); if(!card) return;
-  const hasBomStock=shared.deliveries.some(n=>n.source==="bom");
   const steps=[
     {l:"הגדרות אתר",s:"שם האתר, סוגי השולחנות וכמה מכל סוג. מזה נגזר «לכמה שולחנות המלאי מספיק».",done:!!(SITE.custom||shared.kitTypes.some(t=>Number(t.count)>0&&t.customized)),act:openSettings,btn:"הגדר"},
     {l:"כמויות לשולחן (BOM)",s:"מה יוצא לשולחן אחד מכל סוג. ייבוא מאקסל של היצרן, או עריכה ידנית.",done:shared.kitSource!==KIT_SOURCE_DEFAULT||!!(SITE.bomImported),act:()=>openBomImport(),btn:"ייבוא"},
+    {l:"מבנה החשמל ותוכניות",s:"תחנות, ממירים וסטרינגים, והתוכניות העדכניות. מתיקיית הפרויקט, או במספרים.",done:!!currentElec()&&(shared.PLANS||[]).length>0,act:openElecSetup,btn:"מבנה החשמל"},
     {l:"מלאי פתיחה",s:"מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.",done:shared.deliveries.length>0,act:openImport,btn:"ייבוא"},
     {l:"מאזן פאנלים ראשון",s:"כמה פאנלים באתר, מותקנים, שבורים. מהמאזן השני יש קצב וצפי.",done:shared.panelBal.length>0,act:openPanelBal,btn:"הזן"},
   ];
   const left=steps.filter(s=>!s.done).length;
-  const show=ROLE==="owner" && !shared.demoStock && (!shared.issues.length || left>=2);
+  const fresh=!shared.deliveries.length&&!shared.issues.length;
+  const show=ROLE==="owner" && (!shared.demoStock||fresh) && (!shared.issues.length || left>=2) && left>0;
   card.hidden=!show; if(!show) return;
   box.innerHTML="";
   steps.forEach(st=>{

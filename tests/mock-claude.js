@@ -5,6 +5,7 @@
 //   noClaude: true      → אין window.claude בכלל (תצוגה מקומית)
 //   noDb: true          → use("db") מחזיר null
 //   killListeners: ms   → אחרי ms כל ההאזנות מקבלות שגיאה סופנית (unavailable)
+//   assets: true        → use("assets") מחזיר אחסון מדומה; הקבצים שהועלו ב-window.__MOCK_ASSETS__ ({id, name, size, type})
 // קבצים שהאפליקציה שומרת דרך downloads נאספים ב-window.__MOCK_SAVED__ ({filename, data})
 (function(){
   const M = window.__MOCK__ || {};
@@ -84,6 +85,8 @@
     if (name === "db") return M.noDb ? null : db;
     if (name === "user") return user;
     if (name === "downloads") return { save: async f => { saved.push(f); } };
-    return null;   // assets, sample: לא בבדיקות
+    if (name === "assets" && M.assets){ const up = window.__MOCK_ASSETS__ = [];
+      return { upload: async b => { const id = "as" + (up.length + 1); up.push({ id, name: b.name || "", size: b.size, type: b.type }); return { id, url: "" }; } }; }
+    return null;   // sample (AI): לא בבדיקות
   } };
 })();
