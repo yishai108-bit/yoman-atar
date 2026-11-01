@@ -138,9 +138,9 @@ function paint(cv,L,F,opts){
     if(recent){ ctx.strokeStyle="#E40033"; ctx.lineWidth=1.5; ctx.strokeRect(x-1,y-1,w+2,h+2); }
     if(sel&&sel.n===n&&sel.f===(big?g.f.id:sel.f)){ ctx.strokeStyle="#121212"; ctx.lineWidth=2; ctx.strokeRect(x-2,y-2,w+4,h+4); }
   };
-  if(g.zoom){ const f=g.f; ctx.fillStyle="#3F4447"; ctx.textAlign="right"; ctx.fillText(f.name+" · "+f.rows.length+" שורות",g.W-8,14);
-    g.rows.forEach(({r,x,y,w,h})=>{ const cell=F[f.id][r.n]; bar(x,y,w,h,cell,r.tables,r.n,true); ctx.fillStyle="#666B6E"; ctx.textAlign="right"; ctx.fillText(String(r.n),g.W-14,y+h/2); ctx.textAlign="left"; ctx.fillStyle="#9A9EA1"; ctx.font="600 10px Alef, Heebo, Arial"; ctx.fillText(fmtN(r.tables),x-40,y+h/2); ctx.font="700 11px Alef, Heebo, Arial"; });
-    if(opts.elec!==false&&elecLayerOn()) drawElec(ctx,elecMarks(L,g),true);
+  if(g.zoom){ const f=g.f, EM=opts.elec!==false&&elecLayerOn()?elecMarks(L,g):[]; ctx.fillStyle="#3F4447"; ctx.textAlign="right"; ctx.fillText(f.name+" · "+f.rows.length+" שורות",g.W-8,14);
+    g.rows.forEach(({r,x,y,w,h})=>{ const cell=F[f.id][r.n]; bar(x,y,w,h,cell,r.tables,r.n,true); ctx.fillStyle="#666B6E"; ctx.textAlign="right"; if(!hitMark(EM,g.W-21,y+h/2,11)) ctx.fillText(String(r.n),g.W-14,y+h/2); ctx.textAlign="left"; ctx.fillStyle="#9A9EA1"; ctx.font="600 10px Alef, Heebo, Arial"; ctx.fillText(fmtN(r.tables),x-40,y+h/2); ctx.font="700 11px Alef, Heebo, Arial"; });
+    if(EM.length) drawElec(ctx,EM,true);
     return g; }
   const s=g.s, EM=opts.elec!==false&&elecLayerOn()?elecMarks(L,g):[]; ctx.setLineDash([3,3]); ctx.strokeStyle="#C9CBCC"; ctx.lineWidth=1;
   L.fields.forEach(f=>{ ctx.strokeRect(f.x*s-3,f.y*s-3,f.w*s+6,f.h*s+6); ctx.fillStyle="#3F4447"; ctx.textAlign="center"; ctx.setLineDash([]); ctx.fillText(f.name,(f.x+f.w/2)*s,Math.max(8,f.y*s-10)); ctx.setLineDash([3,3]);
@@ -186,9 +186,10 @@ export function elecMarks(L,g,E){
   E=E||currentElec(); if(!L||!E||!E.pos||L.src!=="map") return [];
   const S=elecState(shared.demoStock?[]:shared.ELEC||[]); const out=[];
   elecItems(E).forEach(it=>{ const p=E.pos[it.id]; if(!p) return; const f=fieldOfHalf(L,p[0]); if(!f) return; const r=Number(p[1]), pos=Math.max(-0.05,Math.min(1.05,Number(p[2]))), n=f.rows.length; let x,y;
-    if(g.zoom){ if(g.f.id!==f.id) return; y=atRow(n,r,i=>g.rows[i].y+g.rows[i].h/2); x=44+pos*(g.W-60); if(it.kind==="st") x+=pos<=0?-11:pos>=1?11:0; }
+    if(g.zoom){ if(g.f.id!==f.id) return; y=atRow(n,r,i=>g.rows[i].y+g.rows[i].h/2); x=44+pos*(g.W-60);
+      if(it.kind==="st") x=pos<=0?33:pos>=1?g.W-24:x; else x=Math.max(52,Math.min(g.W-24,x)); }   // בקצוות: בתוך הפס, התחנה בשוליים
     else { const s=g.s; const rr=f.rows[Math.min(n-1,Math.max(0,Math.round(r)-1))]; y=atRow(n,r,i=>(f.rows[i].y+f.rows[i].h/2)*s); x=(rr.x+pos*rr.w)*s; if(it.kind==="st") x+=pos<=0?-7:pos>=1?7:0; }
-    out.push({id:it.id,kind:it.kind,it,x,y,...elecStateOf(it,S[it.id])}); });
+    out.push({id:it.id,kind:it.kind,it,x,y,left:pos>0.8,...elecStateOf(it,S[it.id])}); });
   return out;
 }
 export function hitMark(marks,x,y,rad){ let best=null,bd=rad; marks.forEach(m=>{ const d=Math.hypot(m.x-x,m.y-y); if(d<=bd){ bd=d; best=m; } }); return best; }
@@ -202,7 +203,7 @@ function drawElec(ctx,marks,zoom){
       else if(m.k!=="none"){ ctx.beginPath(); ctx.arc(m.x,m.y,R,0,Math.PI*2); ctx.fillStyle=ECOL[m.k]; ctx.fill(); }
       ctx.beginPath(); ctx.arc(m.x,m.y,R,0,Math.PI*2); ctx.strokeStyle=m.k==="none"?"#7C8285":"#3F4447"; ctx.lineWidth=1; ctx.stroke(); }
     if(m.recent){ ctx.beginPath(); ctx.arc(m.x,m.y,(m.kind==="st"?S*.78:R+2.5),0,Math.PI*2); ctx.strokeStyle="#E40033"; ctx.lineWidth=1.5; ctx.stroke(); }
-    if(zoom&&m.kind==="inv"){ ctx.fillStyle="#121212"; ctx.font="700 10px Alef, Heebo, Arial"; ctx.textAlign="left"; ctx.fillText(m.id,m.x+R+3,m.y); }
+    if(zoom&&m.kind==="inv"){ ctx.fillStyle="#121212"; ctx.font="700 10px Alef, Heebo, Arial"; ctx.textAlign=m.left?"right":"left"; ctx.fillText(m.id,m.left?m.x-R-3:m.x+R+3,m.y); }   // ליד הקצה המזרחי התווית משמאל
   });
   ctx.font="700 11px Alef, Heebo, Arial"; ctx.textAlign="left";
 }

@@ -1611,7 +1611,7 @@ function paint(cv2, L, F, opts) {
     }
   };
   if (g.zoom) {
-    const f = g.f;
+    const f = g.f, EM2 = opts.elec !== false && elecLayerOn() ? elecMarks(L, g) : [];
     ctx2.fillStyle = "#3F4447";
     ctx2.textAlign = "right";
     ctx2.fillText(f.name + " · " + f.rows.length + " שורות", g.W - 8, 14);
@@ -1620,14 +1620,14 @@ function paint(cv2, L, F, opts) {
       bar(x, y, w, h, cell, r.tables, r.n, true);
       ctx2.fillStyle = "#666B6E";
       ctx2.textAlign = "right";
-      ctx2.fillText(String(r.n), g.W - 14, y + h / 2);
+      if (!hitMark(EM2, g.W - 21, y + h / 2, 11)) ctx2.fillText(String(r.n), g.W - 14, y + h / 2);
       ctx2.textAlign = "left";
       ctx2.fillStyle = "#9A9EA1";
       ctx2.font = "600 10px Alef, Heebo, Arial";
       ctx2.fillText(fmtN(r.tables), x - 40, y + h / 2);
       ctx2.font = "700 11px Alef, Heebo, Arial";
     });
-    if (opts.elec !== false && elecLayerOn()) drawElec(ctx2, elecMarks(L, g), true);
+    if (EM2.length) drawElec(ctx2, EM2, true);
     return g;
   }
   const s = g.s, EM = opts.elec !== false && elecLayerOn() ? elecMarks(L, g) : [];
@@ -1753,7 +1753,8 @@ function elecMarks(L, g, E) {
       if (g.f.id !== f.id) return;
       y = atRow(n, r, (i) => g.rows[i].y + g.rows[i].h / 2);
       x = 44 + pos * (g.W - 60);
-      if (it.kind === "st") x += pos <= 0 ? -11 : pos >= 1 ? 11 : 0;
+      if (it.kind === "st") x = pos <= 0 ? 33 : pos >= 1 ? g.W - 24 : x;
+      else x = Math.max(52, Math.min(g.W - 24, x));
     } else {
       const s = g.s;
       const rr = f.rows[Math.min(n - 1, Math.max(0, Math.round(r) - 1))];
@@ -1761,7 +1762,7 @@ function elecMarks(L, g, E) {
       x = (rr.x + pos * rr.w) * s;
       if (it.kind === "st") x += pos <= 0 ? -7 : pos >= 1 ? 7 : 0;
     }
-    out.push({ id: it.id, kind: it.kind, it, x, y, ...elecStateOf(it, S[it.id]) });
+    out.push({ id: it.id, kind: it.kind, it, x, y, left: pos > 0.8, ...elecStateOf(it, S[it.id]) });
   });
   return out;
 }
@@ -1825,8 +1826,8 @@ function drawElec(ctx2, marks, zoom) {
     if (zoom && m.kind === "inv") {
       ctx2.fillStyle = "#121212";
       ctx2.font = "700 10px Alef, Heebo, Arial";
-      ctx2.textAlign = "left";
-      ctx2.fillText(m.id, m.x + R + 3, m.y);
+      ctx2.textAlign = m.left ? "right" : "left";
+      ctx2.fillText(m.id, m.left ? m.x - R - 3 : m.x + R + 3, m.y);
     }
   });
   ctx2.font = "700 11px Alef, Heebo, Arial";
