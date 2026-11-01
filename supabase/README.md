@@ -29,5 +29,11 @@
 הצד נקבע ב-`VITE_ORG` (`belectric` / `see`) בפרויקט ה-Vercel; בלי `VITE_ORG` (בדיקות, מקומי) לפי הדומיין או `?org=see`.
 משתני הסביבה בפרויקט של קבלן החשמל: `VITE_SEE_SUPABASE_URL`, `VITE_SEE_SUPABASE_ANON_KEY`. ההקמה זהה; האתרים מ-`5-אתרי-SEE.sql` (עד 10, עם `company` ו-`ord`).
 
+## מצב (1.11.2026)
+שני הפרויקטים קיימים והסכמה רצה בהם (מהמחשב של ישי, דרך Supabase CLI ו-Management API `POST /v1/projects/{ref}/database/query`; קובץ הנתונים פוצל למקטעים של כ-100KB):
+- בלקטריק: ref `ptyonidnvoeuipoauduo` (Ireland), אתרים ein-tamar / moledet / beer-tuvia, 548 מסמכי עין תמר. משתני הסביבה ב-Vercel yoman-atar.
+- קבלן חשמל (S.E.E): ref `icrvgduoecfbxqroaews` (Frankfurt), אתרים see-atar-1..3 (שמות זמניים). משתני הסביבה ב-Vercel yoman-hashmal-see.
+נשאר ידני בדשבורד: Site URL בכל פרויקט (Authentication → URL Configuration), ומשתמשים (Authentication → Users + `add_member`).
+
 ## הרצה מקומית מול Supabase
 `VITE_SUPABASE_URL=… VITE_SUPABASE_ANON_KEY=… npm run build:cloud` ואז לפתוח את `dist/cloud/index.html` משרת סטטי (לא כקובץ: הכניסה צריכה origin).
