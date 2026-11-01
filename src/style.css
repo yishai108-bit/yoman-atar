@@ -701,3 +701,6 @@ body.net-off .tabs{top:var(--netH,0px)}
 .el-n{font-size:.68rem;color:var(--ink3);font-variant-numeric:tabular-nums}
 .el-dots{display:flex;justify-content:center;gap:4px} .el-dots i{width:9px;height:9px;border-radius:50%;border:1px solid #C9CBCC;background:#fff;display:block}
 .slip.el-none{border-inline-start-color:#C9CBCC} .slip.el-dc{border-inline-start-color:#2F80ED} .slip.el-disc{border-inline-start-color:#FFAA00} .slip.el-ac{border-inline-start-color:#5B9A3C} .slip.el-com{border-inline-start-color:#7E57C2} .slip.el-st{border-inline-start-color:#3F4447}
+
+/* שכבת חשמל במפה (גרסה 59): מקרא + כפתור הצגה/הסתרה */
+.sb-keys.wm-el{align-items:center;padding-top:4px} .sb-keys.wm-el .linkbtn{min-height:0;padding:0 4px;margin-inline-start:auto} .sb-keys.wm-el i{width:10px;height:10px}

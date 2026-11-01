@@ -903,7 +903,442 @@ const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   statusHolidays,
   workdaysBetween
 }, Symbol.toStringTag, { value: "Module" }));
-const COL$1 = { con: "#FFAA00", pan: "#3199CC", ok: "#9AC339" }, ORDER = ["con", "pan", "ok"];
+const SITE_ELEC = {
+  "עין תמר": {
+    src: "E_10 Color Map rev03 · 15.7.26",
+    stringPanels: 27,
+    stations: [
+      { id: "S1", name: "תחנה 1", side: "מערב", icbs: [
+        { id: "1.1", inv: [["1.1", 19], ["1.2", 18], ["1.3", 18], ["1.4", 18], ["1.5", 18], ["1.6", 18], ["1.7", 19], ["1.8", 19], ["1.9", 19]] },
+        { id: "1.2", inv: [["1.10", 19], ["1.11", 19], ["1.12", 19], ["1.13", 19], ["1.14", 18], ["1.15", 19], ["1.16", 19], ["1.17", 20], ["1.18", 18]] }
+      ] },
+      { id: "S2", name: "תחנה 2", side: "מזרח", icbs: [
+        { id: "2.1", inv: [["2.1", 18], ["2.2", 19], ["2.3", 19], ["2.4", 18], ["2.5", 18], ["2.6", 18], ["2.7", 18], ["2.8", 18], ["2.9", 18], ["2.10", 18]] },
+        { id: "2.2", inv: [["2.11", 19], ["2.12", 20], ["2.13", 19], ["2.14", 19], ["2.15", 19], ["2.16", 20], ["2.17", 18], ["2.18", 19], ["2.19", 19]] }
+      ] }
+    ],
+    // מיקום על מפת השולחנות של האתר (site-maps.js), כמו ב«מה בוצע במפה»: [חצי w/e, שורה מלמטה בתוך החצי (שבר = בין שורות), מיקום לאורך השורה 0 מערב–1 מזרח].
+    // חולץ 1.11.26 ממיקומי התוויות ב-E_20 Cable Plan rev05 / E_10 / E_40 (דיוק ±1 שורה, ±0.1 לאורך). ממירים 1.8, 1.9, 1.18, 2.19 צמודים לדרך המרכזית.
+    pos: {
+      "1.1": ["w", 20.2, 0.49],
+      "1.2": ["w", 18.3, 0.3],
+      "1.3": ["w", 15.4, 0.27],
+      "1.4": ["w", 12.3, 0.26],
+      "1.5": ["w", 18.2, 0.71],
+      "1.6": ["w", 15.3, 0.67],
+      "1.7": ["w", 12.2, 0.63],
+      "1.8": ["e", 22, 0.01],
+      "1.9": ["w", 16.3, 0.99],
+      "1.10": ["w", 9.1, 0.24],
+      "1.11": ["w", 6.2, 0.23],
+      "1.12": ["w", 3.3, 0.21],
+      "1.13": ["w", 9.2, 0.57],
+      "1.14": ["w", 6.1, 0.52],
+      "1.15": ["w", 3.1, 0.5],
+      "1.16": ["w", 10.2, 0.89],
+      "1.17": ["w", 5.5, 0.82],
+      "1.18": ["e", 12.8, 0.22],
+      "2.1": ["e", 22.3, 0.83],
+      "2.2": ["e", 19.3, 0.89],
+      "2.3": ["e", 16.3, 0.91],
+      "2.4": ["e", 22.3, 0.57],
+      "2.5": ["e", 19.3, 0.58],
+      "2.6": ["e", 16.3, 0.59],
+      "2.7": ["e", 13.3, 0.6],
+      "2.8": ["e", 22.2, 0.29],
+      "2.9": ["e", 19.2, 0.27],
+      "2.10": ["e", 16.1, 0.25],
+      "2.11": ["e", 12, 0.95],
+      "2.12": ["e", 7.3, 1],
+      "2.13": ["e", 10.3, 0.58],
+      "2.14": ["e", 7.3, 0.6],
+      "2.15": ["e", 4.4, 0.62],
+      "2.16": ["e", 1, 0.3],
+      "2.17": ["e", 10.4, 0.14],
+      "2.18": ["e", 6.8, 0.06],
+      "2.19": ["e", 3.3, 0.04],
+      "S1": ["w", 12, 0],
+      "S2": ["e", 12, 1]
+    }
+  }
+};
+function siteElecFor(name) {
+  const n = String(name || "");
+  for (const k in SITE_ELEC) if (n.includes(k)) return SITE_ELEC[k];
+  return null;
+}
+function genElec(g) {
+  const st = Math.max(1, Math.min(12, Math.round(Number(g && g.stations) || 0))), inv = Math.max(1, Math.min(40, Math.round(Number(g && g.inv) || 0))), s = Math.max(1, Math.min(40, Math.round(Number(g && g.strings) || 0)));
+  if (!st || !inv || !s) return null;
+  const stations = [];
+  for (let i = 1; i <= st; i++) {
+    const list = [];
+    for (let j = 1; j <= inv; j++) list.push([i + "." + j, s]);
+    stations.push({ id: "S" + i, name: "תחנה " + i, side: "", icbs: [{ id: String(i), inv: list }] });
+  }
+  return { src: "gen", stringPanels: Number(g.stringPanels) || 27, stations };
+}
+const INV_STEPS = [["disc", "מנתק מותקן"], ["ac", "AC מחובר לתחנה"], ["com", "תקשורת מחוברת"]];
+const ST_STEPS = [["place", "הוצבה"], ["mv", "מ״ג מחובר"], ["lv", "LV מחובר"]];
+const COL$1 = { dc: "#2F80ED", disc: "#FFAA00", ac: "#5B9A3C", com: "#7E57C2" };
+function elecDoc() {
+  return shared.ELECCFG || null;
+}
+function currentElec() {
+  const d = elecDoc();
+  if (d && d.gen) {
+    const E = genElec(d.gen);
+    if (E) return E;
+  }
+  return siteElecFor(SITE && SITE.name);
+}
+function elecItems(E) {
+  const out = [];
+  if (!E) return out;
+  E.stations.forEach((s) => {
+    out.push({ id: s.id, kind: "st", name: s.name, side: s.side, st: s });
+    s.icbs.forEach((c) => c.inv.forEach(([id, n]) => out.push({ id, kind: "inv", name: "ממיר " + id, strings: n, icb: c.id, st: s })));
+  });
+  return out;
+}
+const elecSummary = (E) => {
+  const it = elecItems(E);
+  const inv = it.filter((x) => x.kind === "inv");
+  return inv.length ? E.stations.length + " תחנות · " + inv.length + " ממירים · " + fmtN(inv.reduce((s, x) => s + x.strings, 0)) + " סטרינגים" : "";
+};
+async function saveElecCfg(doc) {
+  doc = { ...doc, ts: Date.now(), by: actorName() };
+  if (shared.DB) await shared.DB.doc("settings/elec").set(doc);
+  else {
+    shared.ELECCFG = doc;
+    ls.set("eleccfg", JSON.stringify(doc));
+    renderElec();
+    renderWorkMap();
+  }
+}
+function elecState(reports) {
+  const S = {};
+  (reports || []).slice().sort((a, b) => a.ts - b.ts).forEach((r) => {
+    if (r && r.item) S[r.item] = r;
+  });
+  return S;
+}
+const invDone = (r, it) => r && Number(r.strings) >= it.strings && r.disc && r.ac && r.com;
+function elecTotals(E, S) {
+  const it = elecItems(E), inv = it.filter((x) => x.kind === "inv");
+  const t = { inv: inv.length, strings: inv.reduce((s, x) => s + x.strings, 0), connected: 0, dcFull: 0, disc: 0, ac: 0, com: 0, done: 0, started: 0 };
+  inv.forEach((x) => {
+    const r = S[x.id];
+    if (!r) return;
+    const n = Math.min(x.strings, Number(r.strings) || 0);
+    t.connected += n;
+    if (n > 0 || r.disc || r.ac || r.com) t.started++;
+    if (n >= x.strings) t.dcFull++;
+    if (r.disc) t.disc++;
+    if (r.ac) t.ac++;
+    if (r.com) t.com++;
+    if (invDone(r, x)) t.done++;
+  });
+  return t;
+}
+function elecPending(E, S) {
+  const inv = elecItems(E).filter((x) => x.kind === "inv");
+  const out = [];
+  const grp = (k, test, text) => {
+    const ids = inv.filter((x) => test(S[x.id] || {}, x)).map((x) => x.id);
+    if (ids.length) out.push({ k, ids, n: ids.length, text: text + ": " + rangeText(ids, inv.map((x) => x.id)) });
+  };
+  grp("none", (r, x) => !(Number(r.strings) > 0) && !r.disc && !r.ac && !r.com, "עוד לא התחילו");
+  grp("dc", (r, x) => Number(r.strings) > 0 && Number(r.strings) < x.strings, "סטרינגים בחיבור");
+  grp("disc", (r, x) => Number(r.strings) >= x.strings && !r.disc, "DC גמור, בלי מנתק");
+  grp("ac", (r, x) => r.disc && !r.ac, "מנתק יש, AC לא מחובר");
+  grp("com", (r, x) => r.ac && !r.com, "AC מחובר, בלי תקשורת");
+  E.stations.forEach((s) => {
+    const r = S[s.id] || {};
+    const miss = ST_STEPS.filter(([k]) => !r[k]).map(([, l]) => l);
+    if (miss.length) out.push({ k: "st", ids: [s.id], n: 1, text: s.name + ": " + miss.join(", ") });
+  });
+  return out;
+}
+function rangeText(ids, order) {
+  const idx = new Map(order.map((id, i) => [id, i]));
+  const s = ids.slice().sort((a2, b) => idx.get(a2) - idx.get(b));
+  const runs = [];
+  let a = null, prev = null;
+  s.forEach((id) => {
+    const i = idx.get(id);
+    if (a !== null && i === idx.get(prev) + 1 && id.split(".")[0] === prev.split(".")[0]) {
+      prev = id;
+      return;
+    }
+    if (a !== null) runs.push([a, prev]);
+    a = id;
+    prev = id;
+  });
+  if (a !== null) runs.push([a, prev]);
+  return runs.map(([x, y]) => x === y ? x : x + "–" + y).join(", ");
+}
+let built$2 = false;
+function buildDom$2() {
+  const box = $("#elBody");
+  if (!box || built$2) return;
+  built$2 = true;
+  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="elBig">0</span><span class="sb-cap">סטרינגים מחוברים</span></div><div class="sb-sub" id="elSub"></div><div id="elStations"></div><div class="sb-keys"><span><i style="background:' + COL$1.dc + '"></i>סטרינגים</span><span><i style="background:' + COL$1.disc + '"></i>מנתק</span><span><i style="background:' + COL$1.ac + '"></i>AC</span><span><i style="background:' + COL$1.com + '"></i>תקשורת</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>עודכן בשבוע האחרון</span></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="elPendN"></span></div><div class="wm-pend" id="elPend"></div><div class="hint" id="elSrc" style="margin-top:8px"></div>';
+}
+function renderElec() {
+  const card = $("#elecCard");
+  if (!card) return;
+  buildDom$2();
+  const E = currentElec(), reps = shared.demoStock ? [] : shared.ELEC || [];
+  $("#elEmpty").hidden = !!E;
+  $("#elBody").hidden = !E;
+  $("#elSetup").hidden = ROLE !== "owner";
+  if (!E) {
+    foldSum("elec", "");
+    return;
+  }
+  const S = elecState(reps), T = elecTotals(E, S), recent = (t) => t > Date.now() - 7 * 864e5;
+  $("#elBig").textContent = fmtN(T.connected) + " / " + fmtN(T.strings);
+  $("#elSub").innerHTML = "ממירים מתוך <b>" + T.inv + "</b>: DC מלא <b>" + T.dcFull + "</b> · מנתק <b>" + T.disc + "</b> · AC <b>" + T.ac + "</b> · תקשורת <b>" + T.com + "</b>" + (T.done ? " · גמורים <b>" + T.done + "</b>" : "");
+  const box = $("#elStations");
+  box.innerHTML = "";
+  E.stations.forEach((s) => {
+    const r = S[s.id] || {};
+    const head = document.createElement("button");
+    head.type = "button";
+    head.className = "el-st" + (ST_STEPS.every(([k]) => r[k]) ? " done" : "") + (r.ts && recent(r.ts) ? " recent" : "");
+    head.innerHTML = "<b>" + esc(s.name) + (s.side ? " <small>" + esc(s.side) + "</small>" : "") + '</b><span class="el-flags">' + ST_STEPS.map(([k, l]) => '<i class="' + (r[k] ? "on" : "") + '">' + l + "</i>").join("") + "</span>";
+    head.onclick = () => openElecItem(s.id);
+    box.appendChild(head);
+    s.icbs.forEach((c) => {
+      const lab = document.createElement("div");
+      lab.className = "el-icb";
+      const tot = c.inv.reduce((a, [, n]) => a + n, 0), con = c.inv.reduce((a, [id, n]) => a + Math.min(n, Number((S[id] || {}).strings) || 0), 0);
+      lab.innerHTML = (E.src === "gen" ? "" : "ICB " + esc(c.id) + " · ") + c.inv.length + " ממירים · <b>" + fmtN(con) + "</b> / " + fmtN(tot) + " סטרינגים";
+      box.appendChild(lab);
+      const grid = document.createElement("div");
+      grid.className = "el-grid";
+      c.inv.forEach(([id, n]) => {
+        const r2 = S[id] || {};
+        const k = Math.min(n, Number(r2.strings) || 0);
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "el-inv" + (invDone(r2, { strings: n }) ? " done" : k > 0 || r2.disc || r2.ac || r2.com ? " on" : "") + (r2.ts && recent(r2.ts) ? " recent" : "");
+        b.dataset.inv = id;
+        b.setAttribute("aria-label", "ממיר " + id + ": " + k + " מתוך " + n + " סטרינגים" + (r2.disc ? ", מנתק" : "") + (r2.ac ? ", AC" : "") + (r2.com ? ", תקשורת" : ""));
+        b.innerHTML = "<b>" + esc(id) + '</b><span class="el-bar"><i style="width:' + Math.round(100 * k / n) + "%;background:" + COL$1.dc + '"></i></span><span class="el-n">' + k + "/" + n + '</span><span class="el-dots">' + INV_STEPS.map(([s2]) => '<i style="' + (r2[s2] ? "background:" + COL$1[s2] + ";border-color:" + COL$1[s2] : "") + '"></i>').join("") + "</span>";
+        b.onclick = () => openElecItem(id);
+        grid.appendChild(b);
+      });
+      box.appendChild(grid);
+    });
+  });
+  const P = elecPending(E, S);
+  const pb = $("#elPend");
+  pb.innerHTML = "";
+  $("#elPendN").textContent = P.length ? "" : "הכול בוצע";
+  P.forEach((p) => {
+    const d = document.createElement("button");
+    d.type = "button";
+    d.className = "slip wm-pd el-" + p.k;
+    d.innerHTML = "<b>" + (p.k === "st" ? "תחנה" : p.n + " ממירים") + "</b><span>" + esc(p.text) + "</span>";
+    d.onclick = () => openElecItem(p.ids[0]);
+    pb.appendChild(d);
+  });
+  $("#elSrc").textContent = (E.src === "gen" ? "לפי המספרים בהגדרות" : "לפי " + E.src) + " · " + elecSummary(E) + (ROLE === "owner" ? " · שינוי בכפתור «מבנה החשמל»" : "");
+  foldSum("elec", fmtN(T.connected) + " / " + fmtN(T.strings) + " סטרינגים");
+}
+function openElecItem(id) {
+  const E = currentElec();
+  const it = elecItems(E).find((x) => x.id === id);
+  if (!it) return;
+  const reps = (shared.demoStock ? [] : shared.ELEC || []).filter((r2) => r2.item === id).sort((a, b) => b.ts - a.ts);
+  const r = reps[0] || {};
+  const rows = it.kind === "inv" ? [['<i style="background:' + COL$1.dc + '"></i>', "סטרינגים מחוברים", fmtN(Math.min(it.strings, Number(r.strings) || 0)) + " / " + it.strings, Number(r.strings) >= it.strings], ...INV_STEPS.map(([k, l]) => ['<i style="background:' + COL$1[k] + '"></i>', l, r[k] ? "בוצע" : "עוד לא", !!r[k]])] : ST_STEPS.map(([k, l]) => ['<i style="background:' + COL$1.ac + '"></i>', l, r[k] ? "בוצע" : "עוד לא", !!r[k]]);
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(it.name) + '"><div class="grab"></div><h2>' + esc(it.name) + '</h2><div class="hint">' + esc([it.st.name, it.st.side, it.kind === "inv" && E.src !== "gen" ? "ICB " + it.icb : "", it.kind === "inv" ? it.strings + " סטרינגים · " + fmtN(it.strings * (E.stringPanels || 27)) + " פאנלים" : ""].filter(Boolean).join(" · ")) + '</div><div class="wm-zoom" style="margin-top:10px">' + rows.map(([i, l, v, on]) => '<div class="zm-row' + (on ? " done" : "") + '">' + i + "<span>" + esc(l) + '</span><span class="num">' + esc(v) + '</span><span class="d"></span></div>').join("") + (r.ts ? '<div class="hint" style="margin-top:6px">עודכן ' + esc(fmtDT(r.dateText) || fmtD(r.ts)) + (r.who ? " · " + esc(r.who) : "") + (r.by ? " · " + esc(r.by) : "") + (r.note ? " · " + esc(r.note) : "") + "</div>" : '<div class="hint" style="margin-top:6px">עוד לא דווח.</div>') + "</div>" + (reps.length > 1 ? '<div class="sechead" style="margin-top:10px"><span>היסטוריה</span><span>' + reps.length + ' עדכונים</span></div><div class="zm-reps">' + reps.slice(0, 12).map((x) => '<div class="zm-rep"><span class="num">' + esc(fmtDT(x.dateText) || fmtD(x.ts)) + "</span><span>" + esc(stateText(x, it)) + (x.by ? " · " + esc(x.by) : "") + "</span></div>").join("") + "</div>" : "") + '<div class="acts">' + (ROLE !== "viewer" ? '<button class="save" type="button" id="eiUpd">עדכון מצב</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  scrim.querySelector(".cancel").onclick = close;
+  const u2 = scrim.querySelector("#eiUpd");
+  if (u2) u2.onclick = () => {
+    close();
+    openElecReport(id);
+  };
+}
+function stateText(r, it) {
+  if (it.kind === "st") return ST_STEPS.filter(([k]) => r[k]).map(([, l]) => l).join(", ") || "כלום עדיין";
+  return (Number(r.strings) || 0) + " / " + it.strings + " סטרינגים" + INV_STEPS.filter(([k]) => r[k]).map(([, l]) => " · " + l).join("");
+}
+function openElecReport(preId) {
+  const E = currentElec();
+  if (!E) {
+    toast("אין עדיין מבנה חשמל לאתר.");
+    return;
+  }
+  const items = elecItems(E);
+  let it = items.find((x) => x.id === preId) || items.find((x) => x.kind === "inv") || items[0];
+  const reps = shared.demoStock ? [] : shared.ELEC || [];
+  const whos = [...new Set(reps.slice().sort((a, b) => b.ts - a.ts).map((r) => r.who).filter(Boolean))];
+  const today = /* @__PURE__ */ new Date();
+  const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עדכון מצב חשמל"><div class="grab"></div><h2>עדכון מצב: חשמל</h2><div class="note-card">מסמנים את <b>המצב הנוכחי</b> של הממיר או התחנה, לא תוספת. מה שכבר סומן נשאר מסומן.</div><div class="f"><label for="erItem">ממיר / תחנה</label><select id="erItem">' + E.stations.map((s) => '<optgroup label="' + esc(s.name) + '"><option value="' + esc(s.id) + '">' + esc(s.name) + (s.side ? " · " + esc(s.side) : "") + "</option>" + s.icbs.map((c) => c.inv.map(([id, n]) => '<option value="' + esc(id) + '">ממיר ' + esc(id) + " · " + n + " סטרינגים</option>").join("")).join("") + "</optgroup>").join("") + '</select></div><div id="erState"></div><div class="f"><label for="erWho">קבלן חשמל</label><input type="text" id="erWho" list="erWhoList" placeholder="שם הקבלן" autocomplete="off" value="' + esc(whos[0] || "") + '"><datalist id="erWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="erDate">תאריך</label><input type="date" id="erDate" value="' + iso + '"></div><div class="f"><label for="erBy">מי דיווח</label><input type="text" id="erBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f"><label for="erNote">הערה</label><input type="text" id="erNote" placeholder="למשל: חסרים מהדקים"></div><div class="acts"><button class="save" id="erSave" type="button">שמור עדכון</button><button class="cancel" id="erCancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  let strings = 0, flags = {};
+  const drawState = () => {
+    const S = elecState(reps);
+    const r = S[it.id] || {};
+    strings = Math.min(it.strings || 0, Number(r.strings) || 0);
+    flags = {};
+    const steps = it.kind === "inv" ? INV_STEPS : ST_STEPS;
+    steps.forEach(([k]) => {
+      flags[k] = !!r[k];
+    });
+    q("#erState").innerHTML = (it.kind === "inv" ? '<div class="f"><label>סטרינגים מחוברים מתוך ' + it.strings + '</label><div class="stepper"><button type="button" id="erMinus" aria-label="פחות">−</button><div class="val"><input type="text" inputmode="numeric" id="erStr" value="' + strings + '" aria-label="סטרינגים מחוברים"><small>סטרינגים</small></div><button type="button" id="erPlus" aria-label="יותר">+</button></div><button class="ghost" type="button" id="erAll" style="width:100%;margin-top:6px">הכול מחובר (' + it.strings + ")</button></div>" : "") + '<div class="f"><label>' + (it.kind === "inv" ? "מה בוצע בממיר" : "מה בוצע בתחנה") + '</label><div class="chips" id="erFlags" style="margin-bottom:0">' + steps.map(([k, l]) => '<button type="button" class="chip2" data-k="' + k + '" aria-pressed="' + flags[k] + '">' + l + "</button>").join("") + "</div></div>";
+    if (it.kind === "inv") {
+      const setS = (n) => {
+        n = Math.max(0, Math.min(it.strings, Math.round(Number(n) || 0)));
+        strings = n;
+        q("#erStr").value = n;
+      };
+      q("#erMinus").onclick = () => setS(strings - 1);
+      q("#erPlus").onclick = () => setS(strings + 1);
+      q("#erStr").onchange = (e) => setS(e.target.value);
+      q("#erAll").onclick = () => setS(it.strings);
+    }
+    q("#erFlags").onclick = (e) => {
+      const b = e.target.closest("[data-k]");
+      if (!b) return;
+      flags[b.dataset.k] = !flags[b.dataset.k];
+      b.setAttribute("aria-pressed", String(flags[b.dataset.k]));
+    };
+  };
+  q("#erItem").value = it.id;
+  q("#erItem").onchange = (e) => {
+    it = items.find((x) => x.id === e.target.value) || it;
+    drawState();
+  };
+  drawState();
+  q("#erCancel").onclick = close;
+  q("#erSave").onclick = async () => {
+    const by = q("#erBy").value.trim();
+    if (!by) {
+      toast("מי דיווח? צריך שם.");
+      q("#erBy").focus();
+      return;
+    }
+    ls.set("issuer", by);
+    const dv = q("#erDate").value;
+    let ts = Date.now(), dateText = fmtD(ts);
+    if (dv) {
+      const d = /* @__PURE__ */ new Date(dv + "T12:00:00");
+      if (!isNaN(d)) {
+        ts = d.getTime();
+        dateText = fmtD(ts);
+      }
+    }
+    const b = q("#erSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    const id = "el" + Date.now();
+    const doc = { id, ts, dateText, item: it.id, kind: it.kind, who: q("#erWho").value.trim(), by, note: q("#erNote").value.trim(), source: "app", ...flags };
+    if (it.kind === "inv") doc.strings = strings;
+    try {
+      if (shared.DB) await shared.DB.doc("elec/" + id).set(doc);
+      else {
+        shared.ELEC = (shared.ELEC || []).concat(doc);
+        ls.set("elec", JSON.stringify(shared.ELEC));
+      }
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "שמור עדכון";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    if (shared.demoStock) {
+      shared.demoStock = false;
+      ls.set("demoDoneS", "1");
+    }
+    logAct("elec", "add", "חשמל · " + it.name + ": " + stateText(doc, it) + (doc.who ? " · " + doc.who : ""), id, by);
+    close();
+    toast("העדכון נשמר.");
+    renderElec();
+    renderWorkMap();
+  };
+}
+function openElecSetup() {
+  const d = elecDoc() || {}, g = d.gen || { stations: 2, inv: 10, strings: 18 };
+  const builtIn = siteElecFor(SITE && SITE.name);
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה החשמל"><div class="grab"></div><h2>מבנה החשמל</h2><div class="note-card">' + (builtIn ? "לאתר הזה יש מבנה מובנה מתוכנית החשמל (" + esc(builtIn.src) + "). אפשר להחליף אותו במספרים, ולחזור אליו עם «נקה»." : "אין עדיין מבנה חשמל מתוכנית. קובעים אותו במספרים: תחנות, ממירים לתחנה, סטרינגים לממיר.") + '</div><div class="f"><label for="esSt">תחנות (סקידים)</label><input type="text" inputmode="numeric" id="esSt" value="' + esc(g.stations) + '"></div><div class="f"><label for="esInv">ממירים לתחנה</label><input type="text" inputmode="numeric" id="esInv" value="' + esc(g.inv) + '"></div><div class="f"><label for="esStr">סטרינגים לממיר</label><input type="text" inputmode="numeric" id="esStr" value="' + esc(g.strings) + '"></div><div class="acts"><button class="save" id="esSave" type="button">שמור מבנה</button>' + (d.gen ? '<button class="ghost" id="esClear" type="button">נקה</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  q("#esSave").onclick = async () => {
+    const gen = { stations: Number(q("#esSt").value), inv: Number(q("#esInv").value), strings: Number(q("#esStr").value) };
+    if (!genElec(gen)) {
+      toast("צריך מספרים חיוביים.");
+      return;
+    }
+    try {
+      await saveElecCfg({ gen });
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("settings", "edit", "מבנה חשמל: " + gen.stations + " תחנות × " + gen.inv + " ממירים × " + gen.strings + " סטרינגים", "settings/elec");
+    close();
+    toast("המבנה נשמר.");
+  };
+  const c = q("#esClear");
+  if (c) c.onclick = async () => {
+    if (!await ask("לנקות את המבנה מהמספרים?" + (builtIn ? " המבנה המובנה יחזור." : ""), "נקה")) return;
+    try {
+      await saveElecCfg({});
+    } catch (e) {
+      toast("השמירה נכשלה.");
+      return;
+    }
+    close();
+  };
+}
+function __init$j() {
+  shared.ELEC = [];
+  shared.ELECCFG = null;
+  try {
+    shared.ELEC = JSON.parse(ls.get("elec") || "[]");
+  } catch (e) {
+    shared.ELEC = [];
+  }
+  try {
+    const v = ls.get("eleccfg");
+    if (v) shared.ELECCFG = JSON.parse(v);
+  } catch (e) {
+  }
+  const s = $("#elSetup");
+  if (s) s.onclick = openElecSetup;
+  const a = $("#btnElecReport");
+  if (a) a.onclick = () => openElecReport();
+}
+const m21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  INV_STEPS,
+  ST_STEPS,
+  __init: __init$j,
+  currentElec,
+  elecDoc,
+  elecItems,
+  elecPending,
+  elecState,
+  elecSummary,
+  elecTotals,
+  openElecItem,
+  openElecReport,
+  openElecSetup,
+  rangeText,
+  renderElec,
+  saveElecCfg,
+  stateText
+}, Symbol.toStringTag, { value: "Module" }));
+const COL = { con: "#FFAA00", pan: "#3199CC", ok: "#9AC339" }, ORDER = ["con", "pan", "ok"];
 const PLAN_W = 620;
 const PLAN_PROMPT = 'בתמונה תוכנית של אתר סולארי (מבט מלמעלה): שדות של שולחנות פאנלים בשורות. בנה ממנה מבנה סכמתי למעקב ביצוע. קואורדינטות x ו-y מ-0 עד 1000 על פני התמונה (0,0 בפינה השמאלית העליונה). החזר רק JSON, בלי הסברים: {"fence":[x,y,w,h] או null,"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע, אחרת מערב/מזרח או A, B…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות בשדה>,"tables":<שולחנות בשורה טיפוסית>}]}. שדה = גוש שורות רציף; דרך רחבה בין גושים מפרידה שדות.';
 const num = (v) => Number.isFinite(Number(v)) ? Number(v) : NaN;
@@ -1125,7 +1560,7 @@ function pendingRuns(L, F) {
   });
   return out;
 }
-let focus = null, sel = null, built$2 = false;
+let focus = null, sel = null, built$1 = false;
 function geom(cv2, L, f) {
   const W = cv2.clientWidth || 360;
   if (f) {
@@ -1154,7 +1589,7 @@ function paint(cv2, L, F, opts) {
     ORDER.forEach((k) => {
       const fr = Math.min(1, cell[k] / tables);
       if (fr > 0) {
-        ctx2.fillStyle = COL$1[k];
+        ctx2.fillStyle = COL[k];
         ctx2.fillRect(x, y, w * fr, h);
       }
     });
@@ -1192,9 +1627,10 @@ function paint(cv2, L, F, opts) {
       ctx2.fillText(fmtN(r.tables), x - 40, y + h / 2);
       ctx2.font = "700 11px Alef, Heebo, Arial";
     });
+    if (opts.elec !== false && elecLayerOn()) drawElec(ctx2, elecMarks(L, g), true);
     return g;
   }
-  const s = g.s;
+  const s = g.s, EM = opts.elec !== false && elecLayerOn() ? elecMarks(L, g) : [];
   ctx2.setLineDash([3, 3]);
   ctx2.strokeStyle = "#C9CBCC";
   ctx2.lineWidth = 1;
@@ -1216,12 +1652,14 @@ function paint(cv2, L, F, opts) {
     ctx2.textAlign = "left";
     const every = f.rows.length > 14 ? 5 : 1;
     f.rows.forEach((r) => {
-      if (r.n === 1 || r.n % every === 0) ctx2.fillText(String(r.n), (r.x + r.w) * s + 3, (r.y + r.h / 2) * s);
+      const x = (r.x + r.w) * s + 3, y = (r.y + r.h / 2) * s;
+      if ((r.n === 1 || r.n % every === 0) && !hitMark(EM, x + 5, y, 9)) ctx2.fillText(String(r.n), x, y);
     });
     ctx2.font = "700 11px Alef, Heebo, Arial";
     ctx2.setLineDash([3, 3]);
   });
   ctx2.setLineDash([]);
+  if (EM.length) drawElec(ctx2, EM, false);
   return g;
 }
 function pickRow(L, g, x, y) {
@@ -1253,7 +1691,7 @@ function drawMini(cv2, L, F, areaId, rows, zoomField) {
   const keep = [focus, sel];
   focus = zoomField || null;
   sel = null;
-  const g = paint(cv2, L, F);
+  const g = paint(cv2, L, F, { elec: false });
   const ctx2 = cv2.getContext("2d");
   const dpr = Math.min(2.5, window.devicePixelRatio || 1);
   ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1277,18 +1715,142 @@ function drawMini(cv2, L, F, areaId, rows, zoomField) {
   [focus, sel] = keep;
   return g;
 }
-function buildDom$2() {
+const ECOL = { none: "#FFFFFF", dc: "#2F80ED", disc: "#FFAA00", ac: "#5B9A3C", com: "#7E57C2" };
+const ELEC_KEYS = [["none", "עוד לא"], ["dc", "סטרינגים"], ["disc", "מנתק"], ["ac", "AC"], ["com", "גמור"]];
+const elecLayerOn = () => ls.get("wmElec") !== "0";
+function elecStateOf(it, r) {
+  r = r || {};
+  const recent = !!r.ts && r.ts > Date.now() - 7 * 864e5;
+  if (it.kind === "st") {
+    const n2 = ST_STEPS.filter(([k]) => r[k]).length;
+    return { k: n2 >= 3 ? "com" : n2 > 0 ? "disc" : "none", fr: n2 / 3, recent };
+  }
+  const n = Math.min(it.strings || 0, Number(r.strings) || 0);
+  return { k: r.com ? "com" : r.ac ? "ac" : r.disc ? "disc" : n > 0 ? "dc" : "none", fr: it.strings ? n / it.strings : 0, recent };
+}
+function atRow(n, r, cy) {
+  if (n < 2) return cy(0);
+  const pitch = cy(0) - cy(1);
+  const i = Math.floor(r) - 1, fr = r - Math.floor(r);
+  if (i < 0) return cy(0) + (1 - r) * pitch;
+  if (i >= n - 1) return cy(n - 1) - (r - n) * pitch;
+  return cy(i) + (cy(i + 1) - cy(i)) * fr;
+}
+const fieldOfHalf = (L, h) => L.fields.find((f) => f.id === (h === "w" ? "west" : h === "e" ? "east" : h)) || (L.fields.length === 1 ? L.fields[0] : null);
+function elecMarks(L, g, E) {
+  E = E || currentElec();
+  if (!L || !E || !E.pos || L.src !== "map") return [];
+  const S = elecState(shared.demoStock ? [] : shared.ELEC || []);
+  const out = [];
+  elecItems(E).forEach((it) => {
+    const p = E.pos[it.id];
+    if (!p) return;
+    const f = fieldOfHalf(L, p[0]);
+    if (!f) return;
+    const r = Number(p[1]), pos = Math.max(-0.05, Math.min(1.05, Number(p[2]))), n = f.rows.length;
+    let x, y;
+    if (g.zoom) {
+      if (g.f.id !== f.id) return;
+      y = atRow(n, r, (i) => g.rows[i].y + g.rows[i].h / 2);
+      x = 44 + pos * (g.W - 60);
+      if (it.kind === "st") x += pos <= 0 ? -11 : pos >= 1 ? 11 : 0;
+    } else {
+      const s = g.s;
+      const rr = f.rows[Math.min(n - 1, Math.max(0, Math.round(r) - 1))];
+      y = atRow(n, r, (i) => (f.rows[i].y + f.rows[i].h / 2) * s);
+      x = (rr.x + pos * rr.w) * s;
+      if (it.kind === "st") x += pos <= 0 ? -7 : pos >= 1 ? 7 : 0;
+    }
+    out.push({ id: it.id, kind: it.kind, it, x, y, ...elecStateOf(it, S[it.id]) });
+  });
+  return out;
+}
+function hitMark(marks, x, y, rad) {
+  let best = null, bd = rad;
+  marks.forEach((m) => {
+    const d = Math.hypot(m.x - x, m.y - y);
+    if (d <= bd) {
+      bd = d;
+      best = m;
+    }
+  });
+  return best;
+}
+function drawElec(ctx2, marks, zoom) {
+  const R = zoom ? 7 : 4.2, S = zoom ? 16 : 9;
+  marks.forEach((m) => {
+    if (m.kind === "st") {
+      ctx2.fillStyle = m.k === "none" ? "#fff" : ECOL[m.k];
+      ctx2.fillRect(m.x - S / 2, m.y - S / 2, S, S);
+      ctx2.strokeStyle = "#3F4447";
+      ctx2.lineWidth = 1;
+      ctx2.strokeRect(m.x - S / 2 + 0.5, m.y - S / 2 + 0.5, S - 1, S - 1);
+      if (zoom) {
+        ctx2.fillStyle = m.k === "none" ? "#3F4447" : "#fff";
+        ctx2.font = "700 9px Alef, Heebo, Arial";
+        ctx2.textAlign = "center";
+        ctx2.fillText(m.id.replace(/^S/, ""), m.x, m.y + 0.5);
+      }
+    } else {
+      ctx2.beginPath();
+      ctx2.arc(m.x, m.y, R, 0, Math.PI * 2);
+      ctx2.fillStyle = "#fff";
+      ctx2.fill();
+      if (m.k === "dc" && m.fr < 1) {
+        ctx2.beginPath();
+        ctx2.moveTo(m.x, m.y);
+        ctx2.arc(m.x, m.y, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * m.fr);
+        ctx2.closePath();
+        ctx2.fillStyle = ECOL.dc;
+        ctx2.fill();
+      } else if (m.k !== "none") {
+        ctx2.beginPath();
+        ctx2.arc(m.x, m.y, R, 0, Math.PI * 2);
+        ctx2.fillStyle = ECOL[m.k];
+        ctx2.fill();
+      }
+      ctx2.beginPath();
+      ctx2.arc(m.x, m.y, R, 0, Math.PI * 2);
+      ctx2.strokeStyle = m.k === "none" ? "#7C8285" : "#3F4447";
+      ctx2.lineWidth = 1;
+      ctx2.stroke();
+    }
+    if (m.recent) {
+      ctx2.beginPath();
+      ctx2.arc(m.x, m.y, m.kind === "st" ? S * 0.78 : R + 2.5, 0, Math.PI * 2);
+      ctx2.strokeStyle = "#E40033";
+      ctx2.lineWidth = 1.5;
+      ctx2.stroke();
+    }
+    if (zoom && m.kind === "inv") {
+      ctx2.fillStyle = "#121212";
+      ctx2.font = "700 10px Alef, Heebo, Arial";
+      ctx2.textAlign = "left";
+      ctx2.fillText(m.id, m.x + R + 3, m.y);
+    }
+  });
+  ctx2.font = "700 11px Alef, Heebo, Arial";
+  ctx2.textAlign = "left";
+}
+const elecKeysHtml = () => ELEC_KEYS.map(([k, l]) => '<span><i style="border-radius:50%;background:' + ECOL[k] + ";border:1px solid " + (k === "none" ? "#7C8285" : ECOL[k]) + '"></i>' + l + "</span>").join("") + '<span><i style="background:#fff;border:1px solid #3F4447"></i>תחנה</span>';
+function buildDom$1() {
   const box = $("#wmBody");
-  if (!box || built$2) return;
-  built$2 = true;
-  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="wmBig">0</span><span class="sb-cap" id="wmCap">שורות עם פאנלים</span></div><div class="sb-sub" id="wmSub"></div><div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה"></canvas></div><div class="sb-keys"><span><i style="background:#ECEDED;border:1px solid #C9CBCC"></i>מתוכנן</span><span><i style="background:' + COL$1.con + '"></i>קונסטרוקציה</span><span><i style="background:' + COL$1.pan + '"></i>פאנלים</span><span><i style="background:' + COL$1.ok + '"></i>אושר ע״י מפקח</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>דווח בשבוע האחרון</span></div><div class="wm-zoom" id="wmZoom" hidden></div><div class="wm-unp" id="wmUnp" hidden></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="wmPendN"></span></div><div class="wm-pend" id="wmPend"></div><div class="hint" id="wmSrc" style="margin-top:8px"></div>';
+  if (!box || built$1) return;
+  built$1 = true;
+  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="wmBig">0</span><span class="sb-cap" id="wmCap">שורות עם פאנלים</span></div><div class="sb-sub" id="wmSub"></div><div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח, ומעליה הממירים והתחנות של החשמל. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה; לחיצה על ממיר פותחת אותו"></canvas></div><div class="sb-keys"><span><i style="background:#ECEDED;border:1px solid #C9CBCC"></i>מתוכנן</span><span><i style="background:' + COL.con + '"></i>קונסטרוקציה</span><span><i style="background:' + COL.pan + '"></i>פאנלים</span><span><i style="background:' + COL.ok + '"></i>אושר ע״י מפקח</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>דווח בשבוע האחרון</span></div><div class="sb-keys wm-el" id="wmEl" hidden></div><div class="wm-zoom" id="wmZoom" hidden></div><div class="wm-unp" id="wmUnp" hidden></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="wmPendN"></span></div><div class="wm-pend" id="wmPend"></div><div class="hint" id="wmSrc" style="margin-top:8px"></div>';
   const cv2 = $("#wmCv");
   cv2.onclick = (e) => {
     const L = currentLayout();
     if (!L) return;
     const r = cv2.getBoundingClientRect();
     const g = geom(cv2, L, focus && L.fields.find((x) => x.id === focus));
-    const hit2 = pickRow(L, g, e.clientX - r.left, e.clientY - r.top);
+    const px2 = e.clientX - r.left, py = e.clientY - r.top;
+    const m = elecLayerOn() ? hitMark(elecMarks(L, g), px2, py, g.zoom ? 13 : 9) : null;
+    if (m) {
+      openElecItem(m.id);
+      return;
+    }
+    const hit2 = pickRow(L, g, px2, py);
     if (!hit2) {
       if (focus) {
         focus = null;
@@ -1304,14 +1866,14 @@ function buildDom$2() {
     renderWorkMap();
   };
   addEventListener("resize", () => {
-    clearTimeout(buildDom$2.t);
-    buildDom$2.t = setTimeout(renderWorkMap, 80);
+    clearTimeout(buildDom$1.t);
+    buildDom$1.t = setTimeout(renderWorkMap, 80);
   });
 }
 function renderWorkMap() {
   const card = $("#workCard");
   if (!card) return;
-  buildDom$2();
+  buildDom$1();
   const L = currentLayout(), prog = shared.demoStock ? [] : shared.progress || [];
   $("#wmEmpty").hidden = !!L;
   $("#wmBody").hidden = !L;
@@ -1329,7 +1891,17 @@ function renderWorkMap() {
   const done = (k) => rowsAll.filter((x) => x.c[k] >= x.r.tables).length, sum = (k) => rowsAll.reduce((s, x) => s + Math.min(x.r.tables, x.c[k]), 0);
   $("#wmBig").textContent = fmtN(done("pan")) + " / " + fmtN(rowsAll.length);
   $("#wmSub").innerHTML = "שולחנות ממוקמים במפה: קונסטרוקציה <b>" + fmtN(sum("con")) + "</b> · פאנלים <b>" + fmtN(sum("pan")) + "</b> · אושרו <b>" + fmtN(sum("ok")) + "</b>" + (placed ? " · מתוך " + placed + " דיווחים עם מיקום" : "");
-  paint($("#wmCv"), L, F);
+  paint($("#wmCv"), L, F, {});
+  const marks = elecMarks(L, { s: 1, zoom: false }), el = $("#wmEl");
+  el.hidden = !marks.length;
+  if (marks.length) {
+    const on = elecLayerOn(), done2 = marks.filter((m) => m.kind === "inv" && m.k === "com").length, inv = marks.filter((m) => m.kind === "inv").length;
+    el.innerHTML = (on ? elecKeysHtml() : "<span>חשמל: " + inv + " ממירים" + (done2 ? ", " + (done2 === 1 ? "אחד גמור" : done2 + " גמורים") : "") + "</span>") + '<button class="linkbtn" type="button" id="wmElT">' + (on ? "הסתר חשמל ›" : "הצג חשמל ›") + "</button>";
+    $("#wmElT").onclick = () => {
+      ls.set("wmElec", on ? "0" : "1");
+      renderWorkMap();
+    };
+  }
   const z = $("#wmZoom");
   z.hidden = !focus;
   if (focus) {
@@ -1340,8 +1912,8 @@ function renderWorkMap() {
     z.innerHTML = '<div class="zm-head"><b>' + esc(f.name) + (r ? " · שורה " + r.n + " · " + fmtN(r.tables) + " שולחנות" : " · לחצו על שורה לפירוט") + '</b><button class="linkbtn" type="button" id="wmBack">חזרה למפה ‹</button></div>' + (cell ? '<div class="zm-ph">' + ORDER.map((k) => {
       const st = STAGES.find((s) => s[0] === k);
       const v = cell[k];
-      return '<div class="zm-row' + (v >= r.tables ? " done" : v > 0 ? " on" : "") + '"><i style="background:' + COL$1[k] + '"></i><span>' + esc(st ? st[1] : k) + '</span><span class="num">' + fmtN(v) + " / " + fmtN(r.tables) + '</span><span class="d">' + (cell.last[k] ? esc(fmtD(cell.last[k])) : v > 0 ? "" : "עוד לא") + "</span></div>";
-    }).join("") + "</div>" : "") + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 12).map((p) => {
+      return '<div class="zm-row' + (v >= r.tables ? " done" : v > 0 ? " on" : "") + '"><i style="background:' + COL[k] + '"></i><span>' + esc(st ? st[1] : k) + '</span><span class="num">' + fmtN(v) + " / " + fmtN(r.tables) + '</span><span class="d">' + (cell.last[k] ? esc(fmtD(cell.last[k])) : v > 0 ? "" : "עוד לא") + "</span></div>";
+    }).join("") + "</div>" : "") + (!r && elecLayerOn() && marks.length ? '<div class="hint" style="margin-top:4px">ממירים בשדה: ' + fmtN(marks.filter((m) => m.kind === "inv" && fieldOfHalf(L, currentElec().pos[m.id][0]) === f).length) + " · לחיצה על עיגול פותחת ממיר.</div>" : "") + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 12).map((p) => {
       const st = STAGES.find((s) => s[0] === stageOf(p));
       return '<div class="zm-rep"><span class="num">' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + "</span><span>" + fmtN(p.tables) + " שולחנות · " + esc(st ? st[1] : "") + (rowsOf(p) ? " · שורות " + rowsOf(p)[0] + (rowsOf(p)[1] !== rowsOf(p)[0] ? "–" + rowsOf(p)[1] : "") : "") + (p.who ? " · " + esc(p.who) : "") + (p.note ? " · " + esc(p.note) : "") + "</span></div>";
     }).join("") + (reps.length > 12 ? '<div class="hint">מוצגים 12 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן.</div>') + (ROLE !== "viewer" ? '<button class="ghost" type="button" id="wmHere" style="width:100%;margin-top:8px">דיווח ביצוע כאן</button>' : "");
@@ -1691,7 +2263,7 @@ function openAddPlan() {
     toast("התוכנית נשמרה.");
   };
 }
-function __init$j() {
+function __init$i() {
   shared.LAYOUT = null;
   shared.PLANS = [];
   try {
@@ -1711,11 +2283,18 @@ function __init$j() {
 }
 const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  ECOL,
+  ELEC_KEYS,
   PLAN_PROMPT,
-  __init: __init$j,
+  __init: __init$i,
   currentLayout,
   drawMini,
+  elecKeysHtml,
+  elecLayerOn,
+  elecMarks,
+  elecStateOf,
   genLayout,
+  hitMark,
   layoutDoc,
   layoutFromTables,
   layoutSrcText,
@@ -1734,392 +2313,6 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   renderWorkMap,
   rowsOf,
   saveLayout
-}, Symbol.toStringTag, { value: "Module" }));
-const SITE_ELEC = {
-  "עין תמר": {
-    src: "E_10 Color Map rev03 · 15.7.26",
-    stringPanels: 27,
-    stations: [
-      { id: "S1", name: "תחנה 1", side: "מערב", icbs: [
-        { id: "1.1", inv: [["1.1", 19], ["1.2", 18], ["1.3", 18], ["1.4", 18], ["1.5", 18], ["1.6", 18], ["1.7", 19], ["1.8", 19], ["1.9", 19]] },
-        { id: "1.2", inv: [["1.10", 19], ["1.11", 19], ["1.12", 19], ["1.13", 19], ["1.14", 18], ["1.15", 19], ["1.16", 19], ["1.17", 20], ["1.18", 18]] }
-      ] },
-      { id: "S2", name: "תחנה 2", side: "מזרח", icbs: [
-        { id: "2.1", inv: [["2.1", 18], ["2.2", 19], ["2.3", 19], ["2.4", 18], ["2.5", 18], ["2.6", 18], ["2.7", 18], ["2.8", 18], ["2.9", 18], ["2.10", 18]] },
-        { id: "2.2", inv: [["2.11", 19], ["2.12", 20], ["2.13", 19], ["2.14", 19], ["2.15", 19], ["2.16", 20], ["2.17", 18], ["2.18", 19], ["2.19", 19]] }
-      ] }
-    ]
-  }
-};
-function siteElecFor(name) {
-  const n = String(name || "");
-  for (const k in SITE_ELEC) if (n.includes(k)) return SITE_ELEC[k];
-  return null;
-}
-function genElec(g) {
-  const st = Math.max(1, Math.min(12, Math.round(Number(g && g.stations) || 0))), inv = Math.max(1, Math.min(40, Math.round(Number(g && g.inv) || 0))), s = Math.max(1, Math.min(40, Math.round(Number(g && g.strings) || 0)));
-  if (!st || !inv || !s) return null;
-  const stations = [];
-  for (let i = 1; i <= st; i++) {
-    const list = [];
-    for (let j = 1; j <= inv; j++) list.push([i + "." + j, s]);
-    stations.push({ id: "S" + i, name: "תחנה " + i, side: "", icbs: [{ id: String(i), inv: list }] });
-  }
-  return { src: "gen", stringPanels: Number(g.stringPanels) || 27, stations };
-}
-const INV_STEPS = [["disc", "מנתק מותקן"], ["ac", "AC מחובר לתחנה"], ["com", "תקשורת מחוברת"]];
-const ST_STEPS = [["place", "הוצבה"], ["mv", "מ״ג מחובר"], ["lv", "LV מחובר"]];
-const COL = { dc: "#2F80ED", disc: "#FFAA00", ac: "#5B9A3C", com: "#7E57C2" };
-function elecDoc() {
-  return shared.ELECCFG || null;
-}
-function currentElec() {
-  const d = elecDoc();
-  if (d && d.gen) {
-    const E = genElec(d.gen);
-    if (E) return E;
-  }
-  return siteElecFor(SITE && SITE.name);
-}
-function elecItems(E) {
-  const out = [];
-  if (!E) return out;
-  E.stations.forEach((s) => {
-    out.push({ id: s.id, kind: "st", name: s.name, side: s.side, st: s });
-    s.icbs.forEach((c) => c.inv.forEach(([id, n]) => out.push({ id, kind: "inv", name: "ממיר " + id, strings: n, icb: c.id, st: s })));
-  });
-  return out;
-}
-const elecSummary = (E) => {
-  const it = elecItems(E);
-  const inv = it.filter((x) => x.kind === "inv");
-  return inv.length ? E.stations.length + " תחנות · " + inv.length + " ממירים · " + fmtN(inv.reduce((s, x) => s + x.strings, 0)) + " סטרינגים" : "";
-};
-async function saveElecCfg(doc) {
-  doc = { ...doc, ts: Date.now(), by: actorName() };
-  if (shared.DB) await shared.DB.doc("settings/elec").set(doc);
-  else {
-    shared.ELECCFG = doc;
-    ls.set("eleccfg", JSON.stringify(doc));
-    renderElec();
-  }
-}
-function elecState(reports) {
-  const S = {};
-  (reports || []).slice().sort((a, b) => a.ts - b.ts).forEach((r) => {
-    if (r && r.item) S[r.item] = r;
-  });
-  return S;
-}
-const invDone = (r, it) => r && Number(r.strings) >= it.strings && r.disc && r.ac && r.com;
-function elecTotals(E, S) {
-  const it = elecItems(E), inv = it.filter((x) => x.kind === "inv");
-  const t = { inv: inv.length, strings: inv.reduce((s, x) => s + x.strings, 0), connected: 0, dcFull: 0, disc: 0, ac: 0, com: 0, done: 0, started: 0 };
-  inv.forEach((x) => {
-    const r = S[x.id];
-    if (!r) return;
-    const n = Math.min(x.strings, Number(r.strings) || 0);
-    t.connected += n;
-    if (n > 0 || r.disc || r.ac || r.com) t.started++;
-    if (n >= x.strings) t.dcFull++;
-    if (r.disc) t.disc++;
-    if (r.ac) t.ac++;
-    if (r.com) t.com++;
-    if (invDone(r, x)) t.done++;
-  });
-  return t;
-}
-function elecPending(E, S) {
-  const inv = elecItems(E).filter((x) => x.kind === "inv");
-  const out = [];
-  const grp = (k, test, text) => {
-    const ids = inv.filter((x) => test(S[x.id] || {}, x)).map((x) => x.id);
-    if (ids.length) out.push({ k, ids, n: ids.length, text: text + ": " + rangeText(ids, inv.map((x) => x.id)) });
-  };
-  grp("none", (r, x) => !(Number(r.strings) > 0) && !r.disc && !r.ac && !r.com, "עוד לא התחילו");
-  grp("dc", (r, x) => Number(r.strings) > 0 && Number(r.strings) < x.strings, "סטרינגים בחיבור");
-  grp("disc", (r, x) => Number(r.strings) >= x.strings && !r.disc, "DC גמור, בלי מנתק");
-  grp("ac", (r, x) => r.disc && !r.ac, "מנתק יש, AC לא מחובר");
-  grp("com", (r, x) => r.ac && !r.com, "AC מחובר, בלי תקשורת");
-  E.stations.forEach((s) => {
-    const r = S[s.id] || {};
-    const miss = ST_STEPS.filter(([k]) => !r[k]).map(([, l]) => l);
-    if (miss.length) out.push({ k: "st", ids: [s.id], n: 1, text: s.name + ": " + miss.join(", ") });
-  });
-  return out;
-}
-function rangeText(ids, order) {
-  const idx = new Map(order.map((id, i) => [id, i]));
-  const s = ids.slice().sort((a2, b) => idx.get(a2) - idx.get(b));
-  const runs = [];
-  let a = null, prev = null;
-  s.forEach((id) => {
-    const i = idx.get(id);
-    if (a !== null && i === idx.get(prev) + 1 && id.split(".")[0] === prev.split(".")[0]) {
-      prev = id;
-      return;
-    }
-    if (a !== null) runs.push([a, prev]);
-    a = id;
-    prev = id;
-  });
-  if (a !== null) runs.push([a, prev]);
-  return runs.map(([x, y]) => x === y ? x : x + "–" + y).join(", ");
-}
-let built$1 = false;
-function buildDom$1() {
-  const box = $("#elBody");
-  if (!box || built$1) return;
-  built$1 = true;
-  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="elBig">0</span><span class="sb-cap">סטרינגים מחוברים</span></div><div class="sb-sub" id="elSub"></div><div id="elStations"></div><div class="sb-keys"><span><i style="background:' + COL.dc + '"></i>סטרינגים</span><span><i style="background:' + COL.disc + '"></i>מנתק</span><span><i style="background:' + COL.ac + '"></i>AC</span><span><i style="background:' + COL.com + '"></i>תקשורת</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>עודכן בשבוע האחרון</span></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="elPendN"></span></div><div class="wm-pend" id="elPend"></div><div class="hint" id="elSrc" style="margin-top:8px"></div>';
-}
-function renderElec() {
-  const card = $("#elecCard");
-  if (!card) return;
-  buildDom$1();
-  const E = currentElec(), reps = shared.demoStock ? [] : shared.ELEC || [];
-  $("#elEmpty").hidden = !!E;
-  $("#elBody").hidden = !E;
-  $("#elSetup").hidden = ROLE !== "owner";
-  if (!E) {
-    foldSum("elec", "");
-    return;
-  }
-  const S = elecState(reps), T = elecTotals(E, S), recent = (t) => t > Date.now() - 7 * 864e5;
-  $("#elBig").textContent = fmtN(T.connected) + " / " + fmtN(T.strings);
-  $("#elSub").innerHTML = "ממירים מתוך <b>" + T.inv + "</b>: DC מלא <b>" + T.dcFull + "</b> · מנתק <b>" + T.disc + "</b> · AC <b>" + T.ac + "</b> · תקשורת <b>" + T.com + "</b>" + (T.done ? " · גמורים <b>" + T.done + "</b>" : "");
-  const box = $("#elStations");
-  box.innerHTML = "";
-  E.stations.forEach((s) => {
-    const r = S[s.id] || {};
-    const head = document.createElement("button");
-    head.type = "button";
-    head.className = "el-st" + (ST_STEPS.every(([k]) => r[k]) ? " done" : "") + (r.ts && recent(r.ts) ? " recent" : "");
-    head.innerHTML = "<b>" + esc(s.name) + (s.side ? " <small>" + esc(s.side) + "</small>" : "") + '</b><span class="el-flags">' + ST_STEPS.map(([k, l]) => '<i class="' + (r[k] ? "on" : "") + '">' + l + "</i>").join("") + "</span>";
-    head.onclick = () => openElecItem(s.id);
-    box.appendChild(head);
-    s.icbs.forEach((c) => {
-      const lab = document.createElement("div");
-      lab.className = "el-icb";
-      const tot = c.inv.reduce((a, [, n]) => a + n, 0), con = c.inv.reduce((a, [id, n]) => a + Math.min(n, Number((S[id] || {}).strings) || 0), 0);
-      lab.innerHTML = (E.src === "gen" ? "" : "ICB " + esc(c.id) + " · ") + c.inv.length + " ממירים · <b>" + fmtN(con) + "</b> / " + fmtN(tot) + " סטרינגים";
-      box.appendChild(lab);
-      const grid = document.createElement("div");
-      grid.className = "el-grid";
-      c.inv.forEach(([id, n]) => {
-        const r2 = S[id] || {};
-        const k = Math.min(n, Number(r2.strings) || 0);
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "el-inv" + (invDone(r2, { strings: n }) ? " done" : k > 0 || r2.disc || r2.ac || r2.com ? " on" : "") + (r2.ts && recent(r2.ts) ? " recent" : "");
-        b.dataset.inv = id;
-        b.setAttribute("aria-label", "ממיר " + id + ": " + k + " מתוך " + n + " סטרינגים" + (r2.disc ? ", מנתק" : "") + (r2.ac ? ", AC" : "") + (r2.com ? ", תקשורת" : ""));
-        b.innerHTML = "<b>" + esc(id) + '</b><span class="el-bar"><i style="width:' + Math.round(100 * k / n) + "%;background:" + COL.dc + '"></i></span><span class="el-n">' + k + "/" + n + '</span><span class="el-dots">' + INV_STEPS.map(([s2]) => '<i style="' + (r2[s2] ? "background:" + COL[s2] + ";border-color:" + COL[s2] : "") + '"></i>').join("") + "</span>";
-        b.onclick = () => openElecItem(id);
-        grid.appendChild(b);
-      });
-      box.appendChild(grid);
-    });
-  });
-  const P = elecPending(E, S);
-  const pb = $("#elPend");
-  pb.innerHTML = "";
-  $("#elPendN").textContent = P.length ? "" : "הכול בוצע";
-  P.forEach((p) => {
-    const d = document.createElement("button");
-    d.type = "button";
-    d.className = "slip wm-pd el-" + p.k;
-    d.innerHTML = "<b>" + (p.k === "st" ? "תחנה" : p.n + " ממירים") + "</b><span>" + esc(p.text) + "</span>";
-    d.onclick = () => openElecItem(p.ids[0]);
-    pb.appendChild(d);
-  });
-  $("#elSrc").textContent = (E.src === "gen" ? "לפי המספרים בהגדרות" : "לפי " + E.src) + " · " + elecSummary(E) + (ROLE === "owner" ? " · שינוי בכפתור «מבנה החשמל»" : "");
-  foldSum("elec", fmtN(T.connected) + " / " + fmtN(T.strings) + " סטרינגים");
-}
-function openElecItem(id) {
-  const E = currentElec();
-  const it = elecItems(E).find((x) => x.id === id);
-  if (!it) return;
-  const reps = (shared.demoStock ? [] : shared.ELEC || []).filter((r2) => r2.item === id).sort((a, b) => b.ts - a.ts);
-  const r = reps[0] || {};
-  const rows = it.kind === "inv" ? [['<i style="background:' + COL.dc + '"></i>', "סטרינגים מחוברים", fmtN(Math.min(it.strings, Number(r.strings) || 0)) + " / " + it.strings, Number(r.strings) >= it.strings], ...INV_STEPS.map(([k, l]) => ['<i style="background:' + COL[k] + '"></i>', l, r[k] ? "בוצע" : "עוד לא", !!r[k]])] : ST_STEPS.map(([k, l]) => ['<i style="background:' + COL.ac + '"></i>', l, r[k] ? "בוצע" : "עוד לא", !!r[k]]);
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(it.name) + '"><div class="grab"></div><h2>' + esc(it.name) + '</h2><div class="hint">' + esc([it.st.name, it.st.side, it.kind === "inv" && E.src !== "gen" ? "ICB " + it.icb : "", it.kind === "inv" ? it.strings + " סטרינגים · " + fmtN(it.strings * (E.stringPanels || 27)) + " פאנלים" : ""].filter(Boolean).join(" · ")) + '</div><div class="wm-zoom" style="margin-top:10px">' + rows.map(([i, l, v, on]) => '<div class="zm-row' + (on ? " done" : "") + '">' + i + "<span>" + esc(l) + '</span><span class="num">' + esc(v) + '</span><span class="d"></span></div>').join("") + (r.ts ? '<div class="hint" style="margin-top:6px">עודכן ' + esc(fmtDT(r.dateText) || fmtD(r.ts)) + (r.who ? " · " + esc(r.who) : "") + (r.by ? " · " + esc(r.by) : "") + (r.note ? " · " + esc(r.note) : "") + "</div>" : '<div class="hint" style="margin-top:6px">עוד לא דווח.</div>') + "</div>" + (reps.length > 1 ? '<div class="sechead" style="margin-top:10px"><span>היסטוריה</span><span>' + reps.length + ' עדכונים</span></div><div class="zm-reps">' + reps.slice(0, 12).map((x) => '<div class="zm-rep"><span class="num">' + esc(fmtDT(x.dateText) || fmtD(x.ts)) + "</span><span>" + esc(stateText(x, it)) + (x.by ? " · " + esc(x.by) : "") + "</span></div>").join("") + "</div>" : "") + '<div class="acts">' + (ROLE !== "viewer" ? '<button class="save" type="button" id="eiUpd">עדכון מצב</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
-  const close = closer(scrim);
-  scrim.querySelector(".cancel").onclick = close;
-  const u2 = scrim.querySelector("#eiUpd");
-  if (u2) u2.onclick = () => {
-    close();
-    openElecReport(id);
-  };
-}
-function stateText(r, it) {
-  if (it.kind === "st") return ST_STEPS.filter(([k]) => r[k]).map(([, l]) => l).join(", ") || "כלום עדיין";
-  return (Number(r.strings) || 0) + " / " + it.strings + " סטרינגים" + INV_STEPS.filter(([k]) => r[k]).map(([, l]) => " · " + l).join("");
-}
-function openElecReport(preId) {
-  const E = currentElec();
-  if (!E) {
-    toast("אין עדיין מבנה חשמל לאתר.");
-    return;
-  }
-  const items = elecItems(E);
-  let it = items.find((x) => x.id === preId) || items.find((x) => x.kind === "inv") || items[0];
-  const reps = shared.demoStock ? [] : shared.ELEC || [];
-  const whos = [...new Set(reps.slice().sort((a, b) => b.ts - a.ts).map((r) => r.who).filter(Boolean))];
-  const today = /* @__PURE__ */ new Date();
-  const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עדכון מצב חשמל"><div class="grab"></div><h2>עדכון מצב: חשמל</h2><div class="note-card">מסמנים את <b>המצב הנוכחי</b> של הממיר או התחנה, לא תוספת. מה שכבר סומן נשאר מסומן.</div><div class="f"><label for="erItem">ממיר / תחנה</label><select id="erItem">' + E.stations.map((s) => '<optgroup label="' + esc(s.name) + '"><option value="' + esc(s.id) + '">' + esc(s.name) + (s.side ? " · " + esc(s.side) : "") + "</option>" + s.icbs.map((c) => c.inv.map(([id, n]) => '<option value="' + esc(id) + '">ממיר ' + esc(id) + " · " + n + " סטרינגים</option>").join("")).join("") + "</optgroup>").join("") + '</select></div><div id="erState"></div><div class="f"><label for="erWho">קבלן חשמל</label><input type="text" id="erWho" list="erWhoList" placeholder="שם הקבלן" autocomplete="off" value="' + esc(whos[0] || "") + '"><datalist id="erWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="erDate">תאריך</label><input type="date" id="erDate" value="' + iso + '"></div><div class="f"><label for="erBy">מי דיווח</label><input type="text" id="erBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f"><label for="erNote">הערה</label><input type="text" id="erNote" placeholder="למשל: חסרים מהדקים"></div><div class="acts"><button class="save" id="erSave" type="button">שמור עדכון</button><button class="cancel" id="erCancel" type="button">ביטול</button></div></div>');
-  const close = closer(scrim);
-  const q = (s) => scrim.querySelector(s);
-  let strings = 0, flags = {};
-  const drawState = () => {
-    const S = elecState(reps);
-    const r = S[it.id] || {};
-    strings = Math.min(it.strings || 0, Number(r.strings) || 0);
-    flags = {};
-    const steps = it.kind === "inv" ? INV_STEPS : ST_STEPS;
-    steps.forEach(([k]) => {
-      flags[k] = !!r[k];
-    });
-    q("#erState").innerHTML = (it.kind === "inv" ? '<div class="f"><label>סטרינגים מחוברים מתוך ' + it.strings + '</label><div class="stepper"><button type="button" id="erMinus" aria-label="פחות">−</button><div class="val"><input type="text" inputmode="numeric" id="erStr" value="' + strings + '" aria-label="סטרינגים מחוברים"><small>סטרינגים</small></div><button type="button" id="erPlus" aria-label="יותר">+</button></div><button class="ghost" type="button" id="erAll" style="width:100%;margin-top:6px">הכול מחובר (' + it.strings + ")</button></div>" : "") + '<div class="f"><label>' + (it.kind === "inv" ? "מה בוצע בממיר" : "מה בוצע בתחנה") + '</label><div class="chips" id="erFlags" style="margin-bottom:0">' + steps.map(([k, l]) => '<button type="button" class="chip2" data-k="' + k + '" aria-pressed="' + flags[k] + '">' + l + "</button>").join("") + "</div></div>";
-    if (it.kind === "inv") {
-      const setS = (n) => {
-        n = Math.max(0, Math.min(it.strings, Math.round(Number(n) || 0)));
-        strings = n;
-        q("#erStr").value = n;
-      };
-      q("#erMinus").onclick = () => setS(strings - 1);
-      q("#erPlus").onclick = () => setS(strings + 1);
-      q("#erStr").onchange = (e) => setS(e.target.value);
-      q("#erAll").onclick = () => setS(it.strings);
-    }
-    q("#erFlags").onclick = (e) => {
-      const b = e.target.closest("[data-k]");
-      if (!b) return;
-      flags[b.dataset.k] = !flags[b.dataset.k];
-      b.setAttribute("aria-pressed", String(flags[b.dataset.k]));
-    };
-  };
-  q("#erItem").value = it.id;
-  q("#erItem").onchange = (e) => {
-    it = items.find((x) => x.id === e.target.value) || it;
-    drawState();
-  };
-  drawState();
-  q("#erCancel").onclick = close;
-  q("#erSave").onclick = async () => {
-    const by = q("#erBy").value.trim();
-    if (!by) {
-      toast("מי דיווח? צריך שם.");
-      q("#erBy").focus();
-      return;
-    }
-    ls.set("issuer", by);
-    const dv = q("#erDate").value;
-    let ts = Date.now(), dateText = fmtD(ts);
-    if (dv) {
-      const d = /* @__PURE__ */ new Date(dv + "T12:00:00");
-      if (!isNaN(d)) {
-        ts = d.getTime();
-        dateText = fmtD(ts);
-      }
-    }
-    const b = q("#erSave");
-    b.disabled = true;
-    b.textContent = "שומר…";
-    const id = "el" + Date.now();
-    const doc = { id, ts, dateText, item: it.id, kind: it.kind, who: q("#erWho").value.trim(), by, note: q("#erNote").value.trim(), source: "app", ...flags };
-    if (it.kind === "inv") doc.strings = strings;
-    try {
-      if (shared.DB) await shared.DB.doc("elec/" + id).set(doc);
-      else {
-        shared.ELEC = (shared.ELEC || []).concat(doc);
-        ls.set("elec", JSON.stringify(shared.ELEC));
-      }
-    } catch (e) {
-      b.disabled = false;
-      b.textContent = "שמור עדכון";
-      toast("השמירה נכשלה.");
-      return;
-    }
-    logAct("elec", "add", "חשמל · " + it.name + ": " + stateText(doc, it) + (doc.who ? " · " + doc.who : ""), id, by);
-    close();
-    toast("העדכון נשמר.");
-    renderElec();
-  };
-}
-function openElecSetup() {
-  const d = elecDoc() || {}, g = d.gen || { stations: 2, inv: 10, strings: 18 };
-  const builtIn = siteElecFor(SITE && SITE.name);
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה החשמל"><div class="grab"></div><h2>מבנה החשמל</h2><div class="note-card">' + (builtIn ? "לאתר הזה יש מבנה מובנה מתוכנית החשמל (" + esc(builtIn.src) + "). אפשר להחליף אותו במספרים, ולחזור אליו עם «נקה»." : "אין עדיין מבנה חשמל מתוכנית. קובעים אותו במספרים: תחנות, ממירים לתחנה, סטרינגים לממיר.") + '</div><div class="f"><label for="esSt">תחנות (סקידים)</label><input type="text" inputmode="numeric" id="esSt" value="' + esc(g.stations) + '"></div><div class="f"><label for="esInv">ממירים לתחנה</label><input type="text" inputmode="numeric" id="esInv" value="' + esc(g.inv) + '"></div><div class="f"><label for="esStr">סטרינגים לממיר</label><input type="text" inputmode="numeric" id="esStr" value="' + esc(g.strings) + '"></div><div class="acts"><button class="save" id="esSave" type="button">שמור מבנה</button>' + (d.gen ? '<button class="ghost" id="esClear" type="button">נקה</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
-  const close = closer(scrim);
-  const q = (s) => scrim.querySelector(s);
-  q(".cancel").onclick = close;
-  q("#esSave").onclick = async () => {
-    const gen = { stations: Number(q("#esSt").value), inv: Number(q("#esInv").value), strings: Number(q("#esStr").value) };
-    if (!genElec(gen)) {
-      toast("צריך מספרים חיוביים.");
-      return;
-    }
-    try {
-      await saveElecCfg({ gen });
-    } catch (e) {
-      toast("השמירה נכשלה.");
-      return;
-    }
-    logAct("settings", "edit", "מבנה חשמל: " + gen.stations + " תחנות × " + gen.inv + " ממירים × " + gen.strings + " סטרינגים", "settings/elec");
-    close();
-    toast("המבנה נשמר.");
-  };
-  const c = q("#esClear");
-  if (c) c.onclick = async () => {
-    if (!await ask("לנקות את המבנה מהמספרים?" + (builtIn ? " המבנה המובנה יחזור." : ""), "נקה")) return;
-    try {
-      await saveElecCfg({});
-    } catch (e) {
-      toast("השמירה נכשלה.");
-      return;
-    }
-    close();
-  };
-}
-function __init$i() {
-  shared.ELEC = [];
-  shared.ELECCFG = null;
-  try {
-    shared.ELEC = JSON.parse(ls.get("elec") || "[]");
-  } catch (e) {
-    shared.ELEC = [];
-  }
-  try {
-    const v = ls.get("eleccfg");
-    if (v) shared.ELECCFG = JSON.parse(v);
-  } catch (e) {
-  }
-  const s = $("#elSetup");
-  if (s) s.onclick = openElecSetup;
-  const a = $("#btnElecReport");
-  if (a) a.onclick = () => openElecReport();
-}
-const m21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  INV_STEPS,
-  ST_STEPS,
-  __init: __init$i,
-  currentElec,
-  elecDoc,
-  elecItems,
-  elecPending,
-  elecState,
-  elecSummary,
-  elecTotals,
-  openElecItem,
-  openElecReport,
-  openElecSetup,
-  rangeText,
-  renderElec,
-  saveElecCfg,
-  stateText
 }, Symbol.toStringTag, { value: "Module" }));
 let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 function applyRole() {
@@ -2639,10 +2832,12 @@ function __init$h() {
       watch(shared.DB.collection("elec"), (snap) => {
         shared.ELEC = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
         renderElec();
+        renderWorkMap();
       });
       watch(shared.DB.doc("settings/elec"), (snap) => {
         shared.ELECCFG = snap && snap.exists ? snap.data() : null;
         renderElec();
+        renderWorkMap();
       });
       watch(shared.DB.doc("settings/boq"), (snap) => {
         const d = snap && snap.exists ? snap.data() : null;
@@ -6430,7 +6625,7 @@ function showTab(which) {
 }
 function __init$a() {
   KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-  APP_VERSION = "58";
+  APP_VERSION = "59";
   SHOW_PRICES = false;
   SITE = { name: "אתר הקמה עין תמר", company: "BELECTRIC", panelsPerTable: 81, custom: false };
   $("#btnSettings").onclick = openSettings;
@@ -13070,7 +13265,10 @@ body.net-off .tabs{top:var(--netH,0px)}
 .el-bar{display:block;height:6px;border-radius:3px;background:#ECEDED;overflow:hidden} .el-bar i{display:block;height:100%}
 .el-n{font-size:.68rem;color:var(--ink3);font-variant-numeric:tabular-nums}
 .el-dots{display:flex;justify-content:center;gap:4px} .el-dots i{width:9px;height:9px;border-radius:50%;border:1px solid #C9CBCC;background:#fff;display:block}
-.slip.el-none{border-inline-start-color:#C9CBCC} .slip.el-dc{border-inline-start-color:#2F80ED} .slip.el-disc{border-inline-start-color:#FFAA00} .slip.el-ac{border-inline-start-color:#5B9A3C} .slip.el-com{border-inline-start-color:#7E57C2} .slip.el-st{border-inline-start-color:#3F4447}</style>
+.slip.el-none{border-inline-start-color:#C9CBCC} .slip.el-dc{border-inline-start-color:#2F80ED} .slip.el-disc{border-inline-start-color:#FFAA00} .slip.el-ac{border-inline-start-color:#5B9A3C} .slip.el-com{border-inline-start-color:#7E57C2} .slip.el-st{border-inline-start-color:#3F4447}
+
+/* שכבת חשמל במפה (גרסה 59): מקרא + כפתור הצגה/הסתרה */
+.sb-keys.wm-el{align-items:center;padding-top:4px} .sb-keys.wm-el .linkbtn{min-height:0;padding:0 4px;margin-inline-start:auto} .sb-keys.wm-el i{width:10px;height:10px}</style>
 </head><body>
 <title>יומן אתר</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>

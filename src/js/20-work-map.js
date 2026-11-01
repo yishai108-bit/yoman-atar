@@ -3,7 +3,9 @@
    (קונסטרוקציה, פאנלים, אישור מפקח) נצבעים על שורות השדה רק מדיווחי ביצוע שנרשם להם מיקום (שדה + שורות).
    דיווח בלי מיקום נספר בכמויות (כמו עד היום) אבל לא במפה, ומופיע ברשימת «בלי מיקום» עם כפתור למקם אותו.
    מבנה האתר (settings/layout): מהמפה של האתר (site-maps.js) כשיש, מתוכנית שנקראה בעזרת AI, או ממספרים בהגדרות.
-   «תוכניות»: קבצי התוכניות של האתר (PDF / תמונה) במופע, לפתיחה בלחיצה; תמונת תוכנית יכולה גם להזין את מבנה האתר. */
+   «תוכניות»: קבצי התוכניות של האתר (PDF / תמונה) במופע, לפתיחה בלחיצה; תמונת תוכנית יכולה גם להזין את מבנה האתר.
+   שכבת חשמל (גרסה 59): הממירים והתחנות מתוכנית החשמל מצוירים על אותה מפה (site-elec.js pos), בסגנון המפה ולא כ-PDF:
+   עיגול לממיר, ריבוע לתחנה, צבע לפי המצב מ«חשמל לפי ממיר» (21-elec.js); לחיצה פותחת את הממיר. */
 import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { fmtN } from "./01-stock.js";
 import { STAGES, openProgress, stageOf } from "./04-contractors.js";
@@ -12,6 +14,7 @@ import { isoOf, isoText } from "./11-daylog.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { siteMap } from "./19-site-build.js";
+import { ST_STEPS, currentElec, elecItems, elecState, openElecItem } from "./21-elec.js";
 
 const COL={con:"#FFAA00",pan:"#3199CC",ok:"#9AC339"}, ORDER=["con","pan","ok"];
 const PLAN_W=620;
@@ -137,13 +140,17 @@ function paint(cv,L,F,opts){
   };
   if(g.zoom){ const f=g.f; ctx.fillStyle="#3F4447"; ctx.textAlign="right"; ctx.fillText(f.name+" · "+f.rows.length+" שורות",g.W-8,14);
     g.rows.forEach(({r,x,y,w,h})=>{ const cell=F[f.id][r.n]; bar(x,y,w,h,cell,r.tables,r.n,true); ctx.fillStyle="#666B6E"; ctx.textAlign="right"; ctx.fillText(String(r.n),g.W-14,y+h/2); ctx.textAlign="left"; ctx.fillStyle="#9A9EA1"; ctx.font="600 10px Alef, Heebo, Arial"; ctx.fillText(fmtN(r.tables),x-40,y+h/2); ctx.font="700 11px Alef, Heebo, Arial"; });
+    if(opts.elec!==false&&elecLayerOn()) drawElec(ctx,elecMarks(L,g),true);
     return g; }
-  const s=g.s; ctx.setLineDash([3,3]); ctx.strokeStyle="#C9CBCC"; ctx.lineWidth=1;
+  const s=g.s, EM=opts.elec!==false&&elecLayerOn()?elecMarks(L,g):[]; ctx.setLineDash([3,3]); ctx.strokeStyle="#C9CBCC"; ctx.lineWidth=1;
   L.fields.forEach(f=>{ ctx.strokeRect(f.x*s-3,f.y*s-3,f.w*s+6,f.h*s+6); ctx.fillStyle="#3F4447"; ctx.textAlign="center"; ctx.setLineDash([]); ctx.fillText(f.name,(f.x+f.w/2)*s,Math.max(8,f.y*s-10)); ctx.setLineDash([3,3]);
     f.rows.forEach(r=>{ const cell=F[f.id][r.n]; const h=Math.max(2.5,r.h*s*.7); bar(r.x*s,r.y*s+(r.h*s-h)/2,r.w*s,h,cell,r.tables,r.n,false); });
     ctx.setLineDash([]); ctx.fillStyle="#9A9EA1"; ctx.font="600 9px Alef, Heebo, Arial"; ctx.textAlign="left";
-    const every=f.rows.length>14?5:1; f.rows.forEach(r=>{ if(r.n===1||r.n%every===0) ctx.fillText(String(r.n),(r.x+r.w)*s+3,(r.y+r.h/2)*s); }); ctx.font="700 11px Alef, Heebo, Arial"; ctx.setLineDash([3,3]); });
-  ctx.setLineDash([]); return g;
+    // מספרי שורות בצד השדה; מספר שממיר יושב עליו מדולג (הסימון חשוב ממנו)
+    const every=f.rows.length>14?5:1; f.rows.forEach(r=>{ const x=(r.x+r.w)*s+3, y=(r.y+r.h/2)*s; if((r.n===1||r.n%every===0)&&!hitMark(EM,x+5,y,9)) ctx.fillText(String(r.n),x,y); }); ctx.font="700 11px Alef, Heebo, Arial"; ctx.setLineDash([3,3]); });
+  ctx.setLineDash([]);
+  if(EM.length) drawElec(ctx,EM,false);
+  return g;
 }
 export function pickRow(L,g,x,y){
   if(g.zoom){ let best=null,bd=Infinity; g.rows.forEach(({r,y:ry,h})=>{ const d=Math.abs(y-(ry+h/2)); if(d<bd){ bd=d; best=r; } }); return best?{f:g.f,r:best}:null; }
@@ -152,7 +159,7 @@ export function pickRow(L,g,x,y){
 }
 // מפה קטנה לבחירת מיקום בטופס הדיווח: לחיצה על שדה בוחרת אותו, לחיצה על שורה (במצב מוגדל) מסמנת שורה / טווח
 export function drawMini(cv,L,F,areaId,rows,zoomField){
-  const keep=[focus,sel]; focus=zoomField||null; sel=null; const g=paint(cv,L,F,{});
+  const keep=[focus,sel]; focus=zoomField||null; sel=null; const g=paint(cv,L,F,{elec:false});
   const ctx=cv.getContext("2d"); const dpr=Math.min(2.5,window.devicePixelRatio||1); ctx.setTransform(dpr,0,0,dpr,0,0);
   const f=areaId&&L.fields.find(x=>x.id===areaId);
   if(f){ ctx.strokeStyle="#121212"; ctx.lineWidth=2;
@@ -161,15 +168,58 @@ export function drawMini(cv,L,F,areaId,rows,zoomField){
   [focus,sel]=keep; return g;
 }
 
+/* ---------- שכבת חשמל: ממירים ותחנות על המפה ---------- */
+// צבע הסימון = הצעד הגבוה ביותר שבוצע: סטרינגים (כחול, חלקי = קשת) → מנתק (כתום) → AC (ירוק) → תקשורת = גמור (סגול). תחנה: 0 / 1–2 / 3 צעדים.
+export const ECOL={none:"#FFFFFF",dc:"#2F80ED",disc:"#FFAA00",ac:"#5B9A3C",com:"#7E57C2"};
+export const ELEC_KEYS=[["none","עוד לא"],["dc","סטרינגים"],["disc","מנתק"],["ac","AC"],["com","גמור"]];
+export const elecLayerOn=()=>ls.get("wmElec")!=="0";
+export function elecStateOf(it,r){
+  r=r||{}; const recent=!!r.ts&&r.ts>Date.now()-7*864e5;
+  if(it.kind==="st"){ const n=ST_STEPS.filter(([k])=>r[k]).length; return {k:n>=3?"com":n>0?"disc":"none",fr:n/3,recent}; }
+  const n=Math.min(it.strings||0,Number(r.strings)||0); return {k:r.com?"com":r.ac?"ac":r.disc?"disc":n>0?"dc":"none",fr:it.strings?n/it.strings:0,recent};
+}
+// y של שורה r (1 = התחתונה בשדה; שבר = בין שורות; מחוץ לטווח = לפי מרווח השורות)
+function atRow(n,r,cy){ if(n<2) return cy(0); const pitch=cy(0)-cy(1); const i=Math.floor(r)-1, fr=r-Math.floor(r); if(i<0) return cy(0)+(1-r)*pitch; if(i>=n-1) return cy(n-1)-(r-n)*pitch; return cy(i)+(cy(i+1)-cy(i))*fr; }
+const fieldOfHalf=(L,h)=>L.fields.find(f=>f.id===(h==="w"?"west":h==="e"?"east":h))||(L.fields.length===1?L.fields[0]:null);
+// הסימונים בגיאומטריה הנוכחית (מפה שלמה או שדה מוגדל): [{id,kind,it,x,y,k,fr,recent}]. רק כשהמבנה הוא מפת האתר, ויש מיקומים.
+export function elecMarks(L,g,E){
+  E=E||currentElec(); if(!L||!E||!E.pos||L.src!=="map") return [];
+  const S=elecState(shared.demoStock?[]:shared.ELEC||[]); const out=[];
+  elecItems(E).forEach(it=>{ const p=E.pos[it.id]; if(!p) return; const f=fieldOfHalf(L,p[0]); if(!f) return; const r=Number(p[1]), pos=Math.max(-0.05,Math.min(1.05,Number(p[2]))), n=f.rows.length; let x,y;
+    if(g.zoom){ if(g.f.id!==f.id) return; y=atRow(n,r,i=>g.rows[i].y+g.rows[i].h/2); x=44+pos*(g.W-60); if(it.kind==="st") x+=pos<=0?-11:pos>=1?11:0; }
+    else { const s=g.s; const rr=f.rows[Math.min(n-1,Math.max(0,Math.round(r)-1))]; y=atRow(n,r,i=>(f.rows[i].y+f.rows[i].h/2)*s); x=(rr.x+pos*rr.w)*s; if(it.kind==="st") x+=pos<=0?-7:pos>=1?7:0; }
+    out.push({id:it.id,kind:it.kind,it,x,y,...elecStateOf(it,S[it.id])}); });
+  return out;
+}
+export function hitMark(marks,x,y,rad){ let best=null,bd=rad; marks.forEach(m=>{ const d=Math.hypot(m.x-x,m.y-y); if(d<=bd){ bd=d; best=m; } }); return best; }
+function drawElec(ctx,marks,zoom){
+  const R=zoom?7:4.2, S=zoom?16:9;
+  marks.forEach(m=>{
+    if(m.kind==="st"){ ctx.fillStyle=m.k==="none"?"#fff":ECOL[m.k]; ctx.fillRect(m.x-S/2,m.y-S/2,S,S); ctx.strokeStyle="#3F4447"; ctx.lineWidth=1; ctx.strokeRect(m.x-S/2+.5,m.y-S/2+.5,S-1,S-1);
+      if(zoom){ ctx.fillStyle=m.k==="none"?"#3F4447":"#fff"; ctx.font="700 9px Alef, Heebo, Arial"; ctx.textAlign="center"; ctx.fillText(m.id.replace(/^S/,""),m.x,m.y+.5); } }
+    else { ctx.beginPath(); ctx.arc(m.x,m.y,R,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+      if(m.k==="dc"&&m.fr<1){ ctx.beginPath(); ctx.moveTo(m.x,m.y); ctx.arc(m.x,m.y,R,-Math.PI/2,-Math.PI/2+Math.PI*2*m.fr); ctx.closePath(); ctx.fillStyle=ECOL.dc; ctx.fill(); }
+      else if(m.k!=="none"){ ctx.beginPath(); ctx.arc(m.x,m.y,R,0,Math.PI*2); ctx.fillStyle=ECOL[m.k]; ctx.fill(); }
+      ctx.beginPath(); ctx.arc(m.x,m.y,R,0,Math.PI*2); ctx.strokeStyle=m.k==="none"?"#7C8285":"#3F4447"; ctx.lineWidth=1; ctx.stroke(); }
+    if(m.recent){ ctx.beginPath(); ctx.arc(m.x,m.y,(m.kind==="st"?S*.78:R+2.5),0,Math.PI*2); ctx.strokeStyle="#E40033"; ctx.lineWidth=1.5; ctx.stroke(); }
+    if(zoom&&m.kind==="inv"){ ctx.fillStyle="#121212"; ctx.font="700 10px Alef, Heebo, Arial"; ctx.textAlign="left"; ctx.fillText(m.id,m.x+R+3,m.y); }
+  });
+  ctx.font="700 11px Alef, Heebo, Arial"; ctx.textAlign="left";
+}
+export const elecKeysHtml=()=>ELEC_KEYS.map(([k,l])=>'<span><i style="border-radius:50%;background:'+ECOL[k]+';border:1px solid '+(k==="none"?"#7C8285":ECOL[k])+'"></i>'+l+'</span>').join("")+'<span><i style="background:#fff;border:1px solid #3F4447"></i>תחנה</span>';
+
 /* ---------- הכרטיס «מה בוצע במפה» ---------- */
 function buildDom(){
   const box=$("#wmBody"); if(!box||built) return; built=true;
   box.innerHTML='<div class="sb-lead"><span class="sb-big num" id="wmBig">0</span><span class="sb-cap" id="wmCap">שורות עם פאנלים</span></div><div class="sb-sub" id="wmSub"></div>'
-    +'<div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה"></canvas></div>'
+    +'<div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח, ומעליה הממירים והתחנות של החשמל. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה; לחיצה על ממיר פותחת אותו"></canvas></div>'
     +'<div class="sb-keys"><span><i style="background:#ECEDED;border:1px solid #C9CBCC"></i>מתוכנן</span><span><i style="background:'+COL.con+'"></i>קונסטרוקציה</span><span><i style="background:'+COL.pan+'"></i>פאנלים</span><span><i style="background:'+COL.ok+'"></i>אושר ע״י מפקח</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>דווח בשבוע האחרון</span></div>'
+    +'<div class="sb-keys wm-el" id="wmEl" hidden></div>'
     +'<div class="wm-zoom" id="wmZoom" hidden></div><div class="wm-unp" id="wmUnp" hidden></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="wmPendN"></span></div><div class="wm-pend" id="wmPend"></div><div class="hint" id="wmSrc" style="margin-top:8px"></div>';
   const cv=$("#wmCv");
-  cv.onclick=e=>{ const L=currentLayout(); if(!L) return; const r=cv.getBoundingClientRect(); const g=geom(cv,L,focus&&L.fields.find(x=>x.id===focus)); const hit=pickRow(L,g,e.clientX-r.left,e.clientY-r.top);
+  cv.onclick=e=>{ const L=currentLayout(); if(!L) return; const r=cv.getBoundingClientRect(); const g=geom(cv,L,focus&&L.fields.find(x=>x.id===focus)); const px=e.clientX-r.left, py=e.clientY-r.top;
+    const m=elecLayerOn()?hitMark(elecMarks(L,g),px,py,g.zoom?13:9):null; if(m){ openElecItem(m.id); return; }
+    const hit=pickRow(L,g,px,py);
     if(!hit){ if(focus){ focus=null; sel=null; renderWorkMap(); } return; }
     if(!focus){ focus=hit.f.id; sel=null; } else sel={f:hit.f.id,n:hit.r.n};
     renderWorkMap(); };
@@ -187,6 +237,11 @@ export function renderWorkMap(){
   $("#wmBig").textContent=fmtN(done("pan"))+" / "+fmtN(rowsAll.length);
   $("#wmSub").innerHTML="שולחנות ממוקמים במפה: קונסטרוקציה <b>"+fmtN(sum("con"))+"</b> · פאנלים <b>"+fmtN(sum("pan"))+"</b> · אושרו <b>"+fmtN(sum("ok"))+"</b>"+(placed?" · מתוך "+placed+" דיווחים עם מיקום":"");
   const g=paint($("#wmCv"),L,F,{});
+  // שכבת חשמל: מקרא וכפתור הצגה/הסתרה, רק כשיש מיקומי ממירים למפה הזאת
+  const marks=elecMarks(L,{s:1,zoom:false}), el=$("#wmEl"); el.hidden=!marks.length;
+  if(marks.length){ const on=elecLayerOn(), done=marks.filter(m=>m.kind==="inv"&&m.k==="com").length, inv=marks.filter(m=>m.kind==="inv").length;
+    el.innerHTML=(on?elecKeysHtml():'<span>חשמל: '+inv+' ממירים'+(done?', '+(done===1?"אחד גמור":done+" גמורים"):'')+'</span>')+'<button class="linkbtn" type="button" id="wmElT">'+(on?"הסתר חשמל ›":"הצג חשמל ›")+'</button>';
+    $("#wmElT").onclick=()=>{ ls.set("wmElec",on?"0":"1"); renderWorkMap(); }; }
   // הגדלה: פירוט השורה שנבחרה
   const z=$("#wmZoom"); z.hidden=!focus;
   if(focus){ const f=L.fields.find(x=>x.id===focus); const r=sel&&f.rows.find(x=>x.n===sel.n);
@@ -194,6 +249,7 @@ export function renderWorkMap(){
     const cell=r?F[f.id][r.n]:null;
     z.innerHTML='<div class="zm-head"><b>'+esc(f.name)+(r?" · שורה "+r.n+" · "+fmtN(r.tables)+" שולחנות":" · לחצו על שורה לפירוט")+'</b><button class="linkbtn" type="button" id="wmBack">חזרה למפה ‹</button></div>'
       +(cell?'<div class="zm-ph">'+ORDER.map(k=>{ const st=STAGES.find(s=>s[0]===k); const v=cell[k]; return '<div class="zm-row'+(v>=r.tables?" done":v>0?" on":"")+'"><i style="background:'+COL[k]+'"></i><span>'+esc(st?st[1]:k)+'</span><span class="num">'+fmtN(v)+' / '+fmtN(r.tables)+'</span><span class="d">'+(cell.last[k]?esc(fmtD(cell.last[k])):v>0?"":"עוד לא")+'</span></div>'; }).join("")+'</div>':"")
+      +(!r&&elecLayerOn()&&marks.length?'<div class="hint" style="margin-top:4px">ממירים בשדה: '+fmtN(marks.filter(m=>m.kind==="inv"&&fieldOfHalf(L,currentElec().pos[m.id][0])===f).length)+' · לחיצה על עיגול פותחת ממיר.</div>':'')
       +(reps.length?'<div class="zm-reps">'+reps.slice(0,12).map(p=>{ const st=STAGES.find(s=>s[0]===stageOf(p)); return '<div class="zm-rep"><span class="num">'+esc(fmtDT(p.dateText)||fmtD(p.ts))+'</span><span>'+fmtN(p.tables)+' שולחנות · '+esc(st?st[1]:"")+(rowsOf(p)?' · שורות '+rowsOf(p)[0]+(rowsOf(p)[1]!==rowsOf(p)[0]?'–'+rowsOf(p)[1]:''):'')+(p.who?' · '+esc(p.who):'')+(p.note?' · '+esc(p.note):'')+'</span></div>'; }).join("")+(reps.length>12?'<div class="hint">מוצגים 12 האחרונים מתוך '+reps.length+'.</div>':'')+'</div>':'<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן.</div>')
       +(ROLE!=="viewer"?'<button class="ghost" type="button" id="wmHere" style="width:100%;margin-top:8px">דיווח ביצוע כאן</button>':'');
     $("#wmBack").onclick=()=>{ focus=null; sel=null; renderWorkMap(); };

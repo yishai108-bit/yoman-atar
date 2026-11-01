@@ -1,4 +1,4 @@
-// «חשמל לפי ממיר» (גרסה 58): מעקב עבודת החשמל לפי ממיר ותחנה, בכרטיס נפרד מהמפה.
+// «חשמל לפי ממיר» (גרסה 58): מעקב עבודת החשמל לפי ממיר ותחנה, בכרטיס משלו; מגרסה 59 הממירים מסומנים גם על המפה (20-work-map.js).
 // לכל ממיר: סטרינגים מחוברים מתוך N, מנתק מותקן, AC מחובר לתחנה, תקשורת. לכל תחנה: הוצבה, מ״ג מחובר, LV מחובר.
 // כל עדכון הוא תמונת מצב של פריט אחד (elec/): המצב הנוכחי = העדכון האחרון לכל פריט; ההיסטוריה נשמרת.
 import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
@@ -7,6 +7,7 @@ import { SITE } from "./08-settings.js";
 import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { genElec, siteElecFor } from "./site-elec.js";
+import { renderWorkMap } from "./20-work-map.js";
 
 export const INV_STEPS=[["disc","מנתק מותקן"],["ac","AC מחובר לתחנה"],["com","תקשורת מחוברת"]];
 export const ST_STEPS=[["place","הוצבה"],["mv","מ״ג מחובר"],["lv","LV מחובר"]];
@@ -24,7 +25,7 @@ export function elecItems(E){
 export const elecSummary=E=>{ const it=elecItems(E); const inv=it.filter(x=>x.kind==="inv"); return inv.length?E.stations.length+" תחנות · "+inv.length+" ממירים · "+fmtN(inv.reduce((s,x)=>s+x.strings,0))+" סטרינגים":""; };
 export async function saveElecCfg(doc){
   doc={...doc,ts:Date.now(),by:actorName()};
-  if(shared.DB) await shared.DB.doc("settings/elec").set(doc); else { shared.ELECCFG=doc; ls.set("eleccfg",JSON.stringify(doc)); renderElec(); }
+  if(shared.DB) await shared.DB.doc("settings/elec").set(doc); else { shared.ELECCFG=doc; ls.set("eleccfg",JSON.stringify(doc)); renderElec(); renderWorkMap(); }
 }
 
 /* ---------- מצב ---------- */
@@ -155,8 +156,9 @@ export function openElecReport(preId){
     if(it.kind==="inv") doc.strings=strings;
     try{ if(shared.DB) await shared.DB.doc("elec/"+id).set(doc); else { shared.ELEC=(shared.ELEC||[]).concat(doc); ls.set("elec",JSON.stringify(shared.ELEC)); } }
     catch(e){ b.disabled=false; b.textContent="שמור עדכון"; toast("השמירה נכשלה."); return; }
+    if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }   // כתיבה אמיתית ראשונה מסיימת את מצב ההדגמה, כמו במלאי
     logAct("elec","add","חשמל · "+it.name+": "+stateText(doc,it)+(doc.who?" · "+doc.who:""),id,by);
-    close(); toast("העדכון נשמר."); renderElec();
+    close(); toast("העדכון נשמר."); renderElec(); renderWorkMap();
   };
 }
 
