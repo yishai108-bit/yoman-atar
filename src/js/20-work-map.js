@@ -6,7 +6,7 @@
    «תוכניות»: קבצי התוכניות של האתר (PDF / תמונה) במופע, לפתיחה בלחיצה; תמונת תוכנית יכולה גם להזין את מבנה האתר.
    שכבת חשמל (גרסה 59): הממירים והתחנות מתוכנית החשמל מצוירים על אותה מפה (site-elec.js pos), בסגנון המפה ולא כ-PDF:
    עיגול לממיר, ריבוע לתחנה, צבע לפי המצב מ«חשמל לפי ממיר» (21-elec.js); לחיצה פותחת את הממיר. */
-import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, actorName, ask, blobUrl, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { fmtN } from "./01-stock.js";
 import { STAGES, openProgress, stageOf } from "./04-contractors.js";
 import { saveFile } from "./08-settings.js";
@@ -381,7 +381,7 @@ export function renderPlans(){
     b.onclick=()=>openPlan(p); box.appendChild(b); });
   foldSum("plans",P.length+" תוכניות");
 }
-const planUrl=p=>p.asset?"/_blob/"+p.asset:(p.url||"");
+const planUrl=p=>p.asset?blobUrl(p.asset):(p.url||"");
 async function planBlob(p){ const r=await fetch(planUrl(p)); if(!r.ok) throw new Error("fetch"); return await r.blob(); }
 export function openPlan(p){
   const img=!/pdf/i.test(p.mime||"");

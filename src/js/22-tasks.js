@@ -3,7 +3,7 @@
    עם מיקום במפה (שדה ושורות, או ממיר), אחראי, תאריך יעד וצילום; מי שסוגר רושם את שמו, ואפשר צילום של הסגירה.
    אוסף tasks/: מסמך אחד למשימה, והסגירה מעדכנת אותו (status, doneTs, doneBy). מונה «פתוחות» בלשונית ביצוע ובכרטיס,
    והמשימות הפתוחות עם מיקום מצוירות על «מה בוצע במפה» (20-work-map.js). בלי קטגוריות, בלי חומרה, בלי בונה טפסים. */
-import { $, actorName, alertSheet, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, actorName, alertSheet, ask, blobUrl, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { fmtN } from "./01-stock.js";
 import { sigPad } from "./03-kit.js";
 import { isoOf, isoText } from "./11-daylog.js";
@@ -23,7 +23,7 @@ export function taskStats(list){
   list=list||taskList(); const open=list.filter(isOpen), late=open.filter(isLate), wk=Date.now()-7*864e5;
   return {open:open.length,late:late.length,doneWeek:list.filter(t=>!isOpen(t)&&t.doneTs>wk).length,newWeek:list.filter(t=>t.ts>wk).length,total:list.length};
 }
-const photoSrc=(t,k)=>t[(k||"photo")+"Asset"]?"/_blob/"+t[(k||"photo")+"Asset"]:(t[(k||"photo")+"Url"]||"");
+const photoSrc=(t,k)=>t[(k||"photo")+"Asset"]?blobUrl(t[(k||"photo")+"Asset"]):(t[(k||"photo")+"Url"]||"");
 // צילום: מקטינים ל-1600px לפני השמירה (כמו תוכנית), לאחסון הקבצים או כ-data URL כשאין
 async function shrinkPhoto(file){
   try{ const im=await createImageBitmap(file); const k=Math.min(1,1600/Math.max(im.width,im.height)); const c=document.createElement("canvas"); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height); return await new Promise(r=>c.toBlob(r,"image/jpeg",.82)); }

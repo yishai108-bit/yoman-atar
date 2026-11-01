@@ -1,27 +1,27 @@
-# Supabase: מסד נתונים אמיתי (מוכן, לא מחובר)
+# Supabase: המאגר של גרסת הענן (מגרסה 61)
 
-מה יש כאן: סכמה, הרשאות (RLS) וכלי ייבוא, נבדקים אוטומטית (`tests/supabase.test.js`, על PGlite).
-מה אין: פרויקט Supabase חי. פתיחת חשבון והעברת האתרים החיים דורשות את ישי ואישור החברה לנתונים.
+מה יש כאן: סכמה, הרשאות (RLS), דלי קבצים וצירוף משתמשים. נבדקים אוטומטית (`tests/supabase.test.js` על PGlite, `tests/cloud.test.js` מול Supabase מדומה).
+מה אין: נתוני אתרים. קובץ הנתונים של עין תמר נשמר מחוץ לריפו.
 
 ## המבנה
-- `sites`: אתר אחד לכל מופע (עין תמר, מולדת, באר טוביה).
+- `sites`: אתר אחד לכל מופע (עין תמר, מולדת, באר טוביה; ל-S.E.E: עד 10).
 - `members`: מי שייך לאיזה אתר ובאיזה תפקיד: `owner`, `editor`, `viewer`.
-- `docs`: טבלה אחת שמחקה את מאגר המסמכים של הארטיפקט (`site_id`, `coll`, `id`, `data jsonb`), כדי שהקוד יעבור כמעט בלי שינוי.
+- `docs`: טבלה אחת שמחקה את מאגר המסמכים של הארטיפקט (`site_id`, `coll`, `id`, `data jsonb`). האפליקציה עוברת בלי שינוי בחישובים: `src/js/cloud/supabase-db.js` מתרגם `collection().onSnapshot()` ו-`doc().set()` לשורות.
+- Storage, דלי `assets` (ציבורי, נתיבים אקראיים): צילומי תעודות, חתימות, תוכניות, משימות.
 
 ## הרשאות (כמו ב-capabilities של הארטיפקט)
 - viewer: קורא הכול חוץ מ-`settings/cba` ו-`settings/prices`.
-- editor: כותב הכול חוץ מ-`settings`.
-- owner: הכול, כולל מחירים ו-CBA. **מחירים נקראים רק ע״י owner** (סוגר את הדליפה שקיימת היום בארטיפקט).
-- `updated_by` ו-`ts` נכתבים אוטומטית בטריגר.
+- editor: כותב הכול חוץ מ-`settings`; מעלה קבצים לאתר שלו.
+- owner: הכול. **מחירים נקראים רק ע״י owner** (סוגר את הדליפה שקיימת בארטיפקט).
+- `updated_by`, `updated_at` ו-`ts` נכתבים אוטומטית.
 
-## הקמה (כשיש אישור)
-1. פרויקט חדש ב-Supabase, אזור אירופה.
-2. SQL Editor: להריץ את `schema.sql`.
-3. להוסיף משתמשים ב-Auth, ואז שורה ב-`members` לכל משתמש ואתר.
+## הקמה (פעם אחת, ~15 דקות)
+1. פרויקט חדש ב-Supabase, אזור Frankfurt.
+2. SQL Editor, בסדר: `schema.sql` → `4-קבצים-והרשאות.sql` → קובץ האתרים הריקים → קובץ הנתונים של עין תמר (מחוץ לריפו).
+3. Authentication → Users → Add user: מייל + סיסמה, Auto Confirm. לכל משתמש.
+4. SQL Editor: `select add_member('מייל', 'ein-tamar', 'owner');` לכל משתמש ואתר (`moledet`, `beer-tuvia`).
+5. Project Settings → API: **Project URL** ו-**anon public** → משתני הסביבה `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` ב-Vercel (Settings → Environment Variables), ופריסה מחדש.
+6. Authentication → URL Configuration → Site URL: כתובת האפליקציה ב-Vercel (בשביל «שכחתי סיסמה»).
 
-## ייבוא נתונים מגיבוי האפליקציה
-```
-node tools/supabase-import.js backup.json ein-tamar "אתר הקמה עין תמר" > /מחוץ-לריפו/ein-tamar.sql
-```
-**הפלט מכיל נתוני חברה. לא נכנס לריפו בשום מקרה.** מריצים אותו ב-SQL Editor.
-פער ידוע: הגיבוי לא כולל ברקודים, כינויים, תמונות רחפן ויומן ייבוא; אותם מעבירים בנפרד.
+## הרצה מקומית מול Supabase
+`VITE_SUPABASE_URL=… VITE_SUPABASE_ANON_KEY=… npm run build:cloud` ואז לפתוח את `dist/cloud/index.html` משרת סטטי (לא כקובץ: הכניסה צריכה origin).

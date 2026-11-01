@@ -1,4 +1,4 @@
-import { $, alertSheet, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, alertSheet, ask, blobUrl, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { curConcrete, curNotes, fmtM3, fmtN, holders, noteFlags, renderOverview, stockRows } from "./01-stock.js";
 import { missingConcrete, openIssue, openKitEditor, perOf, sigPad, trucksText, typeLabel } from "./03-kit.js";
 import { tablesForPanels } from "./19-site-build.js";
@@ -346,7 +346,7 @@ export const hasSig=p=>!!(p&&(p.sigAsset||p.sigUrl||p.sigData));
 export const hasPhoto=p=>!!(p&&(p.photoAsset||p.photoUrl));
 export const hasEvidence=p=>hasSig(p)||hasPhoto(p);
 export const evidenceHtml=p=>hasEvidence(p)?'<span class="pg-ev">'+(hasPhoto(p)?'<i>צילום</i>':'')+(hasSig(p)?'<i>חתום</i>':'')+'</span>':'';
-const srcOf=(p,k)=>p[k+"Asset"]?"/_blob/"+p[k+"Asset"]:(p[k+"Url"]||p[k+"Data"]||"");
+const srcOf=(p,k)=>p[k+"Asset"]?blobUrl(p[k+"Asset"]):(p[k+"Url"]||p[k+"Data"]||"");
 export function openEvidence(p){
   const st=stageLabel(stageOf(p));
   alertSheet(fmtN(p.tables)+" שולחנות · "+st,'<div class="hint" style="margin-bottom:8px">'+esc([fmtDT(p.dateText)||fmtD(p.ts),locText(p),p.who,p.approver?"אישר: "+p.approver:"",p.by?"דיווח: "+p.by:""].filter(Boolean).join(" · "))+'</div>'

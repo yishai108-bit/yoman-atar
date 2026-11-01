@@ -1,4 +1,4 @@
-import { $, ask, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, ask, blobUrl, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { curConcrete, fmtM3, fmtN, hit, renderOverview, weekStart } from "./01-stock.js";
 import { missingConcrete, trucksText } from "./03-kit.js";
 import { showTab } from "./08-settings.js";
@@ -74,7 +74,7 @@ export function renderConcrete(){
 }
 export function openConcreteDetail(id){
   const c=curConcrete().find(x=>x.id===id); if(!c) return;
-  const psrc=c.photoAsset?"/_blob/"+c.photoAsset:c.photoUrl;
+  const psrc=c.photoAsset?blobUrl(c.photoAsset):c.photoUrl;
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="תעודת בטון">'
     +'<div class="grab"></div><h2>'+esc(c.supplier||"בטון")+' · '+esc(c.noteNo||"—")+'</h2>'
     +'<div class="kv"><span>תאריך <b>'+esc(fmtDT(c.dateText)||"")+'</b></span><span>כמות <b>'+fmtM3(Number(c.m3)||0)+' מ״ק</b></span>'
