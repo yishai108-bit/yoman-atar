@@ -275,7 +275,7 @@ function rotateCanvas(c, times) {
 function openScanner(opts) {
   opts = opts || {};
   const pages = [];
-  let step2 = "pick", photo = null, quad = null, filter = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
+  let step2 = "pick", photo = null, quad = null, filter2 = ls.get("scanFilter") || "magic", rot = 0, warped = null, cache = {}, drag = null;
   const root = document.createElement("div");
   root.className = "scan";
   root.setAttribute("role", "dialog");
@@ -328,7 +328,7 @@ function openScanner(opts) {
     const im = await loadImg(f);
     const c = scanCanvasFromImage(im, SCAN_MAX);
     const qd = detectQuad(c) || defaultQuad(c.width, c.height);
-    const w = enhanceCanvas(warpQuad(c, qd), filter);
+    const w = enhanceCanvas(warpQuad(c, qd), filter2);
     await acceptCanvas(w);
   }
   function showPick() {
@@ -436,9 +436,9 @@ function openScanner(opts) {
   function showPreview() {
     step2 = "preview";
     title();
-    const key = filter + "|" + rot;
+    const key = filter2 + "|" + rot;
     if (!warped) warped = warpQuad(photo, quad);
-    if (!cache[key]) cache[key] = rotateCanvas(enhanceCanvas(warped, filter), rot);
+    if (!cache[key]) cache[key] = rotateCanvas(enhanceCanvas(warped, filter2), rot);
     const c = cache[key];
     stage.innerHTML = '<div class="scan-wrap" style="max-width:100%;max-height:100%"><canvas id="scPv"></canvas></div>';
     const pv = q("#scPv");
@@ -461,8 +461,8 @@ function openScanner(opts) {
     pages.push({ blob, w: c.width, h: c.height, url: URL.createObjectURL(blob), thumb: th.toDataURL("image/jpeg", 0.7) });
   }
   async function acceptCurrent() {
-    const key = filter + "|" + rot;
-    const c = cache[key] || rotateCanvas(enhanceCanvas(warped || (warped = warpQuad(photo, quad)), filter), rot);
+    const key = filter2 + "|" + rot;
+    const c = cache[key] || rotateCanvas(enhanceCanvas(warped || (warped = warpQuad(photo, quad)), filter2), rot);
     await acceptCanvas(c);
     photo = null;
     warped = null;
@@ -492,12 +492,12 @@ function openScanner(opts) {
         showPreview();
       };
     } else {
-      bot.innerHTML = '<div class="scan-row" id="scFilters">' + [["magic", "שיפור"], ["bw", "שחור-לבן"], ["orig", "מקור"]].map(([k, l]) => '<button class="ghost" type="button" data-f="' + k + '" aria-pressed="' + (filter === k) + '">' + l + "</button>").join("") + '<button class="ghost" type="button" id="scRot" aria-label="סובב">⟳</button></div><div class="scan-row"><button class="ghost" type="button" id="scBack">‹ חיתוך</button><button class="ghost" type="button" id="scMore">+ עמוד</button><button class="save" type="button" id="scDone2">סיום ✓</button></div>' + pagesStrip();
+      bot.innerHTML = '<div class="scan-row" id="scFilters">' + [["magic", "שיפור"], ["bw", "שחור-לבן"], ["orig", "מקור"]].map(([k, l]) => '<button class="ghost" type="button" data-f="' + k + '" aria-pressed="' + (filter2 === k) + '">' + l + "</button>").join("") + '<button class="ghost" type="button" id="scRot" aria-label="סובב">⟳</button></div><div class="scan-row"><button class="ghost" type="button" id="scBack">‹ חיתוך</button><button class="ghost" type="button" id="scMore">+ עמוד</button><button class="save" type="button" id="scDone2">סיום ✓</button></div>' + pagesStrip();
       q("#scFilters").onclick = (e) => {
         const b = e.target.closest("[data-f]");
         if (!b) return;
-        filter = b.dataset.f;
-        ls.set("scanFilter", filter);
+        filter2 = b.dataset.f;
+        ls.set("scanFilter", filter2);
         showPreview();
       };
       q("#scRot").onclick = () => {
@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$l() {
+function __init$m() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$l,
+  __init: __init$m,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -870,7 +870,7 @@ function openStatusImport() {
     renderStatus();
   };
 }
-function __init$k() {
+function __init$l() {
   isWorkday = (iso) => (/* @__PURE__ */ new Date(iso + "T12:00:00")).getDay() <= 4;
   $("#btnStatusImp").onclick = openStatusImport;
   $("#btnStatusCsv").onclick = () => {
@@ -890,7 +890,7 @@ function __init$k() {
 }
 const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$k,
+  __init: __init$l,
   get isWorkday() {
     return isWorkday;
   },
@@ -1300,7 +1300,7 @@ function openElecSetup() {
     close();
   };
 }
-function __init$j() {
+function __init$k() {
   shared.ELEC = [];
   shared.ELECCFG = null;
   try {
@@ -1322,7 +1322,7 @@ const m21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   __proto__: null,
   INV_STEPS,
   ST_STEPS,
-  __init: __init$j,
+  __init: __init$k,
   currentElec,
   elecDoc,
   elecItems,
@@ -1337,6 +1337,382 @@ const m21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   renderElec,
   saveElecCfg,
   stateText
+}, Symbol.toStringTag, { value: "Module" }));
+const TASK_MAX_PHOTO = 15e5;
+const todayIso = () => isoOf(Date.now());
+const taskList = () => shared.demoStock ? [] : shared.TASKS || [];
+const isOpen = (t) => t && t.status !== "done";
+const isLate = (t) => isOpen(t) && !!t.due && t.due < todayIso();
+const taskWhere = (t) => {
+  const parts = [];
+  if (t.item) {
+    const it = elecItems(currentElec()).find((x) => x.id === t.item);
+    parts.push(it ? it.name : t.item);
+  }
+  const l = locText(t);
+  if (l) parts.push(l);
+  return parts.join(" · ");
+};
+function taskStats(list) {
+  list = list || taskList();
+  const open = list.filter(isOpen), late = open.filter(isLate), wk = Date.now() - 7 * 864e5;
+  return { open: open.length, late: late.length, doneWeek: list.filter((t) => !isOpen(t) && t.doneTs > wk).length, newWeek: list.filter((t) => t.ts > wk).length, total: list.length };
+}
+const photoSrc = (t, k) => t[(k || "photo") + "Asset"] ? "/_blob/" + t[(k || "photo") + "Asset"] : t[(k || "photo") + "Url"] || "";
+async function shrinkPhoto(file) {
+  try {
+    const im = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(im.width, im.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(im.width * k);
+    c.height = Math.round(im.height * k);
+    const x = c.getContext("2d");
+    x.fillStyle = "#fff";
+    x.fillRect(0, 0, c.width, c.height);
+    x.drawImage(im, 0, 0, c.width, c.height);
+    return await new Promise((r) => c.toBlob(r, "image/jpeg", 0.82));
+  } catch (e) {
+    return file;
+  }
+}
+async function storePhoto(file) {
+  if (!file) return {};
+  const blob = await shrinkPhoto(file);
+  if (shared.ASSETS) {
+    const a = await shared.ASSETS.upload(blob);
+    return { asset: a.id, url: a.url || "" };
+  }
+  if (blob.size > TASK_MAX_PHOTO) throw new Error("big");
+  return { asset: "", url: await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  }) };
+}
+async function saveTask(doc) {
+  if (shared.DB) await shared.DB.doc("tasks/" + doc.id).set(doc);
+  else {
+    shared.TASKS = (shared.TASKS || []).filter((t) => t.id !== doc.id).concat(doc);
+    ls.set("tasks", JSON.stringify(shared.TASKS));
+    renderTasks();
+    renderWorkMap();
+  }
+}
+function assigneeNames() {
+  const S = /* @__PURE__ */ new Set();
+  (shared.CREW || []).forEach((c) => {
+    if (c.active !== false && c.name) S.add(c.name);
+    if (c.contractor) S.add(c.contractor);
+  });
+  (shared.demoStock ? [] : shared.progress || []).forEach((p) => {
+    if (p.who) S.add(p.who);
+  });
+  (shared.demoStock ? [] : shared.issues || []).forEach((s) => {
+    if (s.who) S.add(s.who);
+  });
+  (shared.demoStock ? [] : shared.ELEC || []).forEach((r) => {
+    if (r.who) S.add(r.who);
+  });
+  taskList().forEach((t) => {
+    if (t.who) S.add(t.who);
+  });
+  return [...S].filter(Boolean);
+}
+const dl = (id, arr) => '<datalist id="' + id + '">' + [...new Set(arr)].filter(Boolean).map((v) => '<option value="' + esc(v) + '"></option>').join("") + "</datalist>";
+const photoField = (id, label) => '<div class="f"><label>' + label + '</label><div class="shots tk-shots"><div class="shot" id="' + id + 'Box"><i class="ic ic-cam big"></i>צילום<input type="file" accept="image/*" capture="environment" id="' + id + '" aria-label="' + label + '"></div></div></div>';
+function wirePhoto(scrim, id, onFile) {
+  const inp = scrim.querySelector("#" + id), box = scrim.querySelector("#" + id + "Box");
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    onFile(f || null);
+    box.querySelectorAll("img,.tag").forEach((n) => n.remove());
+    if (!f) return;
+    const img = new Image();
+    img.src = URL.createObjectURL(f);
+    img.alt = "";
+    const tag = document.createElement("div");
+    tag.className = "tag";
+    tag.textContent = "צולם";
+    box.appendChild(img);
+    box.appendChild(tag);
+  };
+}
+function openTaskForm(preset) {
+  preset = preset || {};
+  const t = preset.id ? preset : null;
+  let photo = null;
+  const E = currentElec(), items = E ? elecItems(E) : [];
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משימה"><div class="grab"></div><h2>' + (t ? "עריכת משימה" : "משימה חדשה") + "</h2>" + (t ? "" : '<div class="note-card">ממצא או עבודה שמישהו צריך לסגור: מה, איפה, מי, עד מתי. נשאר ברשימה ובמפה עד שסוגרים.</div>') + '<div class="f"><label for="tkTitle">מה</label><input type="text" id="tkTitle" maxlength="120" placeholder="למשל: שולחן עקום, חסרים 2 מהדקים, בור פתוח ליד הדרך" value="' + esc(t ? t.title : preset.title || "") + '"></div><div class="f" id="tkLoc"></div>' + (items.length ? '<div class="f"><label for="tkItem">ממיר / תחנה (לא חובה)</label><select id="tkItem"><option value="">בלי</option>' + E.stations.map((s) => '<optgroup label="' + esc(s.name) + '"><option value="' + esc(s.id) + '">' + esc(s.name) + "</option>" + s.icbs.map((c) => c.inv.map(([id]) => '<option value="' + esc(id) + '">ממיר ' + esc(id) + "</option>").join("")).join("") + "</optgroup>").join("") + "</select></div>" : "") + '<div class="f"><label for="tkWho">אחראי</label><input type="text" id="tkWho" list="tkWhoL" autocomplete="off" placeholder="מי סוגר את זה" value="' + esc(t ? t.who || "" : preset.who || "") + '">' + dl("tkWhoL", assigneeNames()) + '</div><div class="f"><label for="tkDue">עד מתי</label><input type="date" id="tkDue" value="' + esc(t ? t.due || "" : preset.due || "") + '"></div>' + (t ? "" : photoField("tkPhoto", "צילום (לא חובה)")) + '<div class="f"><label for="tkNote">פירוט</label><textarea id="tkNote" placeholder="מה בדיוק, ומה צריך כדי לסגור">' + esc(t ? t.note || "" : "") + '</textarea></div><div class="f"><label for="tkBy">מי פתח</label><input type="text" id="tkBy" autocomplete="off" placeholder="השם שלך" value="' + esc(t ? t.by || "" : ls.get("issuer") || "") + '"></div><div class="acts"><button class="save" id="tkSave" type="button">' + (t ? "שמור" : "פתח משימה") + '</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  const loc = mountLocation(q("#tkLoc"), t || preset);
+  const sel2 = q("#tkItem");
+  if (sel2) sel2.value = (t ? t.item : preset.item) || "";
+  if (!t) wirePhoto(scrim, "tkPhoto", (f) => {
+    photo = f;
+  });
+  q("#tkSave").onclick = async () => {
+    const title = q("#tkTitle").value.trim();
+    if (!title) {
+      toast("מה המשימה?");
+      q("#tkTitle").focus();
+      return;
+    }
+    const by = q("#tkBy").value.trim();
+    if (!by) {
+      toast("מי פתח? צריך שם.");
+      q("#tkBy").focus();
+      return;
+    }
+    ls.set("issuer", by);
+    const b = q("#tkSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    const l = loc.get();
+    const doc = {
+      ...t || { id: "tk" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ts: Date.now(), status: "open", source: "app", photoAsset: "", photoUrl: "" },
+      title,
+      note: q("#tkNote").value.trim(),
+      who: q("#tkWho").value.trim(),
+      due: q("#tkDue").value || "",
+      by,
+      item: sel2 ? sel2.value : "",
+      areaId: l.areaId || "",
+      area: l.area || "",
+      rows: l.rows || null
+    };
+    if (!t) doc.dateText = fmtD(doc.ts);
+    try {
+      if (photo) {
+        const p = await storePhoto(photo);
+        doc.photoAsset = p.asset;
+        doc.photoUrl = p.url;
+      }
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = t ? "שמור" : "פתח משימה";
+      toast(e && e.message === "big" ? "בלי אחסון קבצים אפשר לשמור צילום עד 1.5MB." : "הצילום לא נשמר. אפשר לשמור בלי.");
+      photo = null;
+      return;
+    }
+    try {
+      await saveTask(doc);
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = t ? "שמור" : "פתח משימה";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    if (shared.demoStock) {
+      shared.demoStock = false;
+      ls.set("demoDoneS", "1");
+    }
+    logAct("task", t ? "edit" : "add", (t ? "משימה עודכנה: " : "משימה: ") + title + (doc.who ? " · " + doc.who : "") + (taskWhere(doc) ? " · " + taskWhere(doc) : "") + (doc.due ? " · עד " + isoText(doc.due) : ""), doc.id, by);
+    close();
+    toast(t ? "המשימה עודכנה." : "המשימה נפתחה.");
+    renderTasks();
+    renderWorkMap();
+  };
+}
+function openTaskClose(t) {
+  let photo = null;
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="סגירת משימה"><div class="grab"></div><h2>סגירת משימה</h2><div class="note-card"><b>' + esc(t.title) + "</b>" + (taskWhere(t) ? "<br>" + esc(taskWhere(t)) : "") + (t.who ? "<br>אחראי: " + esc(t.who) : "") + "</div>" + photoField("tcPhoto", "צילום של מה שנסגר (לא חובה)") + '<div class="f"><label for="tcNote">מה נעשה</label><input type="text" id="tcNote" maxlength="200" placeholder="למשל: הוחלפו 2 מהדקים"></div><div class="f"><label for="tcBy">מי סגר</label><input type="text" id="tcBy" autocomplete="off" placeholder="השם שלך" value="' + esc(ls.get("issuer") || "") + '"></div><div class="acts"><button class="save" id="tcSave" type="button" style="background:var(--sage)">סגור משימה</button><button class="cancel" type="button">ביטול</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel").onclick = close;
+  wirePhoto(scrim, "tcPhoto", (f) => {
+    photo = f;
+  });
+  q("#tcSave").onclick = async () => {
+    const by = q("#tcBy").value.trim();
+    if (!by) {
+      toast("מי סגר? צריך שם.");
+      q("#tcBy").focus();
+      return;
+    }
+    ls.set("issuer", by);
+    const b = q("#tcSave");
+    b.disabled = true;
+    b.textContent = "שומר…";
+    const doc = { ...t, status: "done", doneTs: Date.now(), doneBy: by, doneNote: q("#tcNote").value.trim(), doneAsset: "", doneUrl: "" };
+    try {
+      if (photo) {
+        const p = await storePhoto(photo);
+        doc.doneAsset = p.asset;
+        doc.doneUrl = p.url;
+      }
+    } catch (e) {
+      toast("הצילום לא נשמר; המשימה נסגרת בלעדיו.");
+    }
+    try {
+      await saveTask(doc);
+    } catch (e) {
+      b.disabled = false;
+      b.textContent = "סגור משימה";
+      toast("השמירה נכשלה.");
+      return;
+    }
+    logAct("task", "edit", "משימה נסגרה: " + t.title + (doc.doneNote ? " · " + doc.doneNote : ""), t.id, by);
+    close();
+    toast("המשימה נסגרה.");
+    renderTasks();
+    renderWorkMap();
+  };
+}
+async function reopen(t) {
+  if (!await ask("לפתוח מחדש את «" + t.title + "»?", "פתח מחדש", "var(--amber)")) return;
+  const doc = { ...t, status: "open", reopenedTs: Date.now(), reopenedBy: actorName() };
+  try {
+    await saveTask(doc);
+  } catch (e) {
+    toast("השמירה נכשלה.");
+    return;
+  }
+  logAct("task", "edit", "משימה נפתחה מחדש: " + t.title, t.id);
+  renderTasks();
+  renderWorkMap();
+}
+async function remove(t) {
+  if (!await ask("למחוק את המשימה «" + t.title + "»?")) return;
+  try {
+    if (shared.DB) await shared.DB.doc("tasks/" + t.id).delete();
+    else {
+      shared.TASKS = (shared.TASKS || []).filter((x) => x.id !== t.id);
+      ls.set("tasks", JSON.stringify(shared.TASKS));
+      renderTasks();
+      renderWorkMap();
+    }
+  } catch (e) {
+    toast("המחיקה נכשלה.");
+    return;
+  }
+  logAct("task", "delete", "נמחקה משימה: " + t.title, t.id, null, t);
+}
+function openTask(id) {
+  const t = taskList().find((x2) => x2.id === id);
+  if (!t) return;
+  const open = isOpen(t), late = isLate(t), p = photoSrc(t), d = photoSrc(t, "done");
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משימה"><div class="grab"></div><h2>' + esc(t.title) + '</h2><div class="tk-st ' + (open ? late ? "late" : "open" : "done") + '">' + (open ? late ? "פתוחה · באיחור" : "פתוחה" : "נסגרה " + esc(fmtD(t.doneTs)) + (t.doneBy ? " · " + esc(t.doneBy) : "")) + '</div><div class="kv-list">' + [["איפה", taskWhere(t)], ["אחראי", t.who], ["עד מתי", t.due ? isoText(t.due) : ""], ["נפתחה", (fmtDT(t.dateText) || fmtD(t.ts)) + (t.by ? " · " + t.by : "")], ["פירוט", t.note], ["מה נעשה", t.doneNote]].filter(([, v]) => v).map(([k, v]) => '<div class="kv"><span>' + k + "</span><b>" + esc(v) + "</b></div>").join("") + "</div>" + (p ? '<div class="tk-photo"><div class="hint">צילום בפתיחה</div><img src="' + esc(p) + '" alt="צילום המשימה"></div>' : "") + (d ? '<div class="tk-photo"><div class="hint">צילום בסגירה</div><img src="' + esc(d) + '" alt="צילום הסגירה"></div>' : "") + '<div class="acts" style="flex-wrap:wrap">' + (ROLE !== "viewer" ? open ? '<button class="save" id="tdClose" type="button" style="background:var(--sage)">סגור משימה</button><button class="ghost" id="tdEdit" type="button">ערוך</button>' : '<button class="ghost" id="tdReopen" type="button">פתח מחדש</button>' : "") + (ROLE === "owner" ? '<button class="cancel danger" id="tdDel" type="button">מחק</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s);
+  q(".cancel:not(.danger)").onclick = close;
+  const c = q("#tdClose");
+  if (c) c.onclick = () => {
+    close();
+    openTaskClose(t);
+  };
+  const e = q("#tdEdit");
+  if (e) e.onclick = () => {
+    close();
+    openTaskForm(t);
+  };
+  const r = q("#tdReopen");
+  if (r) r.onclick = () => {
+    close();
+    reopen(t);
+  };
+  const x = q("#tdDel");
+  if (x) x.onclick = () => {
+    close();
+    remove(t);
+  };
+}
+function openTaskList(title, list) {
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="משימות"><div class="grab"></div><h2>' + esc(title) + '</h2><div class="stock" id="tlList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
+  const close = closer(scrim);
+  scrim.querySelector(".cancel").onclick = close;
+  const box = scrim.querySelector("#tlList");
+  list.forEach((t) => {
+    const b = slipFor(t);
+    b.onclick = () => {
+      close();
+      openTask(t.id);
+    };
+    box.appendChild(b);
+  });
+}
+function slipFor(t) {
+  const b = document.createElement("button");
+  b.type = "button";
+  const open = isOpen(t), late = isLate(t);
+  b.className = "slip tk-slip " + (open ? late ? "late" : "open" : "done");
+  b.innerHTML = "<b>" + esc(t.title) + '</b><span class="sigok tk-badge">' + (open ? late ? "באיחור" : "פתוחה" : "נסגרה") + "</span><span>" + esc([taskWhere(t), t.who, open ? t.due ? "עד " + isoText(t.due) : "" : fmtD(t.doneTs) + (t.doneBy ? " · " + t.doneBy : "")].filter(Boolean).join(" · ")) + "</span>";
+  return b;
+}
+let filter = "open";
+function renderTasks() {
+  const card = $("#tasksCard");
+  if (!card) return;
+  const list = taskList(), S = taskStats(list);
+  const badge = $("#tabOverN");
+  if (badge) {
+    badge.hidden = !S.open;
+    badge.textContent = S.open ? String(S.open) : "";
+    badge.classList.toggle("late", S.late > 0);
+  }
+  $("#tkBig").textContent = fmtN(S.open);
+  $("#tkSub").innerHTML = S.total ? (S.late ? '<b style="color:var(--clay)">' + S.late + " באיחור</b> · " : "") + "נפתחו השבוע <b>" + S.newWeek + "</b> · נסגרו השבוע <b>" + S.doneWeek + "</b>" : "";
+  const chips = $("#tkChips");
+  chips.innerHTML = [["open", "פתוחות", S.open], ["late", "באיחור", S.late], ["done", "נסגרו", S.total - S.open], ["all", "הכול", S.total]].map(([k, l, n]) => '<button type="button" class="chip2" data-k="' + k + '" aria-pressed="' + (filter === k) + '">' + l + ' <span class="num">' + n + "</span></button>").join("");
+  chips.onclick = (e) => {
+    const b = e.target.closest("[data-k]");
+    if (!b) return;
+    filter = b.dataset.k;
+    renderTasks();
+  };
+  const rows = list.filter((t) => filter === "all" || (filter === "open" ? isOpen(t) : filter === "late" ? isLate(t) : !isOpen(t))).sort((a, b) => {
+    if (isOpen(a) !== isOpen(b)) return isOpen(a) ? -1 : 1;
+    if (isOpen(a)) {
+      const da = a.due || "9", db = b.due || "9";
+      if (da !== db) return da < db ? -1 : 1;
+    }
+    return (b.doneTs || b.ts) - (a.doneTs || a.ts);
+  });
+  const box = $("#tkList");
+  box.innerHTML = "";
+  if (!list.length) box.innerHTML = '<div class="empty">אין עדיין משימות. ממצא בשטח (שולחן עקום, חסר חומר, בור פתוח) נפתח כאן עם מיקום ואחראי, ונשאר במפה עד שסוגרים.</div>';
+  else if (!rows.length) box.innerHTML = '<div class="empty" style="padding:8px 0">' + (filter === "open" ? "אין משימות פתוחות." : filter === "late" ? "אין משימות באיחור." : "עוד לא נסגרו משימות.") + "</div>";
+  rows.slice(0, 30).forEach((t) => {
+    const b = slipFor(t);
+    b.onclick = () => openTask(t.id);
+    box.appendChild(b);
+  });
+  if (rows.length > 30) {
+    const m = document.createElement("div");
+    m.className = "hint";
+    m.textContent = "מוצגות 30 מתוך " + rows.length + ".";
+    box.appendChild(m);
+  }
+  foldSum("tasks", S.open ? S.open + " פתוחות" + (S.late ? " · " + S.late + " באיחור" : "") : list.length ? "הכול סגור" : "");
+}
+function __init$j() {
+  shared.TASKS = [];
+  try {
+    shared.TASKS = JSON.parse(ls.get("tasks") || "[]");
+  } catch (e) {
+    shared.TASKS = [];
+  }
+  const a = $("#btnAddTask");
+  if (a) a.onclick = () => openTaskForm();
+}
+const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  TASK_MAX_PHOTO,
+  __init: __init$j,
+  assigneeNames,
+  isLate,
+  isOpen,
+  openTask,
+  openTaskClose,
+  openTaskForm,
+  openTaskList,
+  renderTasks,
+  storePhoto,
+  taskList,
+  taskStats,
+  taskWhere
 }, Symbol.toStringTag, { value: "Module" }));
 const COL = { con: "#FFAA00", pan: "#3199CC", ok: "#9AC339" }, ORDER = ["con", "pan", "ok"];
 const PLAN_W = 620;
@@ -1628,6 +2004,7 @@ function paint(cv2, L, F, opts) {
       ctx2.font = "700 11px Alef, Heebo, Arial";
     });
     if (EM2.length) drawElec(ctx2, EM2, true);
+    if (opts.tasks !== false) drawTasks(ctx2, taskMarks(L, g, EM2), true);
     return g;
   }
   const s = g.s, EM = opts.elec !== false && elecLayerOn() ? elecMarks(L, g) : [];
@@ -1660,6 +2037,7 @@ function paint(cv2, L, F, opts) {
   });
   ctx2.setLineDash([]);
   if (EM.length) drawElec(ctx2, EM, false);
+  if (opts.tasks !== false) drawTasks(ctx2, taskMarks(L, g, EM), false);
   return g;
 }
 function pickRow(L, g, x, y) {
@@ -1691,7 +2069,7 @@ function drawMini(cv2, L, F, areaId, rows, zoomField) {
   const keep = [focus, sel];
   focus = zoomField || null;
   sel = null;
-  const g = paint(cv2, L, F, { elec: false });
+  const g = paint(cv2, L, F, { elec: false, tasks: false });
   const ctx2 = cv2.getContext("2d");
   const dpr = Math.min(2.5, window.devicePixelRatio || 1);
   ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1834,11 +2212,81 @@ function drawElec(ctx2, marks, zoom) {
   ctx2.textAlign = "left";
 }
 const elecKeysHtml = () => ELEC_KEYS.map(([k, l]) => '<span><i style="border-radius:50%;background:' + ECOL[k] + ";border:1px solid " + (k === "none" ? "#7C8285" : ECOL[k]) + '"></i>' + l + "</span>").join("") + '<span><i style="background:#fff;border:1px solid #3F4447"></i>תחנה</span>';
+const TASK_COL = "#B30027";
+function taskMarks(L, g, EM) {
+  const T = taskList().filter((t) => isOpen(t) && (t.item || t.areaId));
+  if (!L || !T.length) return [];
+  const groups = /* @__PURE__ */ new Map();
+  T.forEach((t) => {
+    let x, y, key;
+    if (t.item) {
+      const m = (EM || []).find((m23) => m23.id === t.item);
+      if (!m) {
+        if (!t.areaId) return;
+      } else {
+        const R = g.zoom ? 7 : 4.2;
+        x = m.x + R + 2;
+        y = m.y - R - 2;
+        key = "i:" + t.item;
+      }
+    }
+    if (x == null) {
+      const f = L.fields.find((f2) => f2.id === t.areaId);
+      if (!f) return;
+      const rr = rowsOf(t);
+      const n = f.rows.length;
+      const mid = rr ? (rr[0] + rr[1]) / 2 : null;
+      const idx = mid == null ? Math.floor(n / 2) : Math.max(0, Math.min(n - 1, f.rows.findIndex((r) => r.n === Math.round(mid))));
+      const row = f.rows[idx < 0 ? 0 : idx];
+      if (g.zoom) {
+        if (g.f.id !== f.id) return;
+        const z = g.rows.find((z2) => z2.r === row);
+        if (!z) return;
+        x = z.x + 12;
+        y = z.y + z.h / 2;
+      } else {
+        x = row.x * g.s + 6;
+        y = (row.y + row.h / 2) * g.s;
+      }
+      key = "r:" + f.id + ":" + row.n;
+    }
+    const gkey = key;
+    if (!groups.has(gkey)) groups.set(gkey, { x, y, list: [], late: false, key: gkey });
+    const G = groups.get(gkey);
+    G.list.push(t);
+    if (isLate(t)) G.late = true;
+  });
+  return [...groups.values()];
+}
+function drawTasks(ctx2, marks, zoom) {
+  const R = zoom ? 8 : 5;
+  marks.forEach((m) => {
+    ctx2.beginPath();
+    ctx2.arc(m.x, m.y, R, 0, Math.PI * 2);
+    ctx2.fillStyle = m.late ? "#E40033" : TASK_COL;
+    ctx2.fill();
+    ctx2.strokeStyle = "#fff";
+    ctx2.lineWidth = 1.5;
+    ctx2.stroke();
+    ctx2.fillStyle = "#fff";
+    ctx2.font = "700 " + (zoom ? 10 : 8) + "px Alef, Heebo, Arial";
+    ctx2.textAlign = "center";
+    ctx2.fillText(m.list.length > 1 ? String(m.list.length) : "!", m.x, m.y + 0.5);
+  });
+  ctx2.font = "700 11px Alef, Heebo, Arial";
+  ctx2.textAlign = "left";
+}
+function taskRowHtml(f, r) {
+  const T = taskList().filter((t) => isOpen(t) && t.areaId === f.id && (!rowsOf(t) || r.n >= rowsOf(t)[0] && r.n <= rowsOf(t)[1]));
+  if (!T.length) return "";
+  return '<div class="zm-tasks">' + T.map((t) => '<button type="button" class="slip tk-slip ' + (isLate(t) ? "late" : "open") + '" data-task="' + esc(t.id) + '"><b>' + esc(t.title) + "</b><span>" + esc([t.who, t.due ? "עד " + t.due.split("-").reverse().slice(0, 2).join(".") : ""].filter(Boolean).join(" · ")) + "</span></button>").join("") + "</div>";
+}
+const taskMarkTitle = (m) => m.key.startsWith("i:") ? m.list[0].item : (m.list[0].area || "") + (rowsOf(m.list[0]) ? " · שורות " + rowsOf(m.list[0])[0] + (rowsOf(m.list[0])[1] !== rowsOf(m.list[0])[0] ? "–" + rowsOf(m.list[0])[1] : "") : "");
 function buildDom$1() {
   const box = $("#wmBody");
   if (!box || built$1) return;
   built$1 = true;
-  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="wmBig">0</span><span class="sb-cap" id="wmCap">שורות עם פאנלים</span></div><div class="sb-sub" id="wmSub"></div><div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח, ומעליה הממירים והתחנות של החשמל. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה; לחיצה על ממיר פותחת אותו"></canvas></div><div class="sb-keys"><span><i style="background:#ECEDED;border:1px solid #C9CBCC"></i>מתוכנן</span><span><i style="background:' + COL.con + '"></i>קונסטרוקציה</span><span><i style="background:' + COL.pan + '"></i>פאנלים</span><span><i style="background:' + COL.ok + '"></i>אושר ע״י מפקח</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>דווח בשבוע האחרון</span></div><div class="sb-keys wm-el" id="wmEl" hidden></div><div class="wm-zoom" id="wmZoom" hidden></div><div class="wm-unp" id="wmUnp" hidden></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="wmPendN"></span></div><div class="wm-pend" id="wmPend"></div><div class="hint" id="wmSrc" style="margin-top:8px"></div>';
+  box.innerHTML = '<div class="sb-lead"><span class="sb-big num" id="wmBig">0</span><span class="sb-cap" id="wmCap">שורות עם פאנלים</span></div><div class="sb-sub" id="wmSub"></div><div class="wm-cvw"><canvas id="wmCv" aria-label="מפת השדות לפי שורות: קונסטרוקציה, פאנלים, אישור מפקח, ומעליה הממירים והתחנות של החשמל. לחיצה על שדה מגדילה אותו; לחיצה על שורה מראה מה דווח בה; לחיצה על ממיר פותחת אותו"></canvas></div><div class="sb-keys"><span><i style="background:#ECEDED;border:1px solid #C9CBCC"></i>מתוכנן</span><span><i style="background:' + COL.con + '"></i>קונסטרוקציה</span><span><i style="background:' + COL.pan + '"></i>פאנלים</span><span><i style="background:' + COL.ok + '"></i>אושר ע״י מפקח</span><span><i style="border:1.5px solid #E40033;background:#fff"></i>דווח בשבוע האחרון</span><span id="wmTaskKey" hidden><i style="border-radius:50%;background:#B30027"></i>משימה פתוחה</span></div><div class="sb-keys wm-el" id="wmEl" hidden></div><div class="wm-zoom" id="wmZoom" hidden></div><div class="wm-unp" id="wmUnp" hidden></div><div class="sechead" style="margin-top:10px"><span>מה עוד לא בוצע</span><span id="wmPendN"></span></div><div class="wm-pend" id="wmPend"></div><div class="hint" id="wmSrc" style="margin-top:8px"></div>';
   const cv2 = $("#wmCv");
   cv2.onclick = (e) => {
     const L = currentLayout();
@@ -1846,7 +2294,14 @@ function buildDom$1() {
     const r = cv2.getBoundingClientRect();
     const g = geom(cv2, L, focus && L.fields.find((x) => x.id === focus));
     const px2 = e.clientX - r.left, py = e.clientY - r.top;
-    const m = elecLayerOn() ? hitMark(elecMarks(L, g), px2, py, g.zoom ? 13 : 9) : null;
+    const EM = elecLayerOn() ? elecMarks(L, g) : [];
+    const tm = hitMark(taskMarks(L, g, EM), px2, py, g.zoom ? 13 : 10);
+    if (tm) {
+      if (tm.list.length === 1) openTask(tm.list[0].id);
+      else openTaskList("משימות פתוחות · " + taskMarkTitle(tm), tm.list);
+      return;
+    }
+    const m = EM.length ? hitMark(EM, px2, py, g.zoom ? 13 : 9) : null;
     if (m) {
       openElecItem(m.id);
       return;
@@ -1893,6 +2348,9 @@ function renderWorkMap() {
   $("#wmBig").textContent = fmtN(done("pan")) + " / " + fmtN(rowsAll.length);
   $("#wmSub").innerHTML = "שולחנות ממוקמים במפה: קונסטרוקציה <b>" + fmtN(sum("con")) + "</b> · פאנלים <b>" + fmtN(sum("pan")) + "</b> · אושרו <b>" + fmtN(sum("ok")) + "</b>" + (placed ? " · מתוך " + placed + " דיווחים עם מיקום" : "");
   paint($("#wmCv"), L, F, {});
+  const openT = taskList().filter((t) => isOpen(t) && (t.areaId || t.item));
+  $("#wmTaskKey").hidden = !openT.length;
+  if (openT.length) $("#wmSub").innerHTML += ' · <b style="color:' + TASK_COL + '">' + openT.length + "</b> משימות פתוחות במפה";
   const marks = elecMarks(L, { s: 1, zoom: false }), el = $("#wmEl");
   el.hidden = !marks.length;
   if (marks.length) {
@@ -1914,7 +2372,7 @@ function renderWorkMap() {
       const st = STAGES.find((s) => s[0] === k);
       const v = cell[k];
       return '<div class="zm-row' + (v >= r.tables ? " done" : v > 0 ? " on" : "") + '"><i style="background:' + COL[k] + '"></i><span>' + esc(st ? st[1] : k) + '</span><span class="num">' + fmtN(v) + " / " + fmtN(r.tables) + '</span><span class="d">' + (cell.last[k] ? esc(fmtD(cell.last[k])) : v > 0 ? "" : "עוד לא") + "</span></div>";
-    }).join("") + "</div>" : "") + (!r && elecLayerOn() && marks.length ? '<div class="hint" style="margin-top:4px">ממירים בשדה: ' + fmtN(marks.filter((m) => m.kind === "inv" && fieldOfHalf(L, currentElec().pos[m.id][0]) === f).length) + " · לחיצה על עיגול פותחת ממיר.</div>" : "") + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 12).map((p) => {
+    }).join("") + "</div>" : "") + (!r && elecLayerOn() && marks.length ? '<div class="hint" style="margin-top:4px">ממירים בשדה: ' + fmtN(marks.filter((m) => m.kind === "inv" && fieldOfHalf(L, currentElec().pos[m.id][0]) === f).length) + " · לחיצה על עיגול פותחת ממיר.</div>" : "") + (r ? taskRowHtml(f, r) : "") + (reps.length ? '<div class="zm-reps">' + reps.slice(0, 12).map((p) => {
       const st = STAGES.find((s) => s[0] === stageOf(p));
       return '<div class="zm-rep"><span class="num">' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + "</span><span>" + fmtN(p.tables) + " שולחנות · " + esc(st ? st[1] : "") + (rowsOf(p) ? " · שורות " + rowsOf(p)[0] + (rowsOf(p)[1] !== rowsOf(p)[0] ? "–" + rowsOf(p)[1] : "") : "") + (p.who ? " · " + esc(p.who) : "") + (p.note ? " · " + esc(p.note) : "") + "</span></div>";
     }).join("") + (reps.length > 12 ? '<div class="hint">מוצגים 12 האחרונים מתוך ' + reps.length + ".</div>" : "") + "</div>" : '<div class="hint" style="margin-top:6px">אין עדיין דיווחים שמוקמו כאן.</div>') + (ROLE !== "viewer" ? '<button class="ghost" type="button" id="wmHere" style="width:100%;margin-top:8px">דיווח ביצוע כאן</button>' : "");
@@ -1923,6 +2381,9 @@ function renderWorkMap() {
       sel = null;
       renderWorkMap();
     };
+    z.querySelectorAll("[data-task]").forEach((b) => {
+      b.onclick = () => openTask(b.dataset.task);
+    });
     const hb = $("#wmHere");
     if (hb) hb.onclick = () => openProgress({ areaId: f.id, rows: r ? [r.n, r.n] : null });
   }
@@ -2287,6 +2748,7 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   ECOL,
   ELEC_KEYS,
   PLAN_PROMPT,
+  TASK_COL,
   __init: __init$i,
   currentLayout,
   drawMini,
@@ -2313,7 +2775,8 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   renderPlans,
   renderWorkMap,
   rowsOf,
-  saveLayout
+  saveLayout,
+  taskMarks
 }, Symbol.toStringTag, { value: "Module" }));
 let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 function applyRole() {
@@ -2840,6 +3303,11 @@ function __init$h() {
         renderElec();
         renderWorkMap();
       });
+      watch(shared.DB.collection("tasks"), (snap) => {
+        shared.TASKS = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+        renderTasks();
+        renderWorkMap();
+      });
       watch(shared.DB.doc("settings/boq"), (snap) => {
         const d = snap && snap.exists ? snap.data() : null;
         if (d && Array.isArray(d.lines)) {
@@ -3169,9 +3637,9 @@ function openWorker(w) {
   const edit = !!w;
   w = w || { date: shared.dayISO, name: "", machine: "", tasks: "", note: "", arrive: "ontime", leave: "ontime", lateMin: "", earlyMin: "", contractor: "", job: "" };
   const names = [...new Set([...shared.CREW.filter((c) => c.active !== false).map((c) => c.name), ...shared.daylog.map((x) => x.name)].filter(Boolean))], machs = [...new Set([...shared.CREW.map((c) => c.machine), ...shared.daylog.map((x) => x.machine)].filter(Boolean))], cons = [...new Set([...shared.CREW.map((c) => c.contractor), ...shared.daylog.map((x) => x.contractor)].filter(Boolean))], jobs = [...new Set([...shared.CREW.map((c) => c.job), ...shared.daylog.map((x) => x.job)].filter(Boolean))];
-  const dl = (id, a) => '<datalist id="' + id + '">' + a.map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
+  const dl2 = (id, a) => '<datalist id="' + id + '">' + a.map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
   let arrive = w.arrive || "ontime", leave = w.leave || "ontime", isOp = !!w.machine;
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>' + (edit ? "עדכון" : "עובד / מפעיל") + " · " + isoText(w.date) + '</h2><div class="f"><label>סוג</label><div class="opts" id="wkKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="wkName">שם</label><input type="text" id="wkName" list="wkNames" autocomplete="off" placeholder="שם מלא">' + dl("wkNames", names) + '</div><div class="f" id="wkMachF"' + (isOp ? "" : " hidden") + '><label for="wkMach">כלי צמ״ה</label><input type="text" id="wkMach" list="wkMachs" autocomplete="off" placeholder="למשל: בובקט, מלגזה טלסקופית, מחפרון">' + dl("wkMachs", machs) + '</div><div class="f"><label for="wkJob">תפקיד / עבודה</label><input type="text" id="wkJob" list="wkJobs" autocomplete="off" placeholder="למשל: הרכבת פאנלים, חשמלאי, עוזר">' + dl("wkJobs", jobs) + '</div><div class="f"><label for="wkCon">קבלן / חברה</label><input type="text" id="wkCon" list="wkCons" autocomplete="off" placeholder="למשל: עאטף">' + dl("wkCons", cons) + '</div><div class="f"><label>הגעה</label><div class="opts" id="wkArr"><button class="opt" type="button" data-v="ontime">הגיע בזמן</button><button class="opt" type="button" data-v="late">איחר</button></div><input type="text" id="wkLate" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div class="f"><label>יציאה</label><div class="opts" id="wkLv"><button class="opt" type="button" data-v="ontime">יצא בזמן</button><button class="opt" type="button" data-v="early">יצא מוקדם</button></div><input type="text" id="wkEarly" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px"><div class="f"><label for="wkHours">שעות בפועל</label><input type="text" id="wkHours" inputmode="decimal" placeholder="ריק = יום מלא"></div><div class="f"><label for="wkArea">עבודה / אזור</label><input type="text" id="wkArea" list="wkAreas" autocomplete="off" placeholder="תעלות · הידוק · דרכים · שדה 3">' + dl("wkAreas", [...new Set([...shared.daylog.map((x) => x.area), "תעלות", "חפירה", "מילוי והידוק", "דרכים", "ניקוז", "יסודות", "פיזור חצץ", "הרכבת פאנלים", "קונסטרוקציה", "חשמל"].filter(Boolean))]) + '</div></div><div class="f"><label for="wkTasks">משימות שבוצעו</label><textarea id="wkTasks" placeholder="למשל: הרכבת פאנלים שדה 2 שורות 15–16"></textarea></div><div class="f"><label for="wkNote">הערות על העובד</label><textarea id="wkNote" placeholder="תפקוד, בטיחות, ציוד"></textarea></div><div class="acts"><button class="save" id="wkSave" type="button">שמור</button>' + (edit && ROLE === "owner" ? '<button class="cancel danger" id="wkDel" type="button">מחק</button>' : "") + '<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד יומי"><div class="grab"></div><h2>' + (edit ? "עדכון" : "עובד / מפעיל") + " · " + isoText(w.date) + '</h2><div class="f"><label>סוג</label><div class="opts" id="wkKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="wkName">שם</label><input type="text" id="wkName" list="wkNames" autocomplete="off" placeholder="שם מלא">' + dl2("wkNames", names) + '</div><div class="f" id="wkMachF"' + (isOp ? "" : " hidden") + '><label for="wkMach">כלי צמ״ה</label><input type="text" id="wkMach" list="wkMachs" autocomplete="off" placeholder="למשל: בובקט, מלגזה טלסקופית, מחפרון">' + dl2("wkMachs", machs) + '</div><div class="f"><label for="wkJob">תפקיד / עבודה</label><input type="text" id="wkJob" list="wkJobs" autocomplete="off" placeholder="למשל: הרכבת פאנלים, חשמלאי, עוזר">' + dl2("wkJobs", jobs) + '</div><div class="f"><label for="wkCon">קבלן / חברה</label><input type="text" id="wkCon" list="wkCons" autocomplete="off" placeholder="למשל: עאטף">' + dl2("wkCons", cons) + '</div><div class="f"><label>הגעה</label><div class="opts" id="wkArr"><button class="opt" type="button" data-v="ontime">הגיע בזמן</button><button class="opt" type="button" data-v="late">איחר</button></div><input type="text" id="wkLate" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div class="f"><label>יציאה</label><div class="opts" id="wkLv"><button class="opt" type="button" data-v="ontime">יצא בזמן</button><button class="opt" type="button" data-v="early">יצא מוקדם</button></div><input type="text" id="wkEarly" inputmode="numeric" placeholder="כמה דקות" style="margin-top:8px"></div><div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px"><div class="f"><label for="wkHours">שעות בפועל</label><input type="text" id="wkHours" inputmode="decimal" placeholder="ריק = יום מלא"></div><div class="f"><label for="wkArea">עבודה / אזור</label><input type="text" id="wkArea" list="wkAreas" autocomplete="off" placeholder="תעלות · הידוק · דרכים · שדה 3">' + dl2("wkAreas", [...new Set([...shared.daylog.map((x) => x.area), "תעלות", "חפירה", "מילוי והידוק", "דרכים", "ניקוז", "יסודות", "פיזור חצץ", "הרכבת פאנלים", "קונסטרוקציה", "חשמל"].filter(Boolean))]) + '</div></div><div class="f"><label for="wkTasks">משימות שבוצעו</label><textarea id="wkTasks" placeholder="למשל: הרכבת פאנלים שדה 2 שורות 15–16"></textarea></div><div class="f"><label for="wkNote">הערות על העובד</label><textarea id="wkNote" placeholder="תפקוד, בטיחות, ציוד"></textarea></div><div class="acts"><button class="save" id="wkSave" type="button">שמור</button>' + (edit && ROLE === "owner" ? '<button class="cancel danger" id="wkDel" type="button">מחק</button>' : "") + '<button class="cancel" id="wkCancel" type="button">ביטול</button></div></div>');
   const q = (x) => scrim.querySelector(x);
   q("#wkName").value = w.name || "";
   q("#wkMach").value = w.machine || "";
@@ -3366,8 +3834,8 @@ function renderCrew() {
 function openCrewForm(existing) {
   const c = existing ? { ...existing } : { id: "cw" + Date.now().toString(36), name: "", kind: "w", job: "", machine: "", contractor: "", phone: "", note: "", active: true, since: isoOf(Date.now()), ts: Date.now() };
   let isOp = !!c.machine || c.kind === "o";
-  const dl = (id, a) => '<datalist id="' + id + '">' + [...new Set(a.filter(Boolean))].map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>' + (existing ? "עדכון עובד" : "עובד חדש לצוות") + '</h2><div class="f"><label>סוג</label><div class="opts" id="cwKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="cwName">שם מלא</label><input type="text" id="cwName" autocomplete="off" value="' + esc(c.name) + '"></div><div class="f"><label for="cwJob">תפקיד / עבודה</label><input type="text" id="cwJob" list="cwJobs" autocomplete="off" placeholder="הרכבת פאנלים · קונסטרוקציה · חשמלאי · עוזר · ראש צוות" value="' + esc(c.job || "") + '">' + dl("cwJobs", [...shared.CREW.map((x) => x.job), ...shared.daylog.map((x) => x.job), "הרכבת פאנלים", "קונסטרוקציה", "חשמלאי", "עוזר חשמלאי", "ראש צוות", "עובד כללי", "נהג", "שומר"]) + '</div><div class="f" id="cwMachF"' + (isOp ? "" : " hidden") + '><label for="cwMach">כלי צמ״ה</label><input type="text" id="cwMach" list="cwMachs" autocomplete="off" placeholder="בובקט, מלגזה טלסקופית, מחפרון" value="' + esc(c.machine || "") + '">' + dl("cwMachs", [...shared.CREW.map((x) => x.machine), ...shared.daylog.map((x) => x.machine)]) + '</div><div class="f"><label for="cwCon">קבלן / חברה</label><input type="text" id="cwCon" list="cwCons" autocomplete="off" value="' + esc(c.contractor || "") + '">' + dl("cwCons", [...shared.CREW.map((x) => x.contractor), ...shared.daylog.map((x) => x.contractor)]) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="cwPhone">טלפון (לא חובה)</label><input type="tel" id="cwPhone" value="' + esc(c.phone || "") + '"></div><div class="f"><label for="cwSince">באתר מאז</label><input type="date" id="cwSince" value="' + esc(c.since || "") + '"></div></div><div class="f"><label for="cwNote">הערה (עובדות בלבד: הסמכות, ציוד, שפה)</label><input type="text" id="cwNote" value="' + esc(c.note || "") + '"></div>' + (existing ? '<div class="f"><label>סטטוס</label><div class="opts" id="cwAct"><button class="opt" type="button" data-v="1" aria-pressed="' + (c.active !== false) + '">פעיל</button><button class="opt" type="button" data-v="0" aria-pressed="' + (c.active === false) + '">לא פעיל (עזב)</button></div></div>' : "") + '<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="cwDel" type="button">מחק</button>' : "") + '<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>');
+  const dl2 = (id, a) => '<datalist id="' + id + '">' + [...new Set(a.filter(Boolean))].map((x) => '<option value="' + esc(x) + '"></option>').join("") + "</datalist>";
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="עובד בצוות"><div class="grab"></div><h2>' + (existing ? "עדכון עובד" : "עובד חדש לצוות") + '</h2><div class="f"><label>סוג</label><div class="opts" id="cwKind"><button class="opt" type="button" data-k="w" aria-pressed="' + !isOp + '">עובד</button><button class="opt" type="button" data-k="o" aria-pressed="' + isOp + '">מפעיל צמ״ה</button></div></div><div class="f"><label for="cwName">שם מלא</label><input type="text" id="cwName" autocomplete="off" value="' + esc(c.name) + '"></div><div class="f"><label for="cwJob">תפקיד / עבודה</label><input type="text" id="cwJob" list="cwJobs" autocomplete="off" placeholder="הרכבת פאנלים · קונסטרוקציה · חשמלאי · עוזר · ראש צוות" value="' + esc(c.job || "") + '">' + dl2("cwJobs", [...shared.CREW.map((x) => x.job), ...shared.daylog.map((x) => x.job), "הרכבת פאנלים", "קונסטרוקציה", "חשמלאי", "עוזר חשמלאי", "ראש צוות", "עובד כללי", "נהג", "שומר"]) + '</div><div class="f" id="cwMachF"' + (isOp ? "" : " hidden") + '><label for="cwMach">כלי צמ״ה</label><input type="text" id="cwMach" list="cwMachs" autocomplete="off" placeholder="בובקט, מלגזה טלסקופית, מחפרון" value="' + esc(c.machine || "") + '">' + dl2("cwMachs", [...shared.CREW.map((x) => x.machine), ...shared.daylog.map((x) => x.machine)]) + '</div><div class="f"><label for="cwCon">קבלן / חברה</label><input type="text" id="cwCon" list="cwCons" autocomplete="off" value="' + esc(c.contractor || "") + '">' + dl2("cwCons", [...shared.CREW.map((x) => x.contractor), ...shared.daylog.map((x) => x.contractor)]) + '</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="cwPhone">טלפון (לא חובה)</label><input type="tel" id="cwPhone" value="' + esc(c.phone || "") + '"></div><div class="f"><label for="cwSince">באתר מאז</label><input type="date" id="cwSince" value="' + esc(c.since || "") + '"></div></div><div class="f"><label for="cwNote">הערה (עובדות בלבד: הסמכות, ציוד, שפה)</label><input type="text" id="cwNote" value="' + esc(c.note || "") + '"></div>' + (existing ? '<div class="f"><label>סטטוס</label><div class="opts" id="cwAct"><button class="opt" type="button" data-v="1" aria-pressed="' + (c.active !== false) + '">פעיל</button><button class="opt" type="button" data-v="0" aria-pressed="' + (c.active === false) + '">לא פעיל (עזב)</button></div></div>' : "") + '<div class="acts"><button class="save" id="cwSave" type="button">שמור</button>' + (existing && ROLE === "owner" ? '<button class="cancel danger" id="cwDel" type="button">מחק</button>' : "") + '<button class="cancel" id="cwCancel" type="button">ביטול</button></div></div>');
   const q = (x) => scrim.querySelector(x);
   const close = () => scrim.remove();
   q("#cwCancel").onclick = close;
@@ -4724,8 +5192,8 @@ function openOrder(existing) {
   new Map(cat.map((c) => [c.name, c]));
   const sups = [...new Set([...cat.map((c) => c.supplier), ...Object.values(shared.SUPPLIERS)].filter(Boolean))].sort((a, b) => a.localeCompare(b, "he"));
   const tasks = [...new Set(shared.orders.map((x) => x.task).filter(Boolean))];
-  let filter = cat.some((c) => c.planned > 0 && c.toOrder > 0) ? "toorder" : "all", qtxt = "";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="בקשת רכש"><div class="grab"></div><h2>' + (edit ? "עריכת " : "") + "בקשת רכש · " + esc(o.no) + '</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="orDate">תאריך הבקשה</label><input type="date" id="orDate" value="' + esc(isoOf(o.ts || Date.now())) + '"></div><div class="f"><label for="orSent">מצב</label><select id="orSent" style="width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13px;border-radius:var(--r);border:1px solid var(--line);background:var(--card,#fff);color:var(--ink)">' + (o.status === "draft" || o.status === "sent" ? '<option value="sent"' + (o.status !== "draft" ? " selected" : "") + '>נשלח לרכש</option><option value="draft"' + (o.status === "draft" ? " selected" : "") + ">טיוטה, עוד לא נשלח</option>" : '<option value="' + esc(o.status) + '" selected>' + esc((ORDER_ST[o.status] || ORDER_ST.draft)[0]) + "</option>") + '</select></div></div><div class="f"><label for="orTask">לטובת איזו משימה</label><input type="text" id="orTask" list="orTasks" placeholder="למשל: חיבורי DC שדה 3 · ריכוז כבלים" autocomplete="off" value="' + esc(o.task) + '"><datalist id="orTasks">' + tasks.map((t) => '<option value="' + esc(t) + '"></option>').join("") + '</datalist></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="orNeed">נדרש עד</label><input type="date" id="orNeed" value="' + esc(o.need || "") + '"></div><div class="f"><label for="orNote">הערה לרכש</label><input type="text" id="orNote" placeholder="דחיפות, אספקה לאתר" value="' + esc(o.note || "") + '"></div></div><div class="f"><label>פריטים</label><div class="search" style="margin-bottom:8px"><input type="text" id="orQ" placeholder="חפש לפי שם, סעיף EBOQ, מק״ט ספק או PO" autocomplete="off"><span class="ico">⌕</span></div><div class="chips" id="orFilt" style="margin-bottom:8px">' + [["toorder", "לא הוזמן"], ["awaiting", "בדרך"], ["missing", "עוד לא הגיעו"], ["arrived", "כבר הגיעו"], ["all", "הכל"], ["electrical", "חשמל"], ["civil", "סיביל"], ["staging", "התארגנות"], ["safety", "בטיחות"]].map(([k, l]) => '<button type="button" class="chip2" data-f="' + k + '" aria-pressed="' + (k === filter) + '">' + l + "</button>").join("") + '</div><div class="stock" id="orSug"></div><button class="addline" type="button" id="orNew" style="margin-top:8px">+ פריט שלא ברשימה</button></div><div class="f"><label>ההזמנה <span id="orCount" style="font-weight:500;color:var(--ink3)"></span></label><div id="orLines"></div></div><div class="acts"><button class="save" id="orSave" type="button" disabled>שמור</button><button class="cancel" id="orCancel" type="button">ביטול</button></div></div>');
+  let filter2 = cat.some((c) => c.planned > 0 && c.toOrder > 0) ? "toorder" : "all", qtxt = "";
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="בקשת רכש"><div class="grab"></div><h2>' + (edit ? "עריכת " : "") + "בקשת רכש · " + esc(o.no) + '</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="orDate">תאריך הבקשה</label><input type="date" id="orDate" value="' + esc(isoOf(o.ts || Date.now())) + '"></div><div class="f"><label for="orSent">מצב</label><select id="orSent" style="width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13px;border-radius:var(--r);border:1px solid var(--line);background:var(--card,#fff);color:var(--ink)">' + (o.status === "draft" || o.status === "sent" ? '<option value="sent"' + (o.status !== "draft" ? " selected" : "") + '>נשלח לרכש</option><option value="draft"' + (o.status === "draft" ? " selected" : "") + ">טיוטה, עוד לא נשלח</option>" : '<option value="' + esc(o.status) + '" selected>' + esc((ORDER_ST[o.status] || ORDER_ST.draft)[0]) + "</option>") + '</select></div></div><div class="f"><label for="orTask">לטובת איזו משימה</label><input type="text" id="orTask" list="orTasks" placeholder="למשל: חיבורי DC שדה 3 · ריכוז כבלים" autocomplete="off" value="' + esc(o.task) + '"><datalist id="orTasks">' + tasks.map((t) => '<option value="' + esc(t) + '"></option>').join("") + '</datalist></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="f"><label for="orNeed">נדרש עד</label><input type="date" id="orNeed" value="' + esc(o.need || "") + '"></div><div class="f"><label for="orNote">הערה לרכש</label><input type="text" id="orNote" placeholder="דחיפות, אספקה לאתר" value="' + esc(o.note || "") + '"></div></div><div class="f"><label>פריטים</label><div class="search" style="margin-bottom:8px"><input type="text" id="orQ" placeholder="חפש לפי שם, סעיף EBOQ, מק״ט ספק או PO" autocomplete="off"><span class="ico">⌕</span></div><div class="chips" id="orFilt" style="margin-bottom:8px">' + [["toorder", "לא הוזמן"], ["awaiting", "בדרך"], ["missing", "עוד לא הגיעו"], ["arrived", "כבר הגיעו"], ["all", "הכל"], ["electrical", "חשמל"], ["civil", "סיביל"], ["staging", "התארגנות"], ["safety", "בטיחות"]].map(([k, l]) => '<button type="button" class="chip2" data-f="' + k + '" aria-pressed="' + (k === filter2) + '">' + l + "</button>").join("") + '</div><div class="stock" id="orSug"></div><button class="addline" type="button" id="orNew" style="margin-top:8px">+ פריט שלא ברשימה</button></div><div class="f"><label>ההזמנה <span id="orCount" style="font-weight:500;color:var(--ink3)"></span></label><div id="orLines"></div></div><div class="acts"><button class="save" id="orSave" type="button" disabled>שמור</button><button class="cancel" id="orCancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   const catLabel = (id) => (CATS.find((c) => c.id === id) || {}).label || id;
@@ -4735,14 +5203,14 @@ function openOrder(existing) {
     const t = qtxt.toLowerCase();
     let list = cat.filter((c) => !o.lines.some((l) => l.name === c.name));
     if (t) list = list.filter((c) => c.name.toLowerCase().includes(t) || c.codes.some((x) => x.toLowerCase() === t || x.toLowerCase().startsWith(t)) || c.sku && c.sku.toLowerCase().includes(t) || c.no && c.no.toLowerCase().includes(t) || c.po.some((p) => p.toLowerCase().includes(t)) || c.supplier && c.supplier.toLowerCase().includes(t));
-    else if (filter === "toorder") list = list.filter((c) => c.planned > 0 && c.toOrder > 0);
-    else if (filter === "awaiting") list = list.filter((c) => c.awaiting > 0);
-    else if (filter === "missing") list = list.filter((c) => c.planned > 0 && c.arrived === 0);
-    else if (filter === "arrived") list = list.filter((c) => c.arrived > 0);
-    else if (filter === "all") list = list.filter((c) => c.planned > 0 || c.arrived > 0);
-    else list = list.filter((c) => c.cat === filter);
+    else if (filter2 === "toorder") list = list.filter((c) => c.planned > 0 && c.toOrder > 0);
+    else if (filter2 === "awaiting") list = list.filter((c) => c.awaiting > 0);
+    else if (filter2 === "missing") list = list.filter((c) => c.planned > 0 && c.arrived === 0);
+    else if (filter2 === "arrived") list = list.filter((c) => c.arrived > 0);
+    else if (filter2 === "all") list = list.filter((c) => c.planned > 0 || c.arrived > 0);
+    else list = list.filter((c) => c.cat === filter2);
     if (!list.length) {
-      box.innerHTML = '<div class="hint">' + (t ? "אין פריט כזה ב-BOM / EBOQ. אפשר להוסיף כפריט חדש." : filter === "toorder" ? "כל מה שמתוכנן ב-EBOQ כבר הוזמן או הגיע." : "אין פריטים בסינון הזה.") + "</div>";
+      box.innerHTML = '<div class="hint">' + (t ? "אין פריט כזה ב-BOM / EBOQ. אפשר להוסיף כפריט חדש." : filter2 === "toorder" ? "כל מה שמתוכנן ב-EBOQ כבר הוזמן או הגיע." : "אין פריטים בסינון הזה.") + "</div>";
       return;
     }
     list.slice(0, 12).forEach((c) => {
@@ -4823,10 +5291,10 @@ function openOrder(existing) {
       });
     });
     if (!q("#orSups")) {
-      const dl = document.createElement("datalist");
-      dl.id = "orSups";
-      dl.innerHTML = sups.map((x) => '<option value="' + esc(x) + '"></option>').join("");
-      box.appendChild(dl);
+      const dl2 = document.createElement("datalist");
+      dl2.id = "orSups";
+      dl2.innerHTML = sups.map((x) => '<option value="' + esc(x) + '"></option>').join("");
+      box.appendChild(dl2);
     }
     check();
   }
@@ -4840,14 +5308,14 @@ function openOrder(existing) {
   q("#orFilt").onclick = (e) => {
     const b = e.target.closest("[data-f]");
     if (!b) return;
-    filter = b.dataset.f;
+    filter2 = b.dataset.f;
     scrim.querySelectorAll("#orFilt .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
     drawSug();
   };
   q("#orTask").oninput = check;
   q("#orNew").onclick = () => {
     const nm = qtxt || "";
-    o.lines.push({ name: nm || "פריט חדש", code: "", qty: 1, unit: "יח'", cat: filter === "all" || filter === "missing" || filter === "partial" ? "electrical" : filter, supplier: "", note: "" });
+    o.lines.push({ name: nm || "פריט חדש", code: "", qty: 1, unit: "יח'", cat: filter2 === "all" || filter2 === "missing" || filter2 === "partial" ? "electrical" : filter2, supplier: "", note: "" });
     drawLines();
     const last = q("#orLines").querySelectorAll(".dline");
     const el = last[last.length - 1];
@@ -6240,6 +6708,7 @@ function backupObject() {
     issues: shared.issues,
     progress: shared.progress,
     elec: shared.ELEC,
+    tasks: shared.TASKS,
     panelbal: shared.panelBal,
     panelmoves: shared.panelMoves,
     daylog: shared.daylog,
@@ -6282,11 +6751,12 @@ async function exportAllCsv() {
   z.file("בטון.csv", csvOf(["תאריך", "מספר תעודה", "ספק", 'מ"ק', "מצטבר", "סוג", "נוצק ב", "משאית", "הערות"], shared.concrete.map((c) => [c.dateText, c.noteNo, c.supplier, c.m3, c.cum ?? "", c.mix, c.element, c.truck, c.note])));
   z.file("דיווחי-ביצוע.csv", csvOf(["תאריך", "קבלן", "שולחנות", "שלב", "סוג", "מיקום", "מדווח", "הערה"], shared.progress.map((p) => [p.dateText || d(p.ts), p.who, p.tables, p.stage || "con", p.ttype ? typeLabel(p.ttype) : "", locText(p), p.by || "", p.note || ""])));
   z.file("חשמל.csv", csvOf(["תאריך", "פריט", "סטרינגים", "מנתק", "AC", "תקשורת", "הוצבה", "מ״ג", "LV", "קבלן", "מדווח", "הערה"], (shared.ELEC || []).slice().sort((a, b) => a.ts - b.ts).map((r) => [r.dateText || d(r.ts), r.kind === "st" ? r.item : "ממיר " + r.item, r.kind === "inv" ? r.strings ?? "" : "", ...["disc", "ac", "com", "place", "mv", "lv"].map((k) => r[k] === void 0 ? "" : r[k] ? "כן" : "לא"), r.who || "", r.by || "", r.note || ""])));
+  z.file("משימות.csv", csvOf(["נפתחה", "מה", "איפה", "אחראי", "עד מתי", "מצב", "נסגרה", "מי סגר", "מה נעשה", "מי פתח", "פירוט"], (shared.TASKS || []).slice().sort((a, b) => a.ts - b.ts).map((t) => [t.dateText || d(t.ts), t.title, taskWhere(t), t.who || "", t.due || "", t.status === "done" ? "נסגרה" : "פתוחה", t.doneTs ? d(t.doneTs) : "", t.doneBy || "", t.doneNote || "", t.by || "", t.note || ""])));
   z.file("מאזן-פאנלים.csv", csvOf(["תאריך", "הוזמנו", "נדרש", "התקבלו", "משטחים סגורים", "בודדים", "מותקנים", "מפוזרים", "שבורים", "יצאו לאתרים אחרים", "מי ספר"], shared.panelBal.slice().sort((a, b) => a.ts - b.ts).map((b) => [b.dateText, b.ordered, b.required, b.received, b.closed, b.singles, b.installed, b.scattered, b.broken, (b.takenOut || []).map((t) => t.site + " " + t.qty).join(" · "), b.by || ""])));
   z.file("פאנלים-שבורים.csv", csvOf(["תאריך", "מספר סידורי", "מי שבר", "הערה"], shared.records.map((r) => [d(r.ts), r.serial, (byId(BLAME, r.blame) || {}).label || r.blame, r.note || ""])));
   z.file("יומן-פעולות.csv", csvOf(["תאריך", "שעה", "מי", "סוג", "פעולה", "תיאור"], shared.logs.slice().sort((a, b) => a.ts - b.ts).map((l) => [d(l.ts), new Date(l.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }), l.who || "", LOG_KINDS[l.kind] || l.kind, l.action, l.summary])));
   const blob = await z.generateAsync({ type: "blob" });
-  if (await saveFile("יומן-אתר-" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) + ".zip", blob)) toast("10 טבלאות ב-ZIP.");
+  if (await saveFile("יומן-אתר-" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) + ".zip", blob)) toast("11 טבלאות ב-ZIP.");
 }
 function openRestore() {
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="שחזור מגיבוי"><div class="grab"></div><h2>שחזור מגיבוי</h2><div class="note-card">בוחרים קובץ גיבוי (JSON) שיוצא מהאפליקציה. הרשומות שבקובץ ייכתבו <b>בנוסף</b> לקיימות: רשומה עם אותו מזהה תוחלף, אחרות לא יימחקו. כך מעבירים אתר למרחב חדש.</div><div id="rsBody"><div class="pick">בחר קובץ גיבוי<small>yoman-atar · JSON</small><input type="file" id="rsFile" accept=".json,application/json"></div></div><div class="acts"><button class="save" id="rsGo" hidden type="button">שחזר</button><button class="cancel" type="button">סגור</button></div></div>');
@@ -6319,7 +6789,7 @@ function openRestore() {
     if (!await ask("לכתוב את כל הרשומות מהגיבוי?", "שחזר", "var(--amber)")) return;
     const b = q("#rsGo");
     b.disabled = true;
-    const colls = { deliveries: "deliveries", moves: "moves", counts: "counts", concrete: "concrete", issues: "issues", progress: "progress", elec: "elec", panelbal: "panelbal", panelmoves: "panelmoves", daylog: "daylog", orders: "orders", pos: "pos", eta: "eta", crew: "crew", status: "status", panels: "panels", log: "log" };
+    const colls = { deliveries: "deliveries", moves: "moves", counts: "counts", concrete: "concrete", issues: "issues", progress: "progress", elec: "elec", tasks: "tasks", panelbal: "panelbal", panelmoves: "panelmoves", daylog: "daylog", orders: "orders", pos: "pos", eta: "eta", crew: "crew", status: "status", panels: "panels", log: "log" };
     let n = 0, fail = 0;
     for (const [k, coll] of Object.entries(colls)) {
       for (const doc of obj[k] || []) {
@@ -6328,7 +6798,7 @@ function openRestore() {
         try {
           if (shared.DB) await shared.DB.collection(coll).doc(String(doc.id)).set(doc);
           else {
-            const arr = { deliveries: shared.deliveries, moves: shared.moves, counts: shared.counts, concrete: shared.concrete, issues: shared.issues, progress: shared.progress, elec: shared.ELEC, panelbal: shared.panelBal, panelmoves: shared.panelMoves, daylog: shared.daylog, orders: shared.orders, panels: shared.records, log: shared.logs }[k];
+            const arr = { deliveries: shared.deliveries, moves: shared.moves, counts: shared.counts, concrete: shared.concrete, issues: shared.issues, progress: shared.progress, elec: shared.ELEC, tasks: shared.TASKS, panelbal: shared.panelBal, panelmoves: shared.panelMoves, daylog: shared.daylog, orders: shared.orders, panels: shared.records, log: shared.logs }[k];
             const i = arr.findIndex((x) => x.id === doc.id);
             if (i >= 0) arr[i] = doc;
             else arr.push(doc);
@@ -6626,7 +7096,7 @@ function showTab(which) {
 }
 function __init$a() {
   KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-  APP_VERSION = "59";
+  APP_VERSION = "60";
   SHOW_PRICES = false;
   SITE = { name: "אתר הקמה עין תמר", company: "BELECTRIC", panelsPerTable: 81, custom: false };
   $("#btnSettings").onclick = openSettings;
@@ -6988,7 +7458,7 @@ function siteBuildSeries(acts) {
   }
   return out;
 }
-function model(map, ser, todayIso) {
+function model(map, ser, todayIso2) {
   const T = (map ? map.tables : []).map(([x, y, w, h, ty]) => ({ x, y, w, h, ty, pan: (map.types || {})[ty] || 81 }));
   const sumPan = T.reduce((a, b) => a + b.pan, 0);
   const TOT = {};
@@ -7000,7 +7470,7 @@ function model(map, ser, todayIso) {
     b.piles = sumPan ? b.pan * TOT.drill / sumPan : 0;
   });
   const firsts = Object.values(ser).map((s) => s.pts[0] && dt(s.pts[0][0])).filter(Boolean);
-  const dEnd = dt(todayIso) + DAY, first = firsts.length ? Math.min(...firsts) : dEnd - 30 * DAY;
+  const dEnd = dt(todayIso2) + DAY, first = firsts.length ? Math.min(...firsts) : dEnd - 30 * DAY;
   let d0 = map && map.start ? dt(map.start) : first - 7 * DAY;
   if (d0 >= first) d0 = first - 7 * DAY;
   const dMid = first - d0 > 45 * DAY ? Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth(), 1) : d0;
@@ -8170,19 +8640,53 @@ function renderContractors() {
     el.className = "slip";
     el.style.cursor = "default";
     const st = stageOf(p);
-    el.innerHTML = "<b>" + fmtN(p.tables) + ' שולחנות · <span style="color:' + (st === "ok" ? "var(--sage)" : st === "pan" ? "var(--info)" : "var(--amber)") + '">' + esc(stageLabel(st)) + "</span>" + (p.who ? " · " + esc(p.who) : "") + (p.ttype ? " · " + esc(typeLabel(p.ttype)) : "") + '</b><button class="del" type="button" data-delprog="' + esc(p.id) + '">מחק</button><span>' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + (locText(p) ? " · " + esc(locText(p)) : "") + (p.by ? " · דיווח: " + esc(p.by) : "") + (p.note ? " · " + esc(p.note) : "") + "</span>";
+    el.innerHTML = "<b>" + fmtN(p.tables) + ' שולחנות · <span style="color:' + (st === "ok" ? "var(--sage)" : st === "pan" ? "var(--info)" : "var(--amber)") + '">' + esc(stageLabel(st)) + "</span>" + (p.who ? " · " + esc(p.who) : "") + (p.ttype ? " · " + esc(typeLabel(p.ttype)) : "") + '</b><button class="del" type="button" data-delprog="' + esc(p.id) + '">מחק</button><span>' + esc(fmtDT(p.dateText) || fmtD(p.ts)) + (locText(p) ? " · " + esc(locText(p)) : "") + (p.by ? " · דיווח: " + esc(p.by) : "") + (p.approver ? " · אישר: " + esc(p.approver) : "") + (p.note ? " · " + esc(p.note) : "") + evidenceHtml(p) + "</span>";
+    if (hasEvidence(p)) {
+      el.style.cursor = "pointer";
+      el.onclick = (e) => {
+        if (!e.target.closest(".del")) openEvidence(p);
+      };
+    }
     pg.appendChild(el);
   });
   renderWorkMap();
   renderPlans();
   renderElec();
+  renderTasks();
+}
+const q0 = (scrim, sel2) => scrim.querySelector(sel2);
+const hasSig = (p) => !!(p && (p.sigAsset || p.sigUrl || p.sigData));
+const hasPhoto = (p) => !!(p && (p.photoAsset || p.photoUrl));
+const hasEvidence = (p) => hasSig(p) || hasPhoto(p);
+const evidenceHtml = (p) => hasEvidence(p) ? '<span class="pg-ev">' + (hasPhoto(p) ? "<i>צילום</i>" : "") + (hasSig(p) ? "<i>חתום</i>" : "") + "</span>" : "";
+const srcOf = (p, k) => p[k + "Asset"] ? "/_blob/" + p[k + "Asset"] : p[k + "Url"] || p[k + "Data"] || "";
+function openEvidence(p) {
+  const st = stageLabel(stageOf(p));
+  alertSheet(fmtN(p.tables) + " שולחנות · " + st, '<div class="hint" style="margin-bottom:8px">' + esc([fmtDT(p.dateText) || fmtD(p.ts), locText(p), p.who, p.approver ? "אישר: " + p.approver : "", p.by ? "דיווח: " + p.by : ""].filter(Boolean).join(" · ")) + "</div>" + (hasPhoto(p) ? '<div class="tk-photo"><div class="hint">צילום</div><img src="' + esc(srcOf(p, "photo")) + '" alt="צילום הביצוע"></div>' : "") + (hasSig(p) ? '<div class="hint">חתימת המאשר</div><img class="sigimg" src="' + esc(srcOf(p, "sig")) + '" alt="חתימת המאשר">' : ""));
 }
 function openProgress(opt) {
   const whos = [...new Set([...(shared.demoStock ? [] : shared.issues).map((i) => i.who), ...(shared.demoStock ? [] : shared.progress).map((p) => p.who)].filter(Boolean))];
   let tables = 5, ttype = "", stage = opt && opt.stage || "con";
   const today = /* @__PURE__ */ new Date();
   const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>דיווח ביצוע</h2><div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.' + ((shared.demoStock ? [] : shared.progress).length ? "" : " <b>דיווח ראשון: המצב המצטבר עד היום.</b>") + '</div><div class="f"><label>שלב</label><div class="chips" id="pgStage" style="margin-bottom:0">' + STAGES.map((x) => '<button type="button" class="chip2" data-s="' + x[0] + '" aria-pressed="' + (x[0] === stage) + '">' + x[1] + "</button>").join("") + '</div><div class="hint" id="pgStageHint"></div></div><div class="f"><label>כמה שולחנות</label><div class="stepper"><button type="button" id="pgMinus" aria-label="פחות">−</button><div class="val"><input type="text" inputmode="numeric" id="pgTables" value="' + tables + '" aria-label="מספר שולחנות"><small id="pgUnit">שולחנות</small></div><button type="button" id="pgPlus" aria-label="יותר">+</button></div></div><div class="f"><label>סוג שולחן (אם ידוע)</label><div class="chips" id="pgTypes" style="margin-bottom:0"><button type="button" class="chip2" data-t="" aria-pressed="true">מעורב / לא ידוע</button>' + shared.kitTypes.map((t) => '<button type="button" class="chip2" data-t="' + t.id + '" aria-pressed="false">' + esc(t.label) + "</button>").join("") + '</div></div><div class="f"><label for="pgWho">קבלן</label><input type="text" id="pgWho" list="pgWhoList" placeholder="הקבלן (עאטף)" autocomplete="off" value="' + esc(whos[0] || "") + '"><datalist id="pgWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="' + iso + '"></div><div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f" id="pgLocF"></div><div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שולחנות ליד הדרך"></div><div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="דיווח ביצוע"><div class="grab"></div><h2>דיווח ביצוע</h2><div class="note-card">שלושה שלבים לכל שולחן: <b>קונסטרוקציה → פאנלים → אישור מפקח</b>. מדווחים כל שלב בנפרד, רק מה שנוסף מאז הדיווח הקודם.' + ((shared.demoStock ? [] : shared.progress).length ? "" : " <b>דיווח ראשון: המצב המצטבר עד היום.</b>") + '</div><div class="f"><label>שלב</label><div class="chips" id="pgStage" style="margin-bottom:0">' + STAGES.map((x) => '<button type="button" class="chip2" data-s="' + x[0] + '" aria-pressed="' + (x[0] === stage) + '">' + x[1] + "</button>").join("") + '</div><div class="hint" id="pgStageHint"></div></div><div class="f"><label>כמה שולחנות</label><div class="stepper"><button type="button" id="pgMinus" aria-label="פחות">−</button><div class="val"><input type="text" inputmode="numeric" id="pgTables" value="' + tables + '" aria-label="מספר שולחנות"><small id="pgUnit">שולחנות</small></div><button type="button" id="pgPlus" aria-label="יותר">+</button></div></div><div class="f"><label>סוג שולחן (אם ידוע)</label><div class="chips" id="pgTypes" style="margin-bottom:0"><button type="button" class="chip2" data-t="" aria-pressed="true">מעורב / לא ידוע</button>' + shared.kitTypes.map((t) => '<button type="button" class="chip2" data-t="' + t.id + '" aria-pressed="false">' + esc(t.label) + "</button>").join("") + '</div></div><div class="f"><label for="pgWho">קבלן</label><input type="text" id="pgWho" list="pgWhoList" placeholder="הקבלן (עאטף)" autocomplete="off" value="' + esc(whos[0] || "") + '"><datalist id="pgWhoList">' + whos.map((w) => '<option value="' + esc(w) + '"></option>').join("") + '</datalist></div><div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="' + iso + '"></div><div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="' + esc(ls.get("issuer") || "") + '"></div><div class="f" id="pgLocF"></div><div class="f"><label>צילום (לא חובה)</label><div class="shots tk-shots"><div class="shot" id="pgPhotoBox"><i class="ic ic-cam big"></i>צילום של מה שבוצע<input type="file" accept="image/*" capture="environment" id="pgPhoto" aria-label="צילום"></div></div></div><div class="f" id="pgSigF" hidden><label for="pgApprover">מי אישר</label><input type="text" id="pgApprover" autocomplete="off" placeholder="שם המפקח / המאשר"><div class="sig" id="pgSig" style="margin-top:8px"><canvas></canvas><div class="hint2">חתימת המאשר, באצבע</div><button class="clr2" type="button">נקה</button></div><div class="hint">אישור עם חתימה וצילום הוא הראיה שהשלב התקבל. אפשר גם בלי.</div></div><div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שולחנות ליד הדרך"></div><div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
+  let photo = null;
+  const pad = sigPad(q0(scrim, "#pgSig"));
+  q0(scrim, "#pgPhoto").onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    photo = f || null;
+    const box = q0(scrim, "#pgPhotoBox");
+    box.querySelectorAll("img,.tag").forEach((n) => n.remove());
+    if (!f) return;
+    const img = new Image();
+    img.src = URL.createObjectURL(f);
+    img.alt = "";
+    const tag = document.createElement("div");
+    tag.className = "tag";
+    tag.textContent = "צולם";
+    box.appendChild(img);
+    box.appendChild(tag);
+  };
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   const loc = mountLocation(q("#pgLocF"), opt || {});
@@ -8204,6 +8708,8 @@ function openProgress(opt) {
     const x = STAGES.find((y) => y[0] === stage);
     q("#pgStageHint").textContent = x[2];
     q("#pgUnit").textContent = x[1];
+    q("#pgSigF").hidden = stage !== "ok";
+    if (stage === "ok") requestAnimationFrame(() => pad.fit());
   };
   q("#pgStage").onclick = (e) => {
     const b = e.target.closest("[data-s]");
@@ -8236,7 +8742,30 @@ function openProgress(opt) {
     b.disabled = true;
     b.textContent = "שומר…";
     const id = "pg" + Date.now();
-    const doc = { id, ts, dateText, who, tables, ttype, by, stage, note: q("#pgNote").value.trim(), source: "app", ...loc.get() };
+    const doc = { id, ts, dateText, who, tables, ttype, by, stage, note: q("#pgNote").value.trim(), source: "app", ...loc.get(), photoAsset: "", photoUrl: "", sigAsset: "", sigUrl: "", sigData: "", approver: stage === "ok" ? q("#pgApprover").value.trim() : "" };
+    try {
+      if (photo) {
+        const p = await storePhoto(photo);
+        doc.photoAsset = p.asset;
+        doc.photoUrl = p.url;
+      }
+    } catch (e) {
+      toast("הצילום לא נשמר; הדיווח נשמר בלעדיו.");
+    }
+    if (stage === "ok" && pad.has()) {
+      try {
+        if (shared.ASSETS) {
+          const a = await shared.ASSETS.upload(await pad.blob());
+          doc.sigAsset = a.id;
+          doc.sigUrl = a.url || "";
+        } else doc.sigData = pad.dataUrl();
+      } catch (e) {
+        try {
+          doc.sigData = pad.dataUrl();
+        } catch (e2) {
+        }
+      }
+    }
     try {
       if (shared.DB) await shared.DB.doc("progress/" + id).set(doc);
       else {
@@ -8249,7 +8778,7 @@ function openProgress(opt) {
       toast("השמירה נכשלה.");
       return;
     }
-    logAct("progress", "add", "דיווח ביצוע: " + fmtN(tables) + " שולחנות · " + stageLabel(stage) + (who ? " · " + who : "") + (ttype ? " · " + typeLabel(ttype) : "") + (locText(doc) ? " · " + locText(doc) : "") + " · " + dateText, id, by);
+    logAct("progress", "add", "דיווח ביצוע: " + fmtN(tables) + " שולחנות · " + stageLabel(stage) + (who ? " · " + who : "") + (ttype ? " · " + typeLabel(ttype) : "") + (locText(doc) ? " · " + locText(doc) : "") + (doc.approver ? " · אישר: " + doc.approver : "") + (hasSig(doc) ? " · חתום" : "") + (doc.photoAsset || doc.photoUrl ? " · צילום" : "") + " · " + dateText, id, by);
     if (shared.demoStock) {
       shared.demoStock = false;
       ls.set("demoDoneS", "1");
@@ -8353,11 +8882,16 @@ const m4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get emptyWho() {
     return emptyWho;
   },
+  evidenceHtml,
+  hasEvidence,
+  hasPhoto,
+  hasSig,
   kitStats,
   get moneyMax() {
     return moneyMax;
   },
   moneyPoints,
+  openEvidence,
   openPrices,
   openProgress,
   get rateMax() {
@@ -8399,9 +8933,9 @@ function matchBarcode(text) {
     k = shared.kit.find((x) => x.code === m[2]);
     if (k) return k;
   }
-  const m22 = T.match(/(?:^|\D)(\d{3})(?:\D|$)/);
-  if (m22) {
-    const ks = shared.kit.filter((x) => x.code === m22[1]);
+  const m23 = T.match(/(?:^|\D)(\d{3})(?:\D|$)/);
+  if (m23) {
+    const ks = shared.kit.filter((x) => x.code === m23[1]);
     if (ks.length === 1) return ks[0];
   }
   return null;
@@ -8853,7 +9387,7 @@ function sigPad(box) {
     has = false;
     box.classList.remove("has");
   };
-  return { has: () => has, blob: () => new Promise((r) => c.toBlob(r, "image/png")), dataUrl: () => c.toDataURL("image/png") };
+  return { has: () => has, blob: () => new Promise((r) => c.toBlob(r, "image/png")), dataUrl: () => c.toDataURL("image/png"), fit };
 }
 function openIssue() {
   const whos = [...new Set((shared.demoStock ? DEMO_MOVES : shared.moves).map((m) => m.who).filter(Boolean))];
@@ -10189,11 +10723,11 @@ function openNote() {
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   {
-    const dl = document.createElement("datalist");
-    dl.id = "boqNames";
+    const dl2 = document.createElement("datalist");
+    dl2.id = "boqNames";
     const names = [...new Set([...shared.boq.map((l) => (l.name || "").trim()), ...shared.kit.map((k) => k.name)].filter(Boolean))];
-    dl.innerHTML = names.slice(0, 400).map((n) => '<option value="' + esc(n) + '"></option>').join("");
-    scrim.appendChild(dl);
+    dl2.innerHTML = names.slice(0, 400).map((n) => '<option value="' + esc(n) + '"></option>').join("");
+    scrim.appendChild(dl2);
   }
   function drawLines() {
     const box = q("#dl");
@@ -12089,7 +12623,7 @@ function __init$1() {
   shared.demoMode = true;
   shared.logs = [];
   uidTried = false;
-  LOG_KINDS = { issue: "ניפוק", count: "ספירה", progress: "ביצוע", delivery: "תעודה", move: "הוצאה", concrete: "בטון", panel: "פאנל שבור", panelbal: "מאזן פאנלים", kit: "כמויות לשולחן", prices: "מחירים", settings: "הגדרות", import: "ייבוא", backup: "גיבוי", daylog: "יומיות", order: "בקשת רכש", elec: "חשמל" };
+  LOG_KINDS = { issue: "ניפוק", count: "ספירה", progress: "ביצוע", delivery: "תעודה", move: "הוצאה", concrete: "בטון", panel: "פאנל שבור", panelbal: "מאזן פאנלים", kit: "כמויות לשולחן", prices: "מחירים", settings: "הגדרות", import: "ייבוא", backup: "גיבוי", daylog: "יומיות", order: "בקשת רכש", elec: "חשמל", task: "משימה" };
   actorName = () => (ls.get("issuer") || "").trim();
   draft = null;
   $("#btnAdd").onclick = openSheet;
@@ -12278,7 +12812,10 @@ function wrData(endIso) {
   if (reqBad.length) flags.push(reqBad.length + " שורות בבקשות רכש דורשות טיפול (לא הוזמן, הוזמן פחות או באיחור).");
   if (poLate.length) flags.push(poLate.length + " הזמנות רכש (PO) עם תאריך אספקה שעבר, בלי תעודת משלוח.");
   if (!acts.some((a) => a.planEnd)) flags.push("אין עדיין תאריכי יעד (גאנט), ולכן אין השוואה לתוכנית.");
+  const TL = taskList().filter((t) => t.ts <= endT), tOpen = TL.filter((t) => isOpen(t) || t.doneTs > endT).sort((a, b) => (a.due || "9") < (b.due || "9") ? -1 : 1), tLate = tOpen.filter((t) => t.due && t.due < endIso), tDone = TL.filter((t) => !isOpen(t) && inW(t.doneTs));
+  if (tLate.length) flags.push(tLate.length + " משימות פתוחות עברו את תאריך היעד.");
   return {
+    tasks: { open: tOpen, late: tLate.length, doneWeek: tDone.length },
     endIso,
     startIso,
     acts,
@@ -12341,6 +12878,7 @@ function wrHtml(mode, D, o) {
     h += "<h3>רכש ואספקה</h3><table><tr><td>בקשות רכש פתוחות</td><td>" + N2(D.reqOpen.length) + (D.reqBad.length ? ' · <b style="color:#B30027">' + N2(D.reqBad.length) + " דורשות טיפול</b>" : "") + "</td></tr><tr><td>הזמנות (PO) באיחור</td><td>" + (D.poLate.length ? '<b style="color:#B30027">' + N2(D.poLate.length) + "</b> · " + D.poLate.slice(0, 6).map((p) => e(p.no)).join(", ") : "אין") + "</td></tr></table>";
     const etaT = (l, lab) => l.length ? '<p style="margin:10px 0 4px;font-weight:700">' + lab + "</p><table>" + l.slice(0, 8).map((r) => '<tr><td class="n" style="width:68px">' + e(r.date ? fmtIso(r.date) : "—") + "</td><td>" + e(r.title) + (r.ref ? ' <small style="color:#666B6E">' + e(r.ref) + "</small>" : "") + "</td></tr>").join("") + "</table>" : "";
     h += etaT(D.etaLate, "אספקות שהתאריך שלהן עבר") + etaT(D.etaSoon, "אספקות צפויות בשבועיים הקרובים");
+    h += "<h3>משימות פתוחות</h3>" + (D.tasks.open.length ? "<table><tr><th>מה</th><th>איפה</th><th>אחראי</th><th>עד</th></tr>" + D.tasks.open.slice(0, 20).map((t) => "<tr" + (t.due && t.due < D.endIso ? ' style="color:#B30027"' : "") + "><td>" + e(t.title) + "</td><td>" + e(taskWhere(t)) + "</td><td>" + e(t.who || "") + '</td><td class="n">' + e(t.due ? isoText(t.due) : "") + "</td></tr>").join("") + "</table>" + (D.tasks.open.length > 20 ? '<div class="empty">מוצגות 20 מתוך ' + D.tasks.open.length + ".</div>" : "") : '<div class="empty">אין משימות פתוחות.</div>') + (D.tasks.doneWeek ? '<div class="empty">נסגרו השבוע: ' + N2(D.tasks.doneWeek) + ".</div>" : "");
     h += "<h3>פתוח לטיפול</h3>" + (D.flags.length ? '<ul class="flags">' + D.flags.map((f) => "<li>" + e(f) + "</li>").join("") + "</ul>" : '<div class="empty">אין פריטים פתוחים.</div>');
   }
   h += '<div class="ft"><span>' + (C ? e(SITE.company || "BELECTRIC") + " · " + e(site) : "נוצר אוטומטית מיומן אתר · מסמך פנימי, לא להעביר") + '</span><span>נתונים נכון ל-<span class="n">' + e(isoText(D.endIso)) + "</span></span></div></div></body></html>";
@@ -12361,7 +12899,7 @@ function wrText(mode, D, o) {
   if (dn.length) L.push("הושלמו: " + dn.join(", "));
   if (!C) {
     L.push("");
-    L.push("בטון השבוע: " + D.con.wn + " תעודות, " + fmtN(D.con.wm3) + " מ״ק · נופקו " + D.iss.wt + " שולחנות · " + D.notes.length + " תעודות משלוח");
+    L.push("בטון השבוע: " + D.con.wn + " תעודות, " + fmtN(D.con.wm3) + " מ״ק · נופקו " + D.iss.wt + " שולחנות · " + D.notes.length + " תעודות משלוח" + (D.tasks.open.length ? " · משימות פתוחות: " + D.tasks.open.length + (D.tasks.late ? " (" + D.tasks.late + " באיחור)" : "") : ""));
     if (D.flags.length) {
       L.push("");
       L.push("פתוח לטיפול:");
@@ -12561,7 +13099,7 @@ const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   wrShrink,
   wrText
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* ברנד: BELECTRIC (אדום #E40033, אפור #666B6E, ענבר #FFAA00, ירוק #9AC339, כחול #3199CC, פונט עברי Alef) · אנרגיה: בילטון (לבן/שחור, FAB צהוב, טבעות אחוז ירוקות) */
@@ -13269,7 +13807,19 @@ body.net-off .tabs{top:var(--netH,0px)}
 .slip.el-none{border-inline-start-color:#C9CBCC} .slip.el-dc{border-inline-start-color:#2F80ED} .slip.el-disc{border-inline-start-color:#FFAA00} .slip.el-ac{border-inline-start-color:#5B9A3C} .slip.el-com{border-inline-start-color:#7E57C2} .slip.el-st{border-inline-start-color:#3F4447}
 
 /* שכבת חשמל במפה (גרסה 59): מקרא + כפתור הצגה/הסתרה */
-.sb-keys.wm-el{align-items:center;padding-top:4px} .sb-keys.wm-el .linkbtn{min-height:0;padding:0 4px;margin-inline-start:auto} .sb-keys.wm-el i{width:10px;height:10px}</style>
+.sb-keys.wm-el{align-items:center;padding-top:4px} .sb-keys.wm-el .linkbtn{min-height:0;padding:0 4px;margin-inline-start:auto} .sb-keys.wm-el i{width:10px;height:10px}
+
+/* משימות פתוחות (גרסה 60) */
+.tbadge{display:inline-block;background:var(--clay);color:#fff;border-radius:99px;font-size:.66rem;line-height:1;padding:3px 6px;margin-inline-start:4px;font-weight:800;vertical-align:2px;min-width:1.6em;text-align:center}
+.tbadge.late{background:var(--pv)}
+.slip.tk-slip{border-inline-start:4px solid var(--clay)} .slip.tk-slip.late{border-inline-start-color:var(--pv)} .slip.tk-slip.done{border-inline-start-color:var(--sage-fill);color:var(--ink3)}
+.slip.tk-slip .tk-badge{background:var(--clay-soft);color:var(--clay)} .slip.tk-slip.late .tk-badge{background:var(--pv-soft);color:var(--pv)} .slip.tk-slip.done .tk-badge{background:var(--sage-soft);color:var(--sage)}
+.tk-st{display:inline-block;font-size:.78rem;font-weight:800;border-radius:99px;padding:4px 10px;margin:4px 0 10px;background:var(--clay-soft);color:var(--clay)} .tk-st.late{background:var(--pv-soft);color:var(--pv)} .tk-st.done{background:var(--sage-soft);color:var(--sage)}
+.kv-list{display:grid;gap:6px;margin-bottom:12px} .kv-list .kv{margin:0;display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:8px} .kv-list .kv b{overflow-wrap:anywhere}
+.tk-photo{margin-bottom:12px} .tk-photo img{width:100%;max-height:320px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+.tk-shots{grid-template-columns:1fr} .tk-shots .shot{min-height:96px}
+.pg-ev{display:inline-flex;gap:4px;margin-inline-start:4px} .pg-ev i{display:inline-block;font-style:normal;font-size:.7rem;font-weight:800;border-radius:99px;padding:2px 7px;background:var(--sage-soft);color:var(--sage)}
+.zm-tasks{display:grid;gap:6px;margin-top:8px}</style>
 </head><body>
 <title>יומן אתר</title>
 <script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
@@ -13289,7 +13839,7 @@ body.net-off .tabs{top:var(--netH,0px)}
   </div>
 
   <div class="tabs" role="tablist">
-    <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע</button>
+    <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע<span class="tbadge" id="tabOverN" hidden></span></button>
     <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
     <button class="tab" id="tabConcrete" role="tab" aria-selected="false" aria-controls="viewConcrete">בטון</button>
     <button class="tab" id="tabPanels" role="tab" aria-selected="false" aria-controls="viewPanels">פאנלים</button>
@@ -13343,6 +13893,15 @@ body.net-off .tabs{top:var(--netH,0px)}
     <div class="empty" id="wmEmpty" style="padding:12px 0 4px">אין עדיין מבנה אתר (שדות ושורות). לאתר עם מפת שולחנות הוא נבנה לבד; אחרת קובעים אותו מהמספרים או מתוכנית.</div>
     <button class="ghost" id="wmSetup" type="button" style="width:100%;margin:4px 0 8px" hidden>מבנה האתר</button>
     <div id="wmBody" hidden></div>
+  </div>
+
+  <div class="card" id="tasksCard" data-fold="tasks" data-open="1">
+    <h3>משימות פתוחות</h3>
+    <div class="note">ממצא או עבודה שמישהו צריך לסגור: מה, איפה (שדה ושורות או ממיר), אחראי, עד מתי, צילום. משימה פתוחה עם מיקום מסומנת על «מה בוצע במפה» עד שסוגרים אותה; הסגירה רושמת מי ומתי, ואפשר צילום של הסגירה.</div>
+    <div class="sb-lead"><span class="sb-big num" id="tkBig">0</span><span class="sb-cap">פתוחות</span></div><div class="sb-sub" id="tkSub"></div>
+    <div class="chips" id="tkChips" style="margin-bottom:8px"></div>
+    <div class="stock" id="tkList"></div>
+    <button class="addline" id="btnAddTask" data-w="edit" type="button" style="margin-top:8px">+ משימה</button>
   </div>
 
   <div class="card" id="elecCard" data-fold="elec" data-open="1">

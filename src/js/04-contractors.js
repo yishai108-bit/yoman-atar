@@ -1,6 +1,6 @@
-import { $, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
+import { $, alertSheet, ask, byId, closer, esc, fmtD, fmtDT, logAct, ls, popup, shared, toast } from "./core.js";
 import { curConcrete, curNotes, fmtM3, fmtN, holders, noteFlags, renderOverview, stockRows } from "./01-stock.js";
-import { missingConcrete, openIssue, openKitEditor, perOf, trucksText, typeLabel } from "./03-kit.js";
+import { missingConcrete, openIssue, openKitEditor, perOf, sigPad, trucksText, typeLabel } from "./03-kit.js";
 import { tablesForPanels } from "./19-site-build.js";
 import { N, curPb, pbCalc, prevPb, ringHtml } from "./05-panels.js";
 import { SHOW_PRICES, showTab } from "./08-settings.js";
@@ -8,6 +8,7 @@ import { foldSum } from "./12-ui-cleanup.js";
 import { ROLE } from "./18-identity.js";
 import { locText, mountLocation, renderPlans, renderWorkMap } from "./20-work-map.js";
 import { renderElec } from "./21-elec.js";
+import { renderTasks, storePhoto } from "./22-tasks.js";
 export let shortName, shortSup, emptyWho, STAGES, stageOf, stageLabel, moneyMax, rateMax, runMax;
 export function kitStats(){
   const mvs=shared.demoStock?[]:shared.moves, iss=shared.demoStock?[]:shared.issues, prog=shared.demoStock?[]:shared.progress;
@@ -333,10 +334,24 @@ export function renderContractors(){
     const st=stageOf(p);
     el.innerHTML='<b>'+fmtN(p.tables)+' שולחנות · <span style="color:'+(st==="ok"?"var(--sage)":st==="pan"?"var(--info)":"var(--amber)")+'">'+esc(stageLabel(st))+'</span>'+(p.who?' · '+esc(p.who):'')+(p.ttype?' · '+esc(typeLabel(p.ttype)):'')+'</b>'
       +'<button class="del" type="button" data-delprog="'+esc(p.id)+'">מחק</button>'
-      +'<span>'+esc(fmtDT(p.dateText)||fmtD(p.ts))+(locText(p)?' · '+esc(locText(p)):'')+(p.by?' · דיווח: '+esc(p.by):'')+(p.note?' · '+esc(p.note):'')+'</span>';
+      +'<span>'+esc(fmtDT(p.dateText)||fmtD(p.ts))+(locText(p)?' · '+esc(locText(p)):'')+(p.by?' · דיווח: '+esc(p.by):'')+(p.approver?' · אישר: '+esc(p.approver):'')+(p.note?' · '+esc(p.note):'')+evidenceHtml(p)+'</span>';
+    if(hasEvidence(p)){ el.style.cursor="pointer"; el.onclick=e=>{ if(!e.target.closest(".del")) openEvidence(p); }; }
     pg.appendChild(el);
   });
-  renderWorkMap(); renderPlans(); renderElec();
+  renderWorkMap(); renderPlans(); renderElec(); renderTasks();
+}
+/* ---- ראיות לדיווח (גרסה 60): צילום לכל שלב, חתימת המאשר ל«אישור מפקח» ---- */
+const q0=(scrim,sel)=>scrim.querySelector(sel);
+export const hasSig=p=>!!(p&&(p.sigAsset||p.sigUrl||p.sigData));
+export const hasPhoto=p=>!!(p&&(p.photoAsset||p.photoUrl));
+export const hasEvidence=p=>hasSig(p)||hasPhoto(p);
+export const evidenceHtml=p=>hasEvidence(p)?'<span class="pg-ev">'+(hasPhoto(p)?'<i>צילום</i>':'')+(hasSig(p)?'<i>חתום</i>':'')+'</span>':'';
+const srcOf=(p,k)=>p[k+"Asset"]?"/_blob/"+p[k+"Asset"]:(p[k+"Url"]||p[k+"Data"]||"");
+export function openEvidence(p){
+  const st=stageLabel(stageOf(p));
+  alertSheet(fmtN(p.tables)+" שולחנות · "+st,'<div class="hint" style="margin-bottom:8px">'+esc([fmtDT(p.dateText)||fmtD(p.ts),locText(p),p.who,p.approver?"אישר: "+p.approver:"",p.by?"דיווח: "+p.by:""].filter(Boolean).join(" · "))+'</div>'
+    +(hasPhoto(p)?'<div class="tk-photo"><div class="hint">צילום</div><img src="'+esc(srcOf(p,"photo"))+'" alt="צילום הביצוע"></div>':'')
+    +(hasSig(p)?'<div class="hint">חתימת המאשר</div><img class="sigimg" src="'+esc(srcOf(p,"sig"))+'" alt="חתימת המאשר">':''));
 }
 /* ---- דיווח שולחנות שהושלמו ---- */
 export function openProgress(opt){
@@ -358,15 +373,19 @@ export function openProgress(opt){
     +'<div class="f"><label for="pgDate">תאריך</label><input type="date" id="pgDate" value="'+iso+'"></div>'
     +'<div class="f"><label for="pgBy">מי דיווח</label><input type="text" id="pgBy" placeholder="השם שלך" autocomplete="off" value="'+esc(ls.get("issuer")||"")+'"></div>'
     +'<div class="f" id="pgLocF"></div>'
+    +'<div class="f"><label>צילום (לא חובה)</label><div class="shots tk-shots"><div class="shot" id="pgPhotoBox"><i class="ic ic-cam big"></i>צילום של מה שבוצע<input type="file" accept="image/*" capture="environment" id="pgPhoto" aria-label="צילום"></div></div></div>'
+    +'<div class="f" id="pgSigF" hidden><label for="pgApprover">מי אישר</label><input type="text" id="pgApprover" autocomplete="off" placeholder="שם המפקח / המאשר"><div class="sig" id="pgSig" style="margin-top:8px"><canvas></canvas><div class="hint2">חתימת המאשר, באצבע</div><button class="clr2" type="button">נקה</button></div><div class="hint">אישור עם חתימה וצילום הוא הראיה שהשלב התקבל. אפשר גם בלי.</div></div>'
     +'<div class="f"><label for="pgNote">הערה</label><input type="text" id="pgNote" placeholder="למשל: שולחנות ליד הדרך"></div>'
     +'<div class="acts"><button class="save" id="pgSave" type="button">שמור דיווח</button><button class="cancel" id="pgCancel" type="button">ביטול</button></div></div>');
+  let photo=null; const pad=sigPad(q0(scrim,"#pgSig"));
+  q0(scrim,"#pgPhoto").onchange=e=>{ const f=e.target.files&&e.target.files[0]; photo=f||null; const box=q0(scrim,"#pgPhotoBox"); box.querySelectorAll("img,.tag").forEach(n=>n.remove()); if(!f) return; const img=new Image(); img.src=URL.createObjectURL(f); img.alt=""; const tag=document.createElement("div"); tag.className="tag"; tag.textContent="צולם"; box.appendChild(img); box.appendChild(tag); };
   const close=closer(scrim);
   const q=s=>scrim.querySelector(s);
   const loc=mountLocation(q("#pgLocF"),opt||{});
   const setT=n=>{ n=Math.max(1,Math.round(Number(n)||0)); tables=n; q("#pgTables").value=n; };
   q("#pgMinus").onclick=()=>setT(tables-1); q("#pgPlus").onclick=()=>setT(tables+1); q("#pgTables").onchange=e=>setT(e.target.value);
   q("#pgTypes").onclick=e=>{ const b=e.target.closest("[data-t]"); if(!b) return; ttype=b.dataset.t; scrim.querySelectorAll("#pgTypes .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
-  const stageHint=()=>{ const x=STAGES.find(y=>y[0]===stage); q("#pgStageHint").textContent=x[2]; q("#pgUnit").textContent=x[1]; };
+  const stageHint=()=>{ const x=STAGES.find(y=>y[0]===stage); q("#pgStageHint").textContent=x[2]; q("#pgUnit").textContent=x[1]; q("#pgSigF").hidden=stage!=="ok"; if(stage==="ok") requestAnimationFrame(()=>pad.fit()); };
   q("#pgStage").onclick=e=>{ const b=e.target.closest("[data-s]"); if(!b) return; stage=b.dataset.s; scrim.querySelectorAll("#pgStage .chip2").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); stageHint(); };
   stageHint();
   q("#pgCancel").onclick=close;
@@ -377,10 +396,13 @@ export function openProgress(opt){
     if(dv){ const d=new Date(dv+"T12:00:00"); if(!isNaN(d)){ ts=d.getTime(); dateText=fmtD(ts); } }
     const b=q("#pgSave"); b.disabled=true; b.textContent="שומר…";
     const id="pg"+Date.now();
-    const doc={id,ts,dateText,who,tables,ttype,by,stage,note:q("#pgNote").value.trim(),source:"app",...loc.get()};
+    const doc={id,ts,dateText,who,tables,ttype,by,stage,note:q("#pgNote").value.trim(),source:"app",...loc.get(),photoAsset:"",photoUrl:"",sigAsset:"",sigUrl:"",sigData:"",approver:stage==="ok"?q("#pgApprover").value.trim():""};
+    // ראיות: צילום לכל שלב, חתימת המאשר לאישור מפקח. כישלון בהעלאה לא מפיל את הדיווח
+    try{ if(photo){ const p=await storePhoto(photo); doc.photoAsset=p.asset; doc.photoUrl=p.url; } }catch(e){ toast("הצילום לא נשמר; הדיווח נשמר בלעדיו."); }
+    if(stage==="ok"&&pad.has()){ try{ if(shared.ASSETS){ const a=await shared.ASSETS.upload(await pad.blob()); doc.sigAsset=a.id; doc.sigUrl=a.url||""; } else doc.sigData=pad.dataUrl(); }catch(e){ try{ doc.sigData=pad.dataUrl(); }catch(e2){} } }
     try{ if(shared.DB) await shared.DB.doc("progress/"+id).set(doc); else { shared.progress.push(doc); ls.set("progress",JSON.stringify(shared.progress)); } }
     catch(e){ b.disabled=false; b.textContent="שמור דיווח"; toast("השמירה נכשלה."); return; }
-    logAct("progress","add","דיווח ביצוע: "+fmtN(tables)+" שולחנות · "+stageLabel(stage)+(who?" · "+who:"")+(ttype?" · "+typeLabel(ttype):"")+(locText(doc)?" · "+locText(doc):"")+" · "+dateText,id,by);
+    logAct("progress","add","דיווח ביצוע: "+fmtN(tables)+" שולחנות · "+stageLabel(stage)+(who?" · "+who:"")+(ttype?" · "+typeLabel(ttype):"")+(locText(doc)?" · "+locText(doc):"")+(doc.approver?" · אישר: "+doc.approver:"")+(hasSig(doc)?" · חתום":"")+(doc.photoAsset||doc.photoUrl?" · צילום":"")+" · "+dateText,id,by);
     if(shared.demoStock){ shared.demoStock=false; ls.set("demoDoneS","1"); }
     close(); renderOverview(); toast("הדיווח נשמר.");
   };

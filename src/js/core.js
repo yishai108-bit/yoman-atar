@@ -333,7 +333,7 @@ shared.demoMode=true;
 /* ---------- יומן פעולות (audit log): מי, מתי, מה ---------- */
 shared.logs=[];
 uidTried = false;
-LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש",elec:"חשמל"};
+LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש",elec:"חשמל",task:"משימה"};
 actorName = ()=>(ls.get("issuer")||"").trim();
 /* ---------- form ---------- */
 draft = null;

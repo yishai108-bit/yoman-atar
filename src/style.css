@@ -704,3 +704,15 @@ body.net-off .tabs{top:var(--netH,0px)}
 
 /* שכבת חשמל במפה (גרסה 59): מקרא + כפתור הצגה/הסתרה */
 .sb-keys.wm-el{align-items:center;padding-top:4px} .sb-keys.wm-el .linkbtn{min-height:0;padding:0 4px;margin-inline-start:auto} .sb-keys.wm-el i{width:10px;height:10px}
+
+/* משימות פתוחות (גרסה 60) */
+.tbadge{display:inline-block;background:var(--clay);color:#fff;border-radius:99px;font-size:.66rem;line-height:1;padding:3px 6px;margin-inline-start:4px;font-weight:800;vertical-align:2px;min-width:1.6em;text-align:center}
+.tbadge.late{background:var(--pv)}
+.slip.tk-slip{border-inline-start:4px solid var(--clay)} .slip.tk-slip.late{border-inline-start-color:var(--pv)} .slip.tk-slip.done{border-inline-start-color:var(--sage-fill);color:var(--ink3)}
+.slip.tk-slip .tk-badge{background:var(--clay-soft);color:var(--clay)} .slip.tk-slip.late .tk-badge{background:var(--pv-soft);color:var(--pv)} .slip.tk-slip.done .tk-badge{background:var(--sage-soft);color:var(--sage)}
+.tk-st{display:inline-block;font-size:.78rem;font-weight:800;border-radius:99px;padding:4px 10px;margin:4px 0 10px;background:var(--clay-soft);color:var(--clay)} .tk-st.late{background:var(--pv-soft);color:var(--pv)} .tk-st.done{background:var(--sage-soft);color:var(--sage)}
+.kv-list{display:grid;gap:6px;margin-bottom:12px} .kv-list .kv{margin:0;display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:8px} .kv-list .kv b{overflow-wrap:anywhere}
+.tk-photo{margin-bottom:12px} .tk-photo img{width:100%;max-height:320px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+.tk-shots{grid-template-columns:1fr} .tk-shots .shot{min-height:96px}
+.pg-ev{display:inline-flex;gap:4px;margin-inline-start:4px} .pg-ev i{display:inline-block;font-style:normal;font-size:.7rem;font-weight:800;border-radius:99px;padding:2px 7px;background:var(--sage-soft);color:var(--sage)}
+.zm-tasks{display:grid;gap:6px;margin-top:8px}

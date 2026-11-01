@@ -10,6 +10,7 @@ import { renderOrders } from "./14-cba.js";
 import { renderStatus } from "./16-status.js";
 import { renderPlans, renderWorkMap } from "./20-work-map.js";
 import { renderElec } from "./21-elec.js";
+import { renderTasks } from "./22-tasks.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -213,6 +214,7 @@ drawNet();
     watch(shared.DB.doc("settings/layout"),snap=>{ shared.LAYOUT=snap&&snap.exists?snap.data():null; renderWorkMap(); });
     watch(shared.DB.collection("elec"),snap=>{ shared.ELEC=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderElec(); renderWorkMap(); });
     watch(shared.DB.doc("settings/elec"),snap=>{ shared.ELECCFG=snap&&snap.exists?snap.data():null; renderElec(); renderWorkMap(); });
+    watch(shared.DB.collection("tasks"),snap=>{ shared.TASKS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderTasks(); renderWorkMap(); });
     watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderOrders(); } });
     watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });
     watch(shared.DB.doc("settings/cba"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ shared.cba=d; renderOrders(); } });   // לבעלים בלבד לפי כללי הגישה

@@ -18,7 +18,7 @@
   </div>
 
   <div class="tabs" role="tablist">
-    <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע</button>
+    <button class="tab" id="tabOver" role="tab" aria-selected="true" aria-controls="viewOver">ביצוע<span class="tbadge" id="tabOverN" hidden></span></button>
     <button class="tab" id="tabStock" role="tab" aria-selected="false" aria-controls="viewStock">מלאי</button>
     <button class="tab" id="tabConcrete" role="tab" aria-selected="false" aria-controls="viewConcrete">בטון</button>
     <button class="tab" id="tabPanels" role="tab" aria-selected="false" aria-controls="viewPanels">פאנלים</button>
@@ -72,6 +72,15 @@
     <div class="empty" id="wmEmpty" style="padding:12px 0 4px">אין עדיין מבנה אתר (שדות ושורות). לאתר עם מפת שולחנות הוא נבנה לבד; אחרת קובעים אותו מהמספרים או מתוכנית.</div>
     <button class="ghost" id="wmSetup" type="button" style="width:100%;margin:4px 0 8px" hidden>מבנה האתר</button>
     <div id="wmBody" hidden></div>
+  </div>
+
+  <div class="card" id="tasksCard" data-fold="tasks" data-open="1">
+    <h3>משימות פתוחות</h3>
+    <div class="note">ממצא או עבודה שמישהו צריך לסגור: מה, איפה (שדה ושורות או ממיר), אחראי, עד מתי, צילום. משימה פתוחה עם מיקום מסומנת על «מה בוצע במפה» עד שסוגרים אותה; הסגירה רושמת מי ומתי, ואפשר צילום של הסגירה.</div>
+    <div class="sb-lead"><span class="sb-big num" id="tkBig">0</span><span class="sb-cap">פתוחות</span></div><div class="sb-sub" id="tkSub"></div>
+    <div class="chips" id="tkChips" style="margin-bottom:8px"></div>
+    <div class="stock" id="tkList"></div>
+    <button class="addline" id="btnAddTask" data-w="edit" type="button" style="margin-top:8px">+ משימה</button>
   </div>
 
   <div class="card" id="elecCard" data-fold="elec" data-open="1">

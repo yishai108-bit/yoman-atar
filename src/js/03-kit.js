@@ -77,7 +77,7 @@ export function sigPad(box){
   c.onpointermove=e=>{ if(!drawing) return; const p=pos(e); g.beginPath(); g.moveTo(last.x,last.y); g.lineTo(p.x,p.y); g.stroke(); last=p; has=true; box.classList.add("has"); e.preventDefault(); };
   c.onpointerup=c.onpointercancel=()=>{ drawing=false; };
   box.querySelector(".clr2").onclick=()=>{ g.clearRect(0,0,c.width,c.height); has=false; box.classList.remove("has"); };
-  return { has:()=>has, blob:()=>new Promise(r=>c.toBlob(r,"image/png")), dataUrl:()=>c.toDataURL("image/png") };
+  return { has:()=>has, blob:()=>new Promise(r=>c.toBlob(r,"image/png")), dataUrl:()=>c.toDataURL("image/png"), fit };
 }
 /* ---- ניפוק לפי שולחנות ---- */
 export function openIssue(){
