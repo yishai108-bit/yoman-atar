@@ -143,7 +143,7 @@ test("הצד של קבלן החשמל (S.E.E): ?org=see → מאגר נפרד, �
     await page.addInitScript(`window.__SB_SEE_URL="https://see.supabase.co";window.__SB_SEE_KEY="anon2";window.__SB__=${JSON.stringify(seed)};\n${MOCK}`);
     await page.goto("file://" + FILE + "?org=see");
     await page.waitForSelector("#cfLogin");
-    assert.equal(await page.textContent(".cloud-screen .brand"), "S.E.E");
+    assert.equal(await page.textContent(".cloud-screen .brand"), "קבלן חשמל");
     await page.fill("#cfEmail", "see@test.local"); await page.fill("#cfPass", "secret12"); await page.click("#cfGo");
     await page.waitForSelector("#cfSites");
     assert.equal((await page.$$("[data-slug]")).length, 2);

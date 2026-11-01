@@ -16,7 +16,7 @@ import { siteBuildSeries } from "../19-site-build.js";
 const ENV=(import.meta.env||{});
 const ORGS={
   belectric:{ id:"belectric", brand:"BELECTRIC", url:ENV.VITE_SUPABASE_URL||window.__SB_URL||"",         key:ENV.VITE_SUPABASE_ANON_KEY||window.__SB_KEY||"" },
-  see:      { id:"see",       brand:"S.E.E",     url:ENV.VITE_SEE_SUPABASE_URL||window.__SB_SEE_URL||"", key:ENV.VITE_SEE_SUPABASE_ANON_KEY||window.__SB_SEE_KEY||"" },
+  see:      { id:"see",       brand:"קבלן חשמל", url:ENV.VITE_SEE_SUPABASE_URL||window.__SB_SEE_URL||"", key:ENV.VITE_SEE_SUPABASE_ANON_KEY||window.__SB_SEE_KEY||"" },   // לפני כניסה: כללי; אחרי כניסה שם החברה מהאתר (sites.company)
 };
 const qs=new URLSearchParams(location.search);
 const LOCK=ORGS[ENV.VITE_ORG||window.__ORG||""]||null;
