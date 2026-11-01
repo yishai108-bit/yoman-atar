@@ -13,6 +13,7 @@ const OPENERS = [
   "openSettings()", "openRestore()", "openBomImport()", "openWorker()", "openCrewForm()",
   "openBoqLinker()", "openBoqImport()", "openImportChooser()", "openCbaImport()", "openOrder()",
   "openWeekly()", "openStatusImport()", "openEtaForm()", "openWho()", "openLog()", "alertSheet('כותרת','<p>טקסט</p>')", "openSheet()",
+  "openTaskForm()", "openTaskList('משימות',[])", "openTaskClose({id:'x',title:'בדיקה'})",
 ];
 let browser;
 test.before(async () => { browser = await launch(); });

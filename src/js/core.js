@@ -39,6 +39,9 @@ export function ask(msg, okLabel, color, sub){
     scrim.querySelector(".cancel").focus();
   });
 }
+// כתובת של קובץ שהועלה (צילום, חתימה, תוכנית): ב-artifact היא /_blob/<id>; באירוח עצמאי (Supabase Storage)
+// הבסיס נקבע בעלייה (shared.BLOB_BASE). כל המודולים עוברים דרך כאן, לא דרך מחרוזת קבועה.
+export function blobUrl(id){ return (shared.BLOB_BASE||"/_blob/")+id; }
 export async function logAct(kind,action,summary,ref,who,data){
   if(shared.USER && UID===null && !uidTried){ uidTried=true; try{ UID=await shared.USER.id(); }catch(e){ UID=null; } }
   const rec={id:"lg"+Date.now()+Math.random().toString(36).slice(2,5),ts:Date.now(),kind,action,
@@ -333,7 +336,7 @@ shared.demoMode=true;
 /* ---------- יומן פעולות (audit log): מי, מתי, מה ---------- */
 shared.logs=[];
 uidTried = false;
-LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש",elec:"חשמל"};
+LOG_KINDS = {issue:"ניפוק",count:"ספירה",progress:"ביצוע",delivery:"תעודה",move:"הוצאה",concrete:"בטון",panel:"פאנל שבור",panelbal:"מאזן פאנלים",kit:"כמויות לשולחן",prices:"מחירים",settings:"הגדרות",import:"ייבוא",backup:"גיבוי",daylog:"יומיות",order:"בקשת רכש",elec:"חשמל",task:"משימה"};
 actorName = ()=>(ls.get("issuer")||"").trim();
 /* ---------- form ---------- */
 draft = null;

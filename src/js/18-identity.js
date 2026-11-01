@@ -10,6 +10,7 @@ import { renderOrders } from "./14-cba.js";
 import { renderStatus } from "./16-status.js";
 import { renderPlans, renderWorkMap } from "./20-work-map.js";
 import { renderElec } from "./21-elec.js";
+import { renderTasks } from "./22-tasks.js";
 export let ROLE, ME, ROLE_LABEL, lockShown, hiddenAt, NET, watch;
 export function applyRole(){
   document.body.classList.remove("r-owner","r-editor","r-viewer"); document.body.classList.add("r-"+ROLE);
@@ -33,9 +34,13 @@ export function openWho(){
   const rows=[["owner","בעלים","הכל: ניפוק, ספירה, תעודות, מחיקות, הגדרות, מחירים, שחזור"],["editor","עריכה (מפקחים)","ניפוק, ספירה, דיווח ביצוע, קליטת תעודות. בלי מחיקות, הגדרות ומחירים"],["viewer","צפייה (מנהלים)","רואה הכל בזמן אמת, לא משנה כלום"]];
   const scrim=popup('<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>מי מחובר</h2>'
     +'<div class="kv" style="align-items:center"><img src="'+(ME?ME.avatarUrl:"")+'" alt="" style="width:48px;height:48px;border-radius:50%"><span><b id="wName"></b><br><span class="role-badge role-'+ROLE+'">'+ROLE_LABEL[ROLE]+'</span></span></div>'
-    +'<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>'
+    +(shared.CLOUD
+      ?'<div class="note-card">הכניסה במייל וסיסמה. ההרשאה נקבעת לכל אתר בנפרד (בעלים, עריכה, צפייה) ונאכפת בשרת, לא רק במסך.'+(shared.CLOUD.sites&&shared.CLOUD.sites.length>1?' יש לך גישה ל-'+shared.CLOUD.sites.length+' אתרים.':'')+'</div>'
+      :'<div class="note-card">הכניסה היא חשבון Claude של כל משתמש. נותנים גישה מתפריט <b>Share</b> לפי מייל: «צפייה» או «עריכה». ההרשאות נאכפות בשרת, לא רק במסך.</div>')
     +'<div class="stock">'+rows.map(r=>'<div class="slip" style="cursor:default'+(r[0]===ROLE?';border-color:var(--pv)':'')+'"><b>'+r[1]+'</b><span>'+r[2]+'</span></div>').join("")+'</div>'
+    +(shared.CLOUD?'<div class="acts" style="margin-top:14px"><button class="ghost" type="button" id="wSites">מסך חברה: כל האתרים</button><button class="ghost" type="button" id="wOut">יציאה</button></div>':'')
     +'<div class="acts"><button class="save" type="button" id="wPin">'+(ls.get("pin")?"שינוי / ביטול קוד PIN":"נעילה בקוד PIN בטלפון הזה")+'</button><button class="cancel" type="button">סגור</button></div></div>');
+  if(shared.CLOUD){ scrim.querySelector("#wSites").onclick=()=>{ scrim.remove(); shared.CLOUD.openCompany(); }; scrim.querySelector("#wOut").onclick=()=>{ scrim.remove(); shared.CLOUD.signOut(); }; }
   scrim.querySelector("#wName").textContent=ME&&ME.name||"משתמש";
   scrim.querySelector(".cancel").onclick=()=>scrim.remove(); scrim.onclick=e=>{ if(e.target===scrim) scrim.remove(); };
   scrim.querySelector("#wPin").onclick=()=>{ scrim.remove(); if(ls.get("pin")) pinMenu(); else setPin(); };
@@ -148,6 +153,8 @@ drawNet();
 (async ()=>{
   const localOnly = () => { NET.noDb=true; drawNet(); $("#aiNote").innerHTML += " <b>נשמר במכשיר הזה בלבד.</b>";
                             $("#dbNote").innerHTML = " <b>נשמר במכשיר הזה בלבד.</b>"; };
+  // אירוח עצמאי (cloud/boot.js): החיבור למאגר מגיע אחרי כניסה במייל, כהבטחה שמחזירה אובייקט במבנה של window.claude
+  if(window.__backend){ try{ const be=await window.__backend; if(be) window.claude=be; }catch(e){} }
   if(!window.claude || !claude.use) { localOnly(); return; }
   $("#app").classList.add("skel"); const unskel=()=>$("#app").classList.remove("skel"); setTimeout(unskel,4000);
   [shared.DB,shared.ASSETS,shared.SAMPLE,shared.DOWNLOADS,shared.USER] = await Promise.all([
@@ -213,6 +220,7 @@ drawNet();
     watch(shared.DB.doc("settings/layout"),snap=>{ shared.LAYOUT=snap&&snap.exists?snap.data():null; renderWorkMap(); });
     watch(shared.DB.collection("elec"),snap=>{ shared.ELEC=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderElec(); renderWorkMap(); });
     watch(shared.DB.doc("settings/elec"),snap=>{ shared.ELECCFG=snap&&snap.exists?snap.data():null; renderElec(); renderWorkMap(); });
+    watch(shared.DB.collection("tasks"),snap=>{ shared.TASKS=snap.docs.map(d=>Object.assign({id:d.id},d.data())); renderTasks(); renderWorkMap(); });
     watch(shared.DB.doc("settings/boq"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.lines)){ shared.boq=d.lines; shared.boqSource=d.source||""; renderOrders(); } });
     watch(shared.DB.doc("settings/aliases"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&d.map&&typeof d.map==="object") shared.ALIASES=d.map; });
     watch(shared.DB.doc("settings/cba"),snap=>{ const d=snap&&snap.exists?snap.data():null; if(d&&Array.isArray(d.packages)){ shared.cba=d; renderOrders(); } });   // לבעלים בלבד לפי כללי הגישה

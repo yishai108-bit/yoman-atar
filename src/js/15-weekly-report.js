@@ -1,4 +1,4 @@
-import { $, actorName, ask, closer, esc, fmtD, fmtDT, logAct, popup, shared, toast } from "./core.js";
+import { $, actorName, ask, blobUrl, closer, esc, fmtD, fmtDT, logAct, popup, shared, toast } from "./core.js";
 import { fmtN, loadImg } from "./01-stock.js";
 import { shortSup } from "./04-contractors.js";
 import { SITE, saveFile } from "./08-settings.js";
@@ -8,6 +8,7 @@ import { poStatus, requestMatch } from "./14-cba.js";
 import { saveStatus, statusHolidays, workdaysBetween } from "./16-status.js";
 import { etaRows, fmtIso } from "./17-eta.js";
 import { ROLE, watch } from "./18-identity.js";
+import { isLate, isOpen, taskList, taskWhere } from "./22-tasks.js";
 export let DRONE, droneSub, wrRedraw, wrPct, wrRange, wrMonth, WR_CSS, wrDataUrl;
 export function droneWatch(){ if(droneSub||!shared.DB) return; droneSub=true;
   try{ watch(shared.DB.collection("drone"),snap=>{ DRONE=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if(wrRedraw) wrRedraw(); }); }catch(e){} }
@@ -52,7 +53,10 @@ export function wrData(endIso){
   if(reqBad.length) flags.push(reqBad.length+" שורות בבקשות רכש דורשות טיפול (לא הוזמן, הוזמן פחות או באיחור).");
   if(poLate.length) flags.push(poLate.length+" הזמנות רכש (PO) עם תאריך אספקה שעבר, בלי תעודת משלוח.");
   if(!acts.some(a=>a.planEnd)) flags.push("אין עדיין תאריכי יעד (גאנט), ולכן אין השוואה לתוכנית.");
-  return {endIso,startIso,acts,panels,panA,con:{n:con.length,m3:m3(con),wn:conW.length,wm3:m3(conW)},
+  // משימות פתוחות (גרסה 60): מה פתוח בסוף השבוע, מה באיחור, מה נסגר השבוע
+  const TL=taskList().filter(t=>t.ts<=endT), tOpen=TL.filter(t=>isOpen(t)||t.doneTs>endT).sort((a,b)=>(a.due||"9")<(b.due||"9")?-1:1), tLate=tOpen.filter(t=>t.due&&t.due<endIso), tDone=TL.filter(t=>!isOpen(t)&&inW(t.doneTs));
+  if(tLate.length) flags.push(tLate.length+" משימות פתוחות עברו את תאריך היעד.");
+  return {tasks:{open:tOpen,late:tLate.length,doneWeek:tDone.length},endIso,startIso,acts,panels,panA,con:{n:con.length,m3:m3(con),wn:conW.length,wm3:m3(conW)},
     iss:{n:iss.length,t:tabs(iss),wn:issW.length,wt:tabs(issW),list:issW},conA,pgCon,notes,sup,reqOpen,reqBad,poLate,etaLate,etaSoon,flags,hasPlan:acts.some(a=>a.planEnd)};
 }
 export function wrHtml(mode,D,o){
@@ -107,6 +111,7 @@ export function wrHtml(mode,D,o){
       +'<tr><td>הזמנות (PO) באיחור</td><td>'+(D.poLate.length?'<b style="color:#B30027">'+N(D.poLate.length)+'</b> · '+D.poLate.slice(0,6).map(p=>e(p.no)).join(", "):'אין')+'</td></tr></table>';
     const etaT=(l,lab)=>l.length?'<p style="margin:10px 0 4px;font-weight:700">'+lab+'</p><table>'+l.slice(0,8).map(r=>'<tr><td class="n" style="width:68px">'+e(r.date?fmtIso(r.date):"—")+'</td><td>'+e(r.title)+(r.ref?' <small style="color:#666B6E">'+e(r.ref)+'</small>':'')+'</td></tr>').join("")+'</table>':'';
     h+=etaT(D.etaLate,"אספקות שהתאריך שלהן עבר")+etaT(D.etaSoon,"אספקות צפויות בשבועיים הקרובים");
+    h+='<h3>משימות פתוחות</h3>'+(D.tasks.open.length?'<table><tr><th>מה</th><th>איפה</th><th>אחראי</th><th>עד</th></tr>'+D.tasks.open.slice(0,20).map(t=>'<tr'+(t.due&&t.due<D.endIso?' style="color:#B30027"':'')+'><td>'+e(t.title)+'</td><td>'+e(taskWhere(t))+'</td><td>'+e(t.who||"")+'</td><td class="n">'+e(t.due?isoText(t.due):"")+'</td></tr>').join("")+'</table>'+(D.tasks.open.length>20?'<div class="empty">מוצגות 20 מתוך '+D.tasks.open.length+'.</div>':''):'<div class="empty">אין משימות פתוחות.</div>')+(D.tasks.doneWeek?'<div class="empty">נסגרו השבוע: '+N(D.tasks.doneWeek)+'.</div>':'');
     h+='<h3>פתוח לטיפול</h3>'+(D.flags.length?'<ul class="flags">'+D.flags.map(f=>'<li>'+e(f)+'</li>').join("")+'</ul>':'<div class="empty">אין פריטים פתוחים.</div>');
   }
   h+='<div class="ft"><span>'+(C?e(SITE.company||"BELECTRIC")+' · '+e(site):'נוצר אוטומטית מיומן אתר · מסמך פנימי, לא להעביר')+'</span><span>נתונים נכון ל-<span class="n">'+e(isoText(D.endIso))+'</span></span></div></div></body></html>';
@@ -119,7 +124,7 @@ export function wrText(mode,D,o){
   if(pan&&pan.required) L.push("פאנלים מותקנים: "+wrPct(pan.installed/pan.required)+"%"+(C?"":" ("+fmtN(pan.installed)+" מתוך "+fmtN(pan.required)+")"));
   D.acts.filter(a=>!a.complete&&a.started).forEach(a=>L.push(a.name+": "+wrPct(a.pct)+"%"+(!C&&a.week?" · +"+fmtN(a.week)+" "+a.weekLabel:"")));
   const dn=D.acts.filter(a=>a.complete).map(a=>a.name); if(dn.length) L.push("הושלמו: "+dn.join(", "));
-  if(!C){ L.push(""); L.push("בטון השבוע: "+D.con.wn+" תעודות, "+fmtN(D.con.wm3)+" מ״ק · נופקו "+D.iss.wt+" שולחנות · "+D.notes.length+" תעודות משלוח"); if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
+  if(!C){ L.push(""); L.push("בטון השבוע: "+D.con.wn+" תעודות, "+fmtN(D.con.wm3)+" מ״ק · נופקו "+D.iss.wt+" שולחנות · "+D.notes.length+" תעודות משלוח"+(D.tasks.open.length?" · משימות פתוחות: "+D.tasks.open.length+(D.tasks.late?" ("+D.tasks.late+" באיחור)":""):"")); if(D.flags.length){ L.push(""); L.push("פתוח לטיפול:"); D.flags.forEach(f=>L.push("• "+f)); } }
   L.push(""); L.push("הדוח המלא מצורף."); return L.join("\n");
 }
 export async function wrShrink(file){ const im=await loadImg(file); const k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight));
@@ -138,7 +143,7 @@ export function openWeekly(){
     +'<div class="acts" style="margin-top:8px"><button class="ghost" id="wrMail" type="button">העתק טקסט למייל</button><button class="cancel" type="button">סגור</button></div></div>'); const q=s=>scrim.querySelector(s);
   const close=closer(scrim,()=>{ wrRedraw=null; }); q(".cancel").onclick=close;
   // התמונה האחרונה עד סוף השבוע, ולהשוואה הצילום הראשון שקדם לה בחודש לפחות
-  const shots=()=>DRONE.map(d=>({src:d.asset?"/_blob/"+d.asset:d.url,date:d.date})).concat(localImg?[localImg]:[]).filter(x=>x.date&&x.date<=endIso).sort((a,b)=>a.date<b.date?-1:1);
+  const shots=()=>DRONE.map(d=>({src:d.asset?blobUrl(d.asset):d.url,date:d.date})).concat(localImg?[localImg]:[]).filter(x=>x.date&&x.date<=endIso).sort((a,b)=>a.date<b.date?-1:1);
   const photo=()=>{ const L=shots(); return L[L.length-1]||null; };
   const prevShot=p=>p?shots().find(x=>x.date<=isoOf(new Date(p.date+"T12:00:00").getTime()-28*864e5))||null:null;
   const imgOpts=(p,pv)=>({img:p&&p.src,imgDate:p&&p.date,prev:pv&&pv.src,prevDate:pv&&pv.date,lead});

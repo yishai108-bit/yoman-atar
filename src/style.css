@@ -704,3 +704,38 @@ body.net-off .tabs{top:var(--netH,0px)}
 
 /* שכבת חשמל במפה (גרסה 59): מקרא + כפתור הצגה/הסתרה */
 .sb-keys.wm-el{align-items:center;padding-top:4px} .sb-keys.wm-el .linkbtn{min-height:0;padding:0 4px;margin-inline-start:auto} .sb-keys.wm-el i{width:10px;height:10px}
+
+/* משימות פתוחות (גרסה 60) */
+.tbadge{display:inline-block;background:var(--clay);color:#fff;border-radius:99px;font-size:.66rem;line-height:1;padding:3px 6px;margin-inline-start:4px;font-weight:800;vertical-align:2px;min-width:1.6em;text-align:center}
+.tbadge.late{background:var(--pv)}
+.slip.tk-slip{border-inline-start:4px solid var(--clay)} .slip.tk-slip.late{border-inline-start-color:var(--pv)} .slip.tk-slip.done{border-inline-start-color:var(--sage-fill);color:var(--ink3)}
+.slip.tk-slip .tk-badge{background:var(--clay-soft);color:var(--clay)} .slip.tk-slip.late .tk-badge{background:var(--pv-soft);color:var(--pv)} .slip.tk-slip.done .tk-badge{background:var(--sage-soft);color:var(--sage)}
+.tk-st{display:inline-block;font-size:.78rem;font-weight:800;border-radius:99px;padding:4px 10px;margin:4px 0 10px;background:var(--clay-soft);color:var(--clay)} .tk-st.late{background:var(--pv-soft);color:var(--pv)} .tk-st.done{background:var(--sage-soft);color:var(--sage)}
+.kv-list{display:grid;gap:6px;margin-bottom:12px} .kv-list .kv{margin:0;display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:8px} .kv-list .kv b{overflow-wrap:anywhere}
+.tk-photo{margin-bottom:12px} .tk-photo img{width:100%;max-height:320px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+.tk-shots{grid-template-columns:1fr} .tk-shots .shot{min-height:96px}
+.pg-ev{display:inline-flex;gap:4px;margin-inline-start:4px} .pg-ev i{display:inline-block;font-style:normal;font-size:.7rem;font-weight:800;border-radius:99px;padding:2px 7px;background:var(--sage-soft);color:var(--sage)}
+.zm-tasks{display:grid;gap:6px;margin-top:8px}
+/* ---------- אירוח עצמאי (Vercel + Supabase): כניסה, בחירת אתר, מסך חברה ---------- */
+.cloud-screen{justify-content:flex-start;padding-top:calc(64px + env(safe-area-inset-top,0px));overflow:auto}
+.cloud-form{width:100%;max-width:360px;display:flex;flex-direction:column;gap:6px}
+.cloud-form .f{margin-bottom:10px}
+.cloud-form input[type=email],.cloud-form input[type=password]{width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13px;border-radius:var(--r);border:1px solid var(--line);background:var(--paper);color:var(--ink);box-sizing:border-box;direction:ltr;text-align:left}
+.cloud-form input:focus{border-color:var(--pv);outline:none;box-shadow:0 0 0 3px var(--pv-soft)}
+.cloud-form .save{width:100%;min-height:48px;font-size:1.05rem}
+.cloud-form .linkbtn,.cloud-screen>.linkbtn{background:none;border:0;color:var(--pv);font-family:var(--ui);font-size:.92rem;min-height:44px;cursor:pointer;text-decoration:underline}
+.cloud-err{background:var(--clay-fill,#F7E3E1);color:var(--clay);border-radius:var(--r);padding:10px 12px;font-size:.9rem;font-weight:700}
+.cloud-sites{width:100%;max-width:560px;display:flex;flex-direction:column;gap:10px}
+.cloud-site{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name pct" "sub pct";gap:4px 12px;align-items:center;text-align:start;width:100%;padding:14px 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--paper);color:var(--ink);font-family:var(--ui);cursor:pointer;min-height:72px}
+.cloud-site[aria-current=true]{border-color:var(--pv);box-shadow:0 0 0 2px var(--pv-soft)}
+.cloud-site:active{background:var(--line2)}
+.cloud-site .cs-name{grid-area:name;font-weight:700;font-size:1.02rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cloud-site .cs-name i{font-style:normal}
+.cloud-site .cs-pct{grid-area:pct;text-align:center;display:flex;flex-direction:column;align-items:center;min-width:72px}
+.cloud-site .cs-pct b{font-family:var(--display);font-size:1.5rem;color:var(--pv);line-height:1}
+.cloud-site .cs-pct small{font-size:.68rem;color:var(--ink3);margin-top:3px;white-space:nowrap}
+.cloud-site .cs-sub{grid-area:sub;font-size:.8rem;color:var(--ink3)}
+.cloud-site .cs-open{font-weight:700;color:var(--ink2)}
+.cloud-site .cs-open.late{color:var(--clay)}
+.cloud-site .cs-open.ok{color:var(--sage,#4F7D5D)}
+.cloud-site .cs-co{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:var(--pv);width:100%}
