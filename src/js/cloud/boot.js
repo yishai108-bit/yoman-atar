@@ -10,15 +10,19 @@ import { makeBackend } from "./supabase-db.js";
 import { $, esc, shared, toast } from "../core.js";
 import { siteBuildSeries } from "../19-site-build.js";
 
-/* שני צדדים של אותה אפליקציה (ישי 30.10): יומן אתר של בלקטריק ויומן אתר של קבלן החשמל (S.E.E). אותו קוד, אותה פריסה,
-   שני פרויקטים נפרדים ב-Supabase (הנתונים לא נוגעים). הצד נקבע לפי הדומיין (yoman-hashmal… = S.E.E) או ?org=see. */
+/* שני מוצרים מאותו קוד (ישי 1.11): «יומן אתר» של בלקטריק, ו«יומן אתר · קבלן חשמל» שמשרת קבלני חשמל (S.E.E ועוד).
+   פריסות נפרדות: פרויקט Vercel נפרד, פרויקט Supabase נפרד, כתובת נפרדת; אין נתונים או משתמשים משותפים.
+   הצד נקבע ב-VITE_ORG בזמן הבנייה (belectric / see) ונעול; בלי VITE_ORG (בדיקות, מקומי) לפי הדומיין (…hashmal… = see) או ?org=see. */
 const ENV=(import.meta.env||{});
 const ORGS={
   belectric:{ id:"belectric", brand:"BELECTRIC", url:ENV.VITE_SUPABASE_URL||window.__SB_URL||"",         key:ENV.VITE_SUPABASE_ANON_KEY||window.__SB_KEY||"" },
   see:      { id:"see",       brand:"S.E.E",     url:ENV.VITE_SEE_SUPABASE_URL||window.__SB_SEE_URL||"", key:ENV.VITE_SEE_SUPABASE_ANON_KEY||window.__SB_SEE_KEY||"" },
 };
 const qs=new URLSearchParams(location.search);
-const ORG=(/hashmal|-see\b|^see\./.test(location.hostname)?ORGS.see:null)||ORGS[qs.get("org")]||ORGS.belectric;
+const LOCK=ORGS[ENV.VITE_ORG||window.__ORG||""]||null;
+const ORG=LOCK||(/hashmal|-see\b|^see\./.test(location.hostname)?ORGS.see:null)||ORGS[qs.get("org")]||ORGS.belectric;
+/* הכתובת הישנה של קבלן החשמל על הפריסה של בלקטריק: מפנים לכתובת החדשה (VITE_SEE_APP_URL) ולא מציגים כלום. */
+const MOVED=LOCK&&LOCK.id==="belectric"&&/hashmal/.test(location.hostname)?(ENV.VITE_SEE_APP_URL||""):"";
 const CFG={ url:ORG.url, key:ORG.key };
 const ready=v=>{ if(window.__backendReady) window.__backendReady(v); };
 const LS={ get:k=>{ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set:(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} }, del:k=>{ try{ localStorage.removeItem(k); }catch(e){} } };
@@ -110,6 +114,7 @@ async function signOut(sb){ try{ await sb.auth.signOut(); }catch(e){} LS.del("cl
 
 /* ---------- עלייה ---------- */
 (async()=>{
+  if(MOVED){ screen('<div class="brand">יומן אתר · קבלן חשמל</div><h2>עברנו לכתובת חדשה</h2><div class="sub"><a href="'+esc(MOVED)+'">'+esc(MOVED)+'</a></div>'); ready(null); return; }
   if(!CFG.url||!CFG.key){ screen(brand()+'<h2>יומן אתר</h2><div class="sub">החיבור למאגר של '+esc(ORG.brand)+' עוד לא הוגדר בגרסה הזאת ('+(ORG.id==="see"?"VITE_SEE_SUPABASE_URL / VITE_SEE_SUPABASE_ANON_KEY":"VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY")+').</div>'); ready(null); return; }
   const sb=(window.__createSupabase||createClient)(CFG.url,CFG.key,{ auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:"sb-"+ORG.id } });
   shared.CLOUD={ sb, org:ORG.id, url:CFG.url, company:ORG.brand, sites:[], site:null, openCompany:()=>{}, signOut:()=>signOut(sb) };

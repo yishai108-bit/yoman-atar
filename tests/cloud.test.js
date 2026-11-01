@@ -156,6 +156,11 @@ test("הצד של קבלן החשמל (S.E.E): ?org=see → מאגר נפרד, �
     await page.goto("file://" + FILE);
     await page.waitForSelector(".cloud-screen");
     assert.match(await page.textContent(".cloud-screen"), /VITE_SUPABASE_URL/);
+    // פריסה נעולה לצד אחד (VITE_ORG=belectric): ?org=see לא מעביר לצד של קבלן החשמל
+    await page.addInitScript(`window.__ORG="belectric";`);
+    await page.goto("file://" + FILE + "?org=see");
+    await page.waitForSelector(".cloud-screen");
+    assert.match(await page.textContent(".cloud-screen"), /VITE_SUPABASE_URL/);
     assert.deepEqual(errors, []);
     await ctx.close();
   } finally { await browser.close(); }
