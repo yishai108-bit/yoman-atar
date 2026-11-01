@@ -23,5 +23,9 @@
 5. Project Settings → API: **Project URL** ו-**anon public** → משתני הסביבה `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` ב-Vercel (Settings → Environment Variables), ופריסה מחדש.
 6. Authentication → URL Configuration → Site URL: כתובת האפליקציה ב-Vercel (בשביל «שכחתי סיסמה»).
 
+## הצד של קבלן החשמל (S.E.E)
+אותו קוד ואותה פריסה, **פרויקט Supabase נפרד** (הנתונים של שני הצדדים לא נוגעים). הצד נקבע לפי הדומיין (`yoman-hashmal…` = S.E.E) או `?org=see`.
+משתני הסביבה: `VITE_SEE_SUPABASE_URL`, `VITE_SEE_SUPABASE_ANON_KEY`. ההקמה זהה; האתרים מ-`5-אתרי-SEE.sql` (עד 10, עם `company` ו-`ord`).
+
 ## הרצה מקומית מול Supabase
 `VITE_SUPABASE_URL=… VITE_SUPABASE_ANON_KEY=… npm run build:cloud` ואז לפתוח את `dist/cloud/index.html` משרת סטטי (לא כקובץ: הכניסה צריכה origin).
