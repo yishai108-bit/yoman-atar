@@ -13,8 +13,10 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "jszip": "^3.10.1",
     "vite": "^5.4.0",
-    "vite-plugin-singlefile": "^2.3.4"
+    "vite-plugin-singlefile": "^2.3.4",
+    "xlsx": "^0.18.5"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0"

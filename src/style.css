@@ -490,6 +490,44 @@ input[type=date]{width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13
 .setgrid .ghost{flex:none;width:100%;min-height:52px}
 .setgrid .ghost small{display:block;font-weight:500;font-size:.72rem;color:var(--ink3)}
 .onb .step .s{line-height:1.4}
+/* אתר חדש: הקמה מתיקיית הפרויקט (גרסה 62) */
+.onb .onb-zip{margin:2px 0 8px}
+.onb-zip-hint{font-size:.8rem;color:var(--ink3);line-height:1.45;margin-bottom:14px}
+.onb-or{display:flex;align-items:center;gap:10px;font-size:.76rem;color:var(--ink3);margin:0 0 12px}
+.onb-or::before,.onb-or::after{content:"";flex:1;height:1px;background:var(--line2)}
+.zs-lead{font-size:.88rem;color:var(--ink2);line-height:1.5;margin:0 0 14px;max-width:62ch}
+.zs-pick{position:relative}
+.zs-folder{display:block;text-align:center;font-size:.85rem;color:var(--info);font-weight:700;padding:12px 0 2px;cursor:pointer;min-height:44px;text-decoration:underline;text-underline-offset:3px}
+.zs-h{font-size:.95rem;font-weight:700;margin:18px 0 8px}
+.zs-items{display:flex;flex-direction:column;gap:8px}
+.zs-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px;cursor:pointer}
+.zs-item:has(input:checked){border-color:var(--ink2)}
+.zs-item.none{opacity:.6;cursor:default}
+.zs-item input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--ink);cursor:inherit}
+.zs-item input:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.zs-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.zs-t b{font-size:.93rem}
+.zs-t span{font-size:.84rem;color:var(--ink2);font-variant-numeric:tabular-nums}
+.zs-t small{font-size:.76rem;color:var(--ink3);overflow-wrap:anywhere}
+.zs-t small.zs-warn{color:var(--amber);font-weight:700}
+.zs-plans,.zs-skip{margin:-2px 0 2px;font-size:.84rem}
+.zs-plans summary,.zs-skip summary{cursor:pointer;color:var(--ink2);font-weight:700;padding:8px 2px;min-height:44px;display:flex;align-items:center}
+.zs-plans summary::-webkit-details-marker,.zs-skip summary::-webkit-details-marker{display:none}
+.zs-plans summary::after,.zs-skip summary::after{content:"‹";margin-inline-start:6px;transition:transform .15s}
+.zs-plans[open] summary::after,.zs-skip[open] summary::after{transform:rotate(-90deg)}
+.zs-plans summary{color:var(--info)}
+.zs-plans .dlines{max-height:260px;overflow:auto}
+.zs-plans .dlines small{color:var(--ink3)}
+.zs-miss,.zs-skip ul,.zs-done{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;font-size:.84rem;color:var(--ink2);line-height:1.45}
+.zs-miss b{color:var(--ink)}
+.zs-skip ul{padding:4px 2px 8px}
+.zs-skip small{color:var(--ink3);overflow-wrap:anywhere}
+.zs-done li{display:flex;align-items:center;gap:2px;font-weight:700;color:var(--ink)}
+.zs-done .ic{color:var(--sage)}
+.zs-fail{margin-top:12px}
+.zs-next{display:flex;flex-direction:column;gap:8px}
+.zs-next .zs-go{grid-column:2;grid-row:1 / span 2;font-weight:700;color:var(--info);font-size:.82rem;white-space:nowrap}
+.sheet.zs .add{margin-top:14px}
 .danger{border-color:var(--clay)!important;color:var(--clay)!important}
 .typerow{display:grid;grid-template-columns:minmax(0,1fr) 84px 44px;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
 .typerow input{padding:9px}
@@ -576,6 +614,7 @@ input[type=date]{width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13
 .ic-doc{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M6%203h8l4%204v14H6z%27%2F%3E%3Cpath%20d%3D%27M14%203v4h4%27%2F%3E%3Cpath%20d%3D%27M9%2012h6M9%2016h6%27%2F%3E%3C%2Fsvg%3E")}
 .ic-gal{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%273%27%20y%3D%275%27%20width%3D%2718%27%20height%3D%2714%27%20rx%3D%272%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%2710%27%20r%3D%271.6%27%2F%3E%3Cpath%20d%3D%27M21%2016l-5-5-7%207%27%2F%3E%3C%2Fsvg%3E")}
 .ic-gear{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%273%27%2F%3E%3Cpath%20d%3D%27M12%202v3M12%2019v3M2%2012h3M19%2012h3M4.9%204.9l2.1%202.1M17%2017l2.1%202.1M4.9%2019.1L7%2017M17%207l2.1-2.1%27%2F%3E%3C%2Fsvg%3E")}
+.ic-folder{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%206.5h6l2%202.5h10v9.5H3z%27%2F%3E%3Cpath%20d%3D%27M12%2011.5v5M9.5%2014l2.5-2.5%202.5%202.5%27%2F%3E%3C%2Fsvg%3E")}
 .ic-check{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M5%2012l5%205L20%206%27%2F%3E%3C%2Fsvg%3E")}
 .ic-scan{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%207V4h3M17%204h3v3M20%2017v3h-3M7%2020H4v-3%27%2F%3E%3Cpath%20d%3D%27M7%2012h10%27%2F%3E%3C%2Fsvg%3E")}
 /* שלד טעינה */

@@ -214,8 +214,8 @@ function warpQuad(c, quad) {
   oc.getContext("2d").putImageData(out, 0, 0);
   return oc;
 }
-function enhanceCanvas(c, mode) {
-  if (mode === "orig") return c;
+function enhanceCanvas(c, mode2) {
+  if (mode2 === "orig") return c;
   const W = c.width, H = c.height;
   const g = c.getContext("2d");
   const img = g.getImageData(0, 0, W, H);
@@ -239,7 +239,7 @@ function enhanceCanvas(c, mode) {
       const x0 = bx | 0, fx = bx - x0, x1 = Math.min(bw - 1, x0 + 1);
       const bg = Math.max(40, (bgS[y0 * bw + x0] * (1 - fx) + bgS[y0 * bw + x1] * fx) * (1 - fy) + (bgS[y1 * bw + x0] * (1 - fx) + bgS[y1 * bw + x1] * fx) * fy);
       const i = (y * W + x) * 4;
-      if (mode === "bw") {
+      if (mode2 === "bw") {
         const l = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
         const r = l / bg;
         const v = r <= 0.72 ? 0 : r >= 0.9 ? 255 : (r - 0.72) / 0.18 * 255;
@@ -621,7 +621,7 @@ async function exportNotePdf(srcs, name, title) {
     toast("יצירת ה-PDF נכשלה.");
   }
 }
-function __init$m() {
+function __init$n() {
   SCAN_MAX = 1600;
   canvasBlob = (c, q) => new Promise((r) => c.toBlob(r, "image/jpeg", q || 0.86));
 }
@@ -630,7 +630,7 @@ const m9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get SCAN_MAX() {
     return SCAN_MAX;
   },
-  __init: __init$m,
+  __init: __init$n,
   boxBlurF,
   buildPdf,
   get canvasBlob() {
@@ -870,7 +870,7 @@ function openStatusImport() {
     renderStatus();
   };
 }
-function __init$l() {
+function __init$m() {
   isWorkday = (iso) => (/* @__PURE__ */ new Date(iso + "T12:00:00")).getDay() <= 4;
   $("#btnStatusImp").onclick = openStatusImport;
   $("#btnStatusCsv").onclick = () => {
@@ -890,7 +890,7 @@ function __init$l() {
 }
 const m16 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$l,
+  __init: __init$m,
   get isWorkday() {
     return isWorkday;
   },
@@ -990,8 +990,10 @@ function currentElec() {
     const E = genElec(d.gen);
     if (E) return E;
   }
+  if (d && d.struct && validStruct(d.struct)) return d.struct;
   return siteElecFor(SITE && SITE.name);
 }
+const validStruct = (s) => Array.isArray(s.stations) && s.stations.length > 0 && s.stations.every((st) => st && Array.isArray(st.icbs) && st.icbs.every((c) => c && Array.isArray(c.inv) && c.inv.every((x) => Array.isArray(x) && x.length === 2 && Number(x[1]) > 0)));
 function elecItems(E) {
   const out = [];
   if (!E) return out;
@@ -1267,8 +1269,8 @@ function openElecReport(preId) {
 }
 function openElecSetup() {
   const d = elecDoc() || {}, g = d.gen || { stations: 2, inv: 10, strings: 18 };
-  const builtIn = siteElecFor(SITE && SITE.name);
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה החשמל"><div class="grab"></div><h2>מבנה החשמל</h2><div class="note-card">' + (builtIn ? "לאתר הזה יש מבנה מובנה מתוכנית החשמל (" + esc(builtIn.src) + "). אפשר להחליף אותו במספרים, ולחזור אליו עם «נקה»." : "אין עדיין מבנה חשמל מתוכנית. קובעים אותו במספרים: תחנות, ממירים לתחנה, סטרינגים לממיר.") + '</div><div class="f"><label for="esSt">תחנות (סקידים)</label><input type="text" inputmode="numeric" id="esSt" value="' + esc(g.stations) + '"></div><div class="f"><label for="esInv">ממירים לתחנה</label><input type="text" inputmode="numeric" id="esInv" value="' + esc(g.inv) + '"></div><div class="f"><label for="esStr">סטרינגים לממיר</label><input type="text" inputmode="numeric" id="esStr" value="' + esc(g.strings) + '"></div><div class="acts"><button class="save" id="esSave" type="button">שמור מבנה</button>' + (d.gen ? '<button class="ghost" id="esClear" type="button">נקה</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
+  const builtIn = d.struct && validStruct(d.struct) ? { src: "תיקיית הפרויקט: " + d.struct.src } : siteElecFor(SITE && SITE.name);
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה החשמל"><div class="grab"></div><h2>מבנה החשמל</h2><div class="note-card">' + (builtIn ? "לאתר הזה יש מבנה מתוכנית החשמל (" + esc(builtIn.src) + "). אפשר להחליף אותו במספרים, ולחזור אליו עם «נקה»." : "אין עדיין מבנה חשמל מתוכנית. קובעים אותו במספרים: תחנות, ממירים לתחנה, סטרינגים לממיר.") + '</div><div class="f"><label for="esSt">תחנות (סקידים)</label><input type="text" inputmode="numeric" id="esSt" value="' + esc(g.stations) + '"></div><div class="f"><label for="esInv">ממירים לתחנה</label><input type="text" inputmode="numeric" id="esInv" value="' + esc(g.inv) + '"></div><div class="f"><label for="esStr">סטרינגים לממיר</label><input type="text" inputmode="numeric" id="esStr" value="' + esc(g.strings) + '"></div><div class="acts"><button class="save" id="esSave" type="button">שמור מבנה</button>' + (d.gen ? '<button class="ghost" id="esClear" type="button">נקה</button>' : "") + '<button class="cancel" type="button">סגור</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
   q(".cancel").onclick = close;
@@ -1279,7 +1281,7 @@ function openElecSetup() {
       return;
     }
     try {
-      await saveElecCfg({ gen });
+      await saveElecCfg({ ...d.struct ? { struct: d.struct } : {}, gen });
     } catch (e) {
       toast("השמירה נכשלה.");
       return;
@@ -1292,7 +1294,7 @@ function openElecSetup() {
   if (c) c.onclick = async () => {
     if (!await ask("לנקות את המבנה מהמספרים?" + (builtIn ? " המבנה המובנה יחזור." : ""), "נקה")) return;
     try {
-      await saveElecCfg({});
+      await saveElecCfg(d.struct ? { struct: d.struct } : {});
     } catch (e) {
       toast("השמירה נכשלה.");
       return;
@@ -1300,7 +1302,7 @@ function openElecSetup() {
     close();
   };
 }
-function __init$k() {
+function __init$l() {
   shared.ELEC = [];
   shared.ELECCFG = null;
   try {
@@ -1322,7 +1324,7 @@ const m21 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   __proto__: null,
   INV_STEPS,
   ST_STEPS,
-  __init: __init$k,
+  __init: __init$l,
   currentElec,
   elecDoc,
   elecItems,
@@ -1687,7 +1689,7 @@ function renderTasks() {
   }
   foldSum("tasks", S.open ? S.open + " פתוחות" + (S.late ? " · " + S.late + " באיחור" : "") : list.length ? "הכול סגור" : "");
 }
-function __init$j() {
+function __init$k() {
   shared.TASKS = [];
   try {
     shared.TASKS = JSON.parse(ls.get("tasks") || "[]");
@@ -1700,7 +1702,7 @@ function __init$j() {
 const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   TASK_MAX_PHOTO,
-  __init: __init$j,
+  __init: __init$k,
   assigneeNames,
   isLate,
   isOpen,
@@ -1717,7 +1719,7 @@ const m22 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
 const COL = { con: "#FFAA00", pan: "#3199CC", ok: "#9AC339" }, ORDER = ["con", "pan", "ok"];
 const PLAN_W = 620;
 const PLAN_PROMPT = 'בתמונה תוכנית של אתר סולארי (מבט מלמעלה): שדות של שולחנות פאנלים בשורות. בנה ממנה מבנה סכמתי למעקב ביצוע. קואורדינטות x ו-y מ-0 עד 1000 על פני התמונה (0,0 בפינה השמאלית העליונה). החזר רק JSON, בלי הסברים: {"fence":[x,y,w,h] או null,"fields":[{"name":"<שם השדה / הבלוק כפי שמופיע, אחרת מערב/מזרח או A, B…>","x":0,"y":0,"w":0,"h":0,"rows":<מספר שורות השולחנות בשדה>,"tables":<שולחנות בשורה טיפוסית>}]}. שדה = גוש שורות רציף; דרך רחבה בין גושים מפרידה שדות.';
-const num = (v) => Number.isFinite(Number(v)) ? Number(v) : NaN;
+const num$1 = (v) => Number.isFinite(Number(v)) ? Number(v) : NaN;
 const validId = (v) => {
   v = v == null ? "" : String(v).trim();
   return /^[A-Za-z0-9_\-.:~֐-׿]{1,40}$/.test(v) ? v : "";
@@ -1734,13 +1736,13 @@ function evenRows(f, n, tables) {
 function normLayout(raw) {
   if (!raw || typeof raw !== "object") return null;
   const box = (o) => {
-    const x = num(o.x), y = num(o.y), w = num(o.w), h = num(o.h);
+    const x = num$1(o.x), y = num$1(o.y), w = num$1(o.w), h = num$1(o.h);
     return [x, y, w, h].every(Number.isFinite) && w > 0 && h > 0 ? { x, y, w, h } : null;
   };
   const fields = (Array.isArray(raw.fields) ? raw.fields : []).map((f, i) => {
     const b = box(f || {});
     if (!b) return null;
-    return { ...b, id: validId(f.id) || "f" + (i + 1), name: String(f.name || "שדה " + String.fromCharCode(65 + i)).slice(0, 30), rows: Math.max(1, Math.min(80, Math.round(num(f.rows) || Math.max(2, b.h / 20)))), tables: Math.max(1, Math.min(60, Math.round(num(f.tables) || 1))) };
+    return { ...b, id: validId(f.id) || "f" + (i + 1), name: String(f.name || "שדה " + String.fromCharCode(65 + i)).slice(0, 30), rows: Math.max(1, Math.min(80, Math.round(num$1(f.rows) || Math.max(2, b.h / 20)))), tables: Math.max(1, Math.min(60, Math.round(num$1(f.tables) || 1))) };
   }).filter(Boolean).slice(0, 40);
   if (!fields.length) return null;
   const used = /* @__PURE__ */ new Set();
@@ -1751,7 +1753,7 @@ function normLayout(raw) {
     used.add(id);
   });
   let fx, fy, fw, fh;
-  const fb = Array.isArray(raw.fence) && raw.fence.length === 4 && raw.fence.map(num);
+  const fb = Array.isArray(raw.fence) && raw.fence.length === 4 && raw.fence.map(num$1);
   if (fb && fb.every(Number.isFinite) && fb[2] > 0 && fb[3] > 0) [fx, fy, fw, fh] = fb;
   else {
     const xs = fields.flatMap((f) => [f.x, f.x + f.w]), ys = fields.flatMap((f) => [f.y, f.y + f.h]);
@@ -1769,7 +1771,7 @@ function normLayout(raw) {
   return { w: PLAN_W, h: Math.round(fh * k + 2 * M2), fields: F, src: "plan" };
 }
 function genLayout(g) {
-  const fields = Math.max(1, Math.min(12, Math.round(num(g && g.fields) || 1))), rows = Math.max(1, Math.min(80, Math.round(num(g && g.rows) || 10))), tables = Math.max(1, Math.min(60, Math.round(num(g && g.tables) || 10)));
+  const fields = Math.max(1, Math.min(12, Math.round(num$1(g && g.fields) || 1))), rows = Math.max(1, Math.min(80, Math.round(num$1(g && g.rows) || 10))), tables = Math.max(1, Math.min(60, Math.round(num$1(g && g.tables) || 10)));
   const names = String(g && g.names || "").split(/[,،\n]/).map((s) => s.trim()).filter(Boolean);
   const M2 = 16, cols = fields > 1 ? 2 : 1, gut = 24, fw = (PLAN_W - 2 * M2 - (cols - 1) * gut) / cols, fh = rows * 14 + 8;
   const F = [];
@@ -2220,7 +2222,7 @@ function taskMarks(L, g, EM) {
   T.forEach((t) => {
     let x, y, key;
     if (t.item) {
-      const m = (EM || []).find((m23) => m23.id === t.item);
+      const m = (EM || []).find((m24) => m24.id === t.item);
       if (!m) {
         if (!t.areaId) return;
       } else {
@@ -2725,7 +2727,7 @@ function openAddPlan() {
     toast("התוכנית נשמרה.");
   };
 }
-function __init$i() {
+function __init$j() {
   shared.LAYOUT = null;
   shared.PLANS = [];
   try {
@@ -2749,7 +2751,7 @@ const m20 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   ELEC_KEYS,
   PLAN_PROMPT,
   TASK_COL,
-  __init: __init$i,
+  __init: __init$j,
   currentLayout,
   drawMini,
   elecKeysHtml,
@@ -2996,7 +2998,7 @@ function netSeen(snap) {
   if (!c) NET.cacheSince = 0;
   else if (!NET.cacheSince) NET.cacheSince = Date.now();
 }
-function __init$h() {
+function __init$i() {
   ROLE = "owner";
   ME = null;
   ROLE_LABEL = { owner: "בעלים", editor: "עריכה", viewer: "צפייה" };
@@ -3404,7 +3406,7 @@ const m18 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get ROLE_LABEL() {
     return ROLE_LABEL;
   },
-  __init: __init$h,
+  __init: __init$i,
   applyRole,
   drawNet,
   get hiddenAt() {
@@ -3543,11 +3545,11 @@ function renderTodayTip() {
   };
   box.hidden = false;
 }
-function __init$g() {
+function __init$h() {
 }
 const m12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$g,
+  __init: __init$h,
   foldSum,
   renderTodayTip,
   tidyUI
@@ -4042,7 +4044,7 @@ async function registerCrewToday() {
   logAct("daylog", "add", "נרשם הצוות ליום " + isoText(shared.dayISO) + ": " + src.length + " אנשים", "");
   renderDay();
 }
-function __init$f() {
+function __init$g() {
   shared.daylog = [];
   shared.dayISO = "";
   shared.CREW = [];
@@ -4118,7 +4120,7 @@ const m11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get LATE() {
     return LATE;
   },
-  __init: __init$f,
+  __init: __init$g,
   conRows,
   copyCrew,
   get csCon() {
@@ -4259,15 +4261,15 @@ async function saveBoq(lines, source) {
   logAct("settings", "edit", "EBOQ עודכן · " + doc.lines.length + " פריטים · " + doc.source, "settings/boq");
 }
 function parseEboq(rows) {
-  const clean = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
+  const clean2 = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
   const num2 = (v) => {
-    const mm = clean(v).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+    const mm = clean2(v).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
     return mm ? Number(mm[0]) : 0;
   };
   const HEB = /[֐-׿]/, GENERIC = ["סט", "הארקה", "כבל", "צינור", "קופסא", "שרוול"];
-  const hi = rows.findIndex((r) => (r || []).some((c) => /item number/i.test(clean(c))));
+  const hi = rows.findIndex((r) => (r || []).some((c) => /item number/i.test(clean2(c))));
   if (hi < 0) return null;
-  const H = rows[hi].map((c) => clean(c).toLowerCase());
+  const H = rows[hi].map((c) => clean2(c).toLowerCase());
   const col = (...names) => {
     for (const n of names) {
       const i = H.indexOf(n.toLowerCase());
@@ -4284,7 +4286,7 @@ function parseEboq(rows) {
   const lines = [];
   let section = "", prev = null, last = "";
   const codeOf = (s) => {
-    s = clean(s);
+    s = clean2(s);
     if (!s) return ["", false];
     if (/^\d+$/.test(s)) return [s, true];
     let mm = s.match(/^(\d+)\.(\d+)$/);
@@ -4304,9 +4306,9 @@ function parseEboq(rows) {
   for (let ri = hi + 1; ri < rows.length; ri++) {
     const r = rows[ri] || [];
     const v = (i) => i >= 0 && i < r.length ? r[i] : "";
-    const en = clean(v(cEn)), he = clean(v(cHe));
-    let desc = clean(v(cDesc));
-    const calc = clean(v(cCalc));
+    const en = clean2(v(cEn)), he = clean2(v(cHe));
+    let desc = clean2(v(cDesc));
+    const calc = clean2(v(cCalc));
     if (!(he || en)) continue;
     let [code, isSec] = codeOf(v(cI));
     if (isSec) {
@@ -4314,15 +4316,15 @@ function parseEboq(rows) {
       prev = null;
       continue;
     }
-    let unit = clean(v(cUnit)), qty = num2(v(cNote)), sup = clean(v(cSup)), po = clean(v(cPoNo)), sku = clean(v(cSku)), rem = clean(v(cRem));
-    const poRaw = clean(v(cPo));
+    let unit = clean2(v(cUnit)), qty = num2(v(cNote)), sup = clean2(v(cSup)), po = clean2(v(cPoNo)), sku = clean2(v(cSku)), rem = clean2(v(cRem));
+    const poRaw = clean2(v(cPo));
     let poQty = HEB.test(poRaw) ? 0 : num2(poRaw);
     if (!qty && /^\d+(\.\d+)?$/.test(desc)) {
       qty = num2(desc);
       desc = "";
     }
     if (!po) {
-      const c = r.map(clean).find((s) => /^PO\d{6,}$/.test(s));
+      const c = r.map(clean2).find((s) => /^PO\d{6,}$/.test(s));
       if (c) po = c;
     }
     if (code) {
@@ -4513,7 +4515,7 @@ function openBoqLinker(prefill) {
     return;
   }
   const cat = catalog().filter((c) => c.codes.length);
-  let mode = "open", qtxt = (prefill || "").toLowerCase(), shown = 40, onlySup = true;
+  let mode2 = "open", qtxt = (prefill || "").toLowerCase(), shown = 40, onlySup = true;
   const boqSups = [...new Set(shared.boq.map((l) => l.supplier).filter(Boolean))];
   const isBoqSup = (sup) => boqSups.some((x) => supMatch(sup, x));
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קישור תעודות ל-EBOQ"><div class="grab"></div><h2>תעודות משלוח ↔ EBOQ</h2><div class="note-card">שמות בתעודה הם של הספק, שמות ב-EBOQ של המתכנן. כל שורה שתקשר כאן נלמדת: בפעם הבאה שאותו פריט מגיע מאותו ספק הוא מתקשר לבד. «לא ב-EBOQ» = פריט שלא מופיע בכתב הכמויות (ציוד, סרטים, תופים).</div>' + (shared.SAMPLE && ROLE !== "viewer" ? '<button class="ghost" type="button" id="lkAuto" style="width:100%;margin-bottom:8px">קישור אוטומטי עם AI לכל מה שלא מקושר</button>' : "") + '<div class="chips" id="lkMode" style="margin-bottom:8px"><button type="button" class="chip2" data-m="open" aria-pressed="true">לא מקושר</button><button type="button" class="chip2" data-m="linked" aria-pressed="false">מקושר</button><button type="button" class="chip2" data-m="likely" aria-pressed="false">כנראה ?</button><button type="button" class="chip2" data-m="none" aria-pressed="false">לא ב-EBOQ</button><button type="button" class="chip2" id="lkSup" aria-pressed="true">רק ספקי EBOQ</button></div><div class="search" style="margin-bottom:8px"><input type="text" id="lkQ" placeholder="חפש שורה לפי שם או ספק" autocomplete="off"><span class="ico">⌕</span></div><div id="lkList"></div><div class="acts"><button class="cancel" type="button" style="flex:1">סגור</button></div></div>');
@@ -4531,7 +4533,7 @@ function openBoqLinker(prefill) {
   q("#lkMode").onclick = (e) => {
     const b = e.target.closest("[data-m]");
     if (!b) return;
-    mode = b.dataset.m;
+    mode2 = b.dataset.m;
     shown = 40;
     scrim.querySelectorAll("#lkMode .chip2").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
     draw2();
@@ -4582,13 +4584,13 @@ function openBoqLinker(prefill) {
     src.forEach(([n, coll]) => (n.lines || []).forEach((l, i) => {
       if (l.skip) return;
       const st = !l.boq ? "open" : l.boq === "-" ? "none" : l.boqConf === "likely" ? "likely" : "linked";
-      if (mode === "linked" ? st !== "linked" && st !== "likely" : st !== mode) return;
+      if (mode2 === "linked" ? st !== "linked" && st !== "likely" : st !== mode2) return;
       if (qtxt && !((l.name || "").toLowerCase().includes(qtxt) || (n.supplier || "").toLowerCase().includes(qtxt) || (n.no || "").toLowerCase().includes(qtxt))) return;
       if (onlySup && !qtxt && st === "open" && coll === "deliveries" && !isBoqSup(n.supplier)) return;
       rows.push({ n, l, i, st, coll });
     }));
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">' + (mode === "open" ? "הכל מקושר." : "אין שורות.") + "</div>";
+      box.innerHTML = '<div class="empty">' + (mode2 === "open" ? "הכל מקושר." : "אין שורות.") + "</div>";
       return;
     }
     rows.slice(0, shown).forEach(({ n, l, i, st, coll }) => {
@@ -4739,7 +4741,7 @@ function openBoqImport() {
     if (ROLE !== "viewer" && (shared.demoStock ? [] : shared.deliveries).some((n) => n.source !== "bom" && (n.lines || []).some((l) => !l.boq))) setTimeout(() => openBoqLinker(), 400);
   };
 }
-function __init$e() {
+function __init$f() {
   shared.boq = [];
   shared.boqSource = "";
   shared.orders = [];
@@ -4779,7 +4781,7 @@ const m13 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get ORDER_ST() {
     return ORDER_ST;
   },
-  __init: __init$e,
+  __init: __init$f,
   get aliasKey() {
     return aliasKey;
   },
@@ -5021,7 +5023,7 @@ function openPoDetail(p) {
   };
   scrim.querySelector("#pdCopy").onclick = () => copyText("*" + p.no + " · " + (p.supplier || "") + "*\n" + (fmtDT(p.dateText) || "") + (p.details ? " · " + p.details : "") + "\n" + (p.lines || []).filter((l) => !l.skip).map((l, i) => i + 1 + ". " + l.name + " — " + fmtN(l.qty) + " " + (l.unit || "") + " · הגיעו " + fmtN(receivedSince(p, l))).join("\n"));
 }
-function __init$d() {
+function __init$e() {
   dueIso = (d) => {
     const m = String(d || "").match(/^(\d\d)\/(\d\d)\/(\d\d)$/);
     return m ? "20" + m[3] + "-" + m[2] + "-" + m[1] : "";
@@ -5061,7 +5063,7 @@ function __init$d() {
 }
 const m17 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  __init: __init$d,
+  __init: __init$e,
   get dueIso() {
     return dueIso;
   },
@@ -5970,7 +5972,7 @@ function poStatus(p) {
   if (late) return { k: "late", label: "לא נקלט · באיחור", color: "var(--clay)", got, n: L.length };
   return { k: "wait", label: "בדרך", color: "var(--info)", got, n: L.length };
 }
-function __init$c() {
+function __init$d() {
   shared.cba = { packages: [], prices: [], source: "", ts: 0 };
   CBA_ST = { po: ["הוזמן", "var(--sage)"], pending: ["ממתין להחלטה", "var(--amber)"], quotes: ["הצעות מחיר", "var(--info)"], open: ["פתוח", "var(--ink3)"] };
   fmtMoney = (v, cur) => {
@@ -6009,7 +6011,7 @@ const m14 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   get REQ_ST() {
     return REQ_ST;
   },
-  __init: __init$c,
+  __init: __init$d,
   cbaPrice,
   get fmtMoney() {
     return fmtMoney;
@@ -6346,7 +6348,7 @@ function openPanelMove() {
   const today = /* @__PURE__ */ new Date();
   const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
   const sites = [...new Set([...shared.panelMoves.map((m) => m.site), ...shared.panelBal.flatMap((b) => (b.takenOut || []).map((t) => t.site))].filter(Boolean))];
-  const F = (id, l, v, ph, mode) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="text" id="' + id + '" value="' + esc(v ?? "") + '" placeholder="' + esc(ph || "") + '"' + (mode ? ' inputmode="' + mode + '"' : "") + ' autocomplete="off"></div>';
+  const F = (id, l, v, ph, mode2) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="text" id="' + id + '" value="' + esc(v ?? "") + '" placeholder="' + esc(ph || "") + '"' + (mode2 ? ' inputmode="' + mode2 + '"' : "") + ' autocomplete="off"></div>';
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="פאנלים בין אתרים"><div class="grab"></div><h2>פאנלים: הגיעו / יצאו</h2><div class="note-card">תנועת פאנלים בין אתרים, בלי לספור מחדש: המאזן מתעדכן לבד. ספירה מלאה עושים ב«עדכון מאזן».</div><div class="f"><label>כיוון</label><div class="opts" id="pmDir"><button class="opt" type="button" data-d="in" aria-pressed="true">הגיעו לאתר<small>מאתר אחר</small></button><button class="opt" type="button" data-d="out" aria-pressed="false">יצאו מהאתר<small>לאתר אחר</small></button></div></div><div class="f"><label for="pmSite">איזה אתר</label><input type="text" id="pmSite" list="pmSites" placeholder="למשל: אשלים" autocomplete="off"><datalist id="pmSites">' + sites.map((x) => '<option value="' + esc(x) + '"></option>').join("") + '</datalist></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + F("pmPal", "משטחים", "", "3", "numeric") + F("pmQty", "פאנלים", "", "99", "numeric") + "</div>" + F("pmBroken", "שבורים בהגעה", "", "0", "numeric") + '<div class="f"><label for="pmDate">תאריך</label><input type="date" id="pmDate" value="' + iso + '"></div>' + F("pmBy", "מי קלט", ls.get("issuer") || "", "השם שלך") + F("pmNote", "הערה", "", "מספר תעודה, נהג, מי פרק") + '<div class="acts"><button class="save" id="pmSave" type="button" disabled>שמור</button><button class="cancel" id="pmCancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (x) => scrim.querySelector(x);
@@ -6511,7 +6513,7 @@ function openStockActions() {
     else openQuickCount();
   });
 }
-function __init$b() {
+function __init$c() {
   shared.panelBal = [];
   shared.panelMoves = [];
   curPb = () => pbEffective(shared.panelBal.slice().sort((a, b) => b.ts - a.ts)[0] || null);
@@ -6537,7 +6539,7 @@ const m5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   get N() {
     return N;
   },
-  __init: __init$b,
+  __init: __init$c,
   get curPb() {
     return curPb;
   },
@@ -6553,6 +6555,606 @@ const m5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   },
   renderPanelBal,
   ringHtml
+}, Symbol.toStringTag, { value: "Module" }));
+const EXT = (p) => {
+  const m = String(p).toLowerCase().match(/\.([a-z0-9]{1,6})$/);
+  return m ? m[1] : "";
+};
+const BASE = (p) => String(p).split("/").pop();
+const SYSTEM = /^(thumbs\.db|desktop\.ini|\.ds_store)$/i;
+const CAD = /* @__PURE__ */ new Set(["dwg", "dxf", "bak", "dwl", "dwl2", "tmp", "log", "err", "xgslab", "xglcad", "rvt", "skp", "pvsyst", "pan", "ond", "db"]);
+const SHEET = /* @__PURE__ */ new Set(["xlsx", "xlsm", "xls", "csv"]);
+const IMAGE = /* @__PURE__ */ new Set(["jpg", "jpeg", "png", "webp", "heic"]);
+function drawingKey(name) {
+  const b = BASE(name).replace(/\.[a-z0-9]{1,6}$/i, "");
+  const m = b.match(/(?:^|[_\s-])([A-Z])_(\d+(?:\.\d+)?)(?=[_\s-]|$)/);
+  if (m) return m[1] + "_" + m[2];
+  return b.replace(/[\s_-]*rev\s*[a-z]?\s*\d*\b/ig, "").replace(/[\s_-]*גרסה\s*\d+.*$/, "").replace(/\(\s*\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?\s*\)/g, "").replace(/(?<=\D)-\d{1,2}$/, "").replace(/[\s._-]+$/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+function revRank(name) {
+  const b = BASE(name);
+  let m = b.match(/rev\s*\.?\s*(\d+)(?![\d])/i);
+  if (m && !/rev\s*\.?\s*p/i.test(b.slice(m.index, m.index + m[0].length))) return 1e3 + Number(m[1]);
+  m = b.match(/rev\s*\.?\s*p\s*0?(\d+)/i);
+  if (m) return 100 + Number(m[1]);
+  m = b.match(/גרסה\s*(\d+)/);
+  if (m) return 1e3 + Number(m[1]);
+  return 0;
+}
+function revText(name) {
+  const b = BASE(name);
+  let m = b.match(/rev\s*\.?\s*(p?\s*\d+)/i);
+  if (m) return "rev" + m[1].replace(/\s+/g, "").toUpperCase().replace(/^P/, "P");
+  m = b.match(/גרסה\s*\d+/);
+  return m ? m[0] : "";
+}
+const OLD_DIR = /(^|\/)(old|ישן|ישנים|archive|superseded|backup)(\/|$)/i;
+function planKind(path) {
+  const k = drawingKey(path), L = /^[A-Z]_/.test(k) ? k[0] : "";
+  if (L === "E") return "חשמל";
+  if (L === "M" || L === "S") return "קונסטרוקציה";
+  if (L === "C") return "אזרחי";
+  const p = String(path).toLowerCase();
+  if (/electr|חשמל|lv board|mv board|sld|cable|grounding|inverter/.test(p)) return "חשמל";
+  if (/struct|mechan|construction|קונסטרוקציה|racks?\b|pile/.test(p)) return "קונסטרוקציה";
+  if (/civil|אזרחי|road|drain|fence|גדר|topo/.test(p)) return "אזרחי";
+  return "כללי";
+}
+function planName(path) {
+  return BASE(path).replace(/\.[a-z0-9]{1,6}$/i, "").replace(/[\s_-]*rev\s*\.?\s*p?\s*\d+\s*_?$/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
+}
+function classify(entries) {
+  const out = { plans: [], superseded: [], sheets: [], chats: [], images: [], docs: [], skipped: [], total: 0 };
+  const pdfs = [];
+  for (const e of entries || []) {
+    const path = String(e.path || "").replace(/\\/g, "/"), name = BASE(path), ext = EXT(path);
+    if (!name || path.endsWith("/")) continue;
+    out.total++;
+    if (SYSTEM.test(name) || name.startsWith("~$") || name.startsWith("._") || /(^|\/)__MACOSX\//.test(path)) {
+      out.skipped.push({ path, why: "system" });
+      continue;
+    }
+    if (ext === "pdf") {
+      if (OLD_DIR.test(path)) out.superseded.push({ path, by: "" });
+      else pdfs.push({ ...e, path, name });
+      continue;
+    }
+    if (SHEET.has(ext)) {
+      out.sheets.push({ ...e, path, name, old: OLD_DIR.test(path) });
+      continue;
+    }
+    if (ext === "zip") {
+      (/whatsapp|וואטסאפ|ווטסאפ/i.test(name) ? out.chats : out.skipped).push(/whatsapp|וואטסאפ|ווטסאפ/i.test(name) ? { ...e, path, name, kind: "zip" } : { path, why: "zip" });
+      continue;
+    }
+    if (ext === "txt" && /whatsapp|_chat\.txt$/i.test(name)) {
+      out.chats.push({ ...e, path, name, kind: "txt" });
+      continue;
+    }
+    if (IMAGE.has(ext)) {
+      out.images.push({ ...e, path, name });
+      continue;
+    }
+    if (ext === "docx" || ext === "doc") {
+      out.docs.push({ ...e, path, name });
+      continue;
+    }
+    if (CAD.has(ext) || /^atmp|^savea/i.test(name)) {
+      out.skipped.push({ path, why: "cad" });
+      continue;
+    }
+    out.skipped.push({ path, why: "other" });
+  }
+  const groups = /* @__PURE__ */ new Map();
+  for (const p of pdfs) {
+    const k = planKind(p.path) + "|" + drawingKey(p.path);
+    (groups.get(k) || groups.set(k, []).get(k)).push(p);
+  }
+  for (const list of groups.values()) {
+    const score = (p) => [revRank(p.path), -p.path.split("/").length, Number(p.size) || 0];
+    list.sort((a, b) => {
+      const x = score(a), y = score(b);
+      for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i];
+      return a.path < b.path ? -1 : 1;
+    });
+    const [best, ...rest] = list;
+    out.plans.push({ ...best, kind: planKind(best.path), rev: revText(best.path), title: planName(best.path), key: drawingKey(best.path), versions: list.length });
+    rest.forEach((p) => out.superseded.push({ path: p.path, by: best.path }));
+  }
+  const kindOrder = ["קונסטרוקציה", "חשמל", "אזרחי", "כללי"];
+  out.plans.sort((a, b) => kindOrder.indexOf(a.kind) - kindOrder.indexOf(b.kind) || a.title.localeCompare(b.title, "en", { numeric: true }));
+  return out;
+}
+const clean = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim();
+const num = (v) => {
+  if (typeof v === "number") return v;
+  const m = clean(v).replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : NaN;
+};
+function sniffSheet(rows, ctx2) {
+  const R = (rows || []).slice(0, 60).map((r) => (r || []).map(clean));
+  const has = (re) => R.some((r) => r.some((c) => re.test(c)));
+  const name = String(ctx2 && ctx2.file || "") + " " + String(ctx2 && ctx2.sheet || "");
+  if (/\bcba\b|cost break ?down/i.test(name) || has(/^cba$|cost breakdown/i)) return "cba";
+  if (R.some((r) => r.some((c) => /^inv(erter)?\.?\s*(num|no|#|number)/i.test(c))) && has(/^total strings?$/i)) return "dc-config";
+  if (has(/item number/i) && has(/total amount|calculated amount/i)) return "bom-schletter";
+  if (has(/item number/i) && has(/^ספק$/)) return "eboq";
+  if (R.slice(0, 16).some((r) => r[0] === "כמות כללית" && r[1])) return "status";
+  if (cableHeader(R) >= 0) return "cable-list";
+  return null;
+}
+const cableHeader = (R) => R.findIndex((r) => r.some((c) => /^type$/i.test(c)) && r.filter((c) => /quantity|כמות/i.test(c)).length === 1 && r.some((c) => /^unit$|יחידה/i.test(c)));
+function parseDcConfig(rows) {
+  const R = (rows || []).map((r) => r || []);
+  const find = (re) => {
+    for (let i = 0; i < R.length; i++) {
+      const j = R[i].findIndex((c) => re.test(clean(c)));
+      if (j >= 0) return [i, j];
+    }
+    return [-1, -1];
+  };
+  const [ri, ci] = find(/^inv(erter)?\.?\s*(num|no|#|number)/i), [si, sci] = find(/^total strings?$/i);
+  if (ri < 0 || si < 0) return null;
+  const cols = [];
+  for (let j = ci + 1; j < R[ri].length; j++) {
+    const v = R[ri][j];
+    if (v !== null && v !== void 0 && clean(v) !== "") cols.push(j);
+  }
+  const strCol = (j) => num(R[si][j]);
+  const invCols = cols.filter((j) => Number.isFinite(strCol(j)) && strCol(j) > 0);
+  if (!invCols.length) return null;
+  let icbAt = [];
+  for (let i = Math.max(0, ri - 4); i < ri; i++) {
+    const hits = [];
+    R[i].forEach((c, j) => {
+      const m = clean(c).match(/^(?:icb|ICB)\s*([\d.]+)$/i);
+      if (m) hits.push([j, m[1]]);
+    });
+    if (hits.length) icbAt = hits;
+  }
+  const icbOf = (j) => {
+    let id = "";
+    for (const [jj, v] of icbAt) if (jj <= j) id = v;
+    return id;
+  };
+  const rawStation = (j) => {
+    const v = R[ri][j];
+    const s = typeof v === "number" ? String(Math.floor(v)) : clean(v).split(".")[0];
+    return s && /^\d+$/.test(s) ? s : icbOf(j).split(".")[0] || "1";
+  };
+  const stations = /* @__PURE__ */ new Map();
+  const seq = /* @__PURE__ */ new Map();
+  for (const j of invCols) {
+    const st = rawStation(j);
+    const n = (seq.get(st) || 0) + 1;
+    seq.set(st, n);
+    const icb = icbOf(j) || st;
+    if (!stations.has(st)) stations.set(st, /* @__PURE__ */ new Map());
+    const icbs = stations.get(st);
+    if (!icbs.has(icb)) icbs.set(icb, []);
+    icbs.get(icb).push([st + "." + n, Math.round(strCol(j))]);
+  }
+  const label = (re) => {
+    for (const r of R) for (let j = 0; j < r.length - 1; j++) if (re.test(clean(r[j]))) {
+      for (let k = j + 1; k < Math.min(r.length, j + 3); k++) {
+        const v = num(r[k]);
+        if (Number.isFinite(v)) return v;
+      }
+    }
+    return NaN;
+  };
+  let stringPanels = label(/אורך סטרינג|string length|modules? per string/i);
+  if (!Number.isFinite(stringPanels)) {
+    const vals = [];
+    R.forEach((r, i) => {
+      if (i > ri && i < si) invCols.forEach((j) => {
+        const v = num(r[j]);
+        if (Number.isFinite(v) && v > 1) vals.push(v);
+      });
+    });
+    stringPanels = vals.length ? mode(vals) : 27;
+  }
+  let moduleW = label(/^הספק$|module power|wp per module/i);
+  const kwpRow = R.findIndex((r) => r.some((c) => /module\s*type\s*\[?kwp/i.test(clean(c))));
+  if (!Number.isFinite(moduleW) && kwpRow >= 0) {
+    const v = num(R[kwpRow][invCols[0]]);
+    if (Number.isFinite(v)) moduleW = v < 5 ? Math.round(v * 1e3) : v;
+  }
+  const out = { src: "", stringPanels, stations: [] };
+  [...stations.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).forEach(([st, icbs]) => {
+    out.stations.push({ id: "S" + st, name: "תחנה " + st, side: "", icbs: [...icbs.entries()].map(([id, inv]) => ({ id, inv })) });
+  });
+  const strings = out.stations.reduce((s, x) => s + x.icbs.reduce((a, c) => a + c.inv.reduce((q, [, n]) => q + n, 0), 0), 0);
+  out.totals = { stations: out.stations.length, icbs: out.stations.reduce((s, x) => s + x.icbs.length, 0), inverters: invCols.length, strings, panels: strings * stringPanels, moduleW: Number.isFinite(moduleW) ? moduleW : 0 };
+  out.totals.kwp = out.totals.moduleW ? Math.round(out.totals.panels * out.totals.moduleW) / 1e3 : 0;
+  return out;
+}
+const mode = (a) => {
+  const c = /* @__PURE__ */ new Map();
+  a.forEach((v) => c.set(v, (c.get(v) || 0) + 1));
+  return [...c.entries()].sort((x, y) => y[1] - x[1])[0][0];
+};
+function parseCableList(rows) {
+  const R = (rows || []).map((r) => (r || []).map((v) => v));
+  const hi = cableHeader(R.slice(0, 60).map((r) => r.map(clean)));
+  if (hi < 0) return null;
+  const H = R[hi].map((c) => clean(c).toLowerCase());
+  const col = (re) => H.findIndex((h) => re.test(h));
+  const cSvc = col(/^service$|^שירות$|^מערכת$/), cType = col(/^type$/), cDesc = col(/תיאור|description/), cUnit = col(/^unit$|יחידה/), cQty = col(/quantity|כמות/);
+  const lines = [];
+  let svc = "";
+  for (let i = hi + 1; i < R.length; i++) {
+    const r = R[i];
+    const v = (j) => j >= 0 && j < r.length ? clean(r[j]) : "";
+    if (v(cSvc)) svc = v(cSvc);
+    const type = v(cType);
+    const qty = num(r[cQty]);
+    if (!type || !Number.isFinite(qty) || qty <= 0) continue;
+    const u2 = v(cUnit).toLowerCase();
+    const unit = /^m$|^מ'?$|meter|מטר/.test(u2) ? "מטר" : /pcs|יח/.test(u2) ? "יח'" : /set|סט/.test(u2) ? "סט" : u2 || "יח'";
+    const desc = v(cDesc);
+    lines.push({ name: type, en: type, code: "", qty: Math.round(qty * 100) / 100, unit, cat: /fire|אש|כיבוי/i.test(svc + " " + type) ? "safety" : "electrical", supplier: "", group: svc, note: desc });
+  }
+  lines.forEach((l, i) => {
+    l.code = String(i + 1);
+  });
+  return lines.length ? { lines } : null;
+}
+function projectNameFrom(rows) {
+  for (const r of (rows || []).slice(0, 30)) for (let j = 0; j < (r || []).length - 1; j++) {
+    if (/^\*?\s*project name\s*:?$/i.test(clean(r[j]))) {
+      for (let k = j + 1; k < Math.min(r.length, j + 3); k++) {
+        const v = clean(r[k]);
+        if (v && !/:$/.test(v)) return v;
+      }
+    }
+  }
+  return null;
+}
+const WHY_HE = { system: "קובצי מערכת", cad: "שרטוטי CAD וקובצי עבודה (DWG, BAK)", zip: "קובצי ZIP פנימיים", other: "סוג קובץ אחר" };
+function skippedSummary(c) {
+  const by = {};
+  (c.skipped || []).forEach((s) => {
+    by[s.why] = (by[s.why] || 0) + 1;
+  });
+  const out = Object.entries(by).map(([k, n]) => ({ k, n, label: WHY_HE[k] || k }));
+  if (c.superseded && c.superseded.length) out.unshift({ k: "old", n: c.superseded.length, label: "גרסאות ישנות של אותה תוכנית" });
+  if (c.docs && c.docs.length) out.push({ k: "docs", n: c.docs.length, label: "מסמכי Word" });
+  if (c.images && c.images.length) out.push({ k: "img", n: c.images.length, label: "תמונות בודדות" });
+  return out;
+}
+const XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+const ZIP_URL = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+const MAX_SHEET = 15e6, MAX_INLINE = 15e5;
+async function entriesOf(files) {
+  const out = [], chats = [];
+  for (const f of files) {
+    if (/\.zip$/i.test(f.name)) {
+      if (!window.JSZip) await loadScript(ZIP_URL);
+      const z = await JSZip.loadAsync(f);
+      const list = Object.values(z.files).filter((x) => !x.dir);
+      if (list.some((x) => /(^|\/)(_chat\.txt|whatsapp chat[^/]*\.txt)$/i.test(x.name)) && list.filter((x) => /\.(jpe?g|png|webp)$/i.test(x.name)).length >= list.length / 2) {
+        chats.push({ path: f.name, name: f.name, size: f.size, file: f });
+        continue;
+      }
+      list.forEach((x) => out.push({ path: x.name, size: x._data && x._data.uncompressedSize || 0, read: (t) => x.async(t) }));
+    } else {
+      const path = f.webkitRelativePath || f.name;
+      out.push({ path, size: f.size, file: f, read: (t) => t === "blob" ? Promise.resolve(f) : t === "string" ? f.text() : f.arrayBuffer().then((b) => new Uint8Array(b)) });
+    }
+  }
+  return { entries: out, chats };
+}
+async function analyze(files, prog) {
+  prog(5, "פותח את הקבצים…");
+  const { entries, chats } = await entriesOf(files);
+  const byPath = new Map(entries.map((e) => [e.path.replace(/\\/g, "/"), e]));
+  const cls = classify(entries.map((e) => ({ path: e.path, size: e.size })));
+  const R = { cls, byPath, chats: chats.concat(cls.chats.filter((c) => c.kind === "zip").map((c) => ({ ...c, entry: byPath.get(c.path) }))), sheets: [], elec: null, boq: null, bom: null, status: null, project: null, cba: [] };
+  const sheets = cls.sheets.filter((s) => !s.old && (Number(s.size) || 0) <= MAX_SHEET);
+  if (sheets.length) await loadScript(XLSX_URL);
+  let i = 0;
+  for (const s of sheets) {
+    prog(10 + Math.round(80 * i++ / sheets.length), "קורא " + s.name);
+    const e = byPath.get(s.path);
+    let wb;
+    try {
+      wb = /\.csv$/i.test(s.path) ? XLSX.read(await e.read("string"), { type: "string" }) : XLSX.read(await e.read("uint8array"), { type: "array" });
+    } catch (err) {
+      R.sheets.push({ path: s.path, name: s.name, kind: "error" });
+      continue;
+    }
+    for (const sn of wb.SheetNames.slice(0, 8)) {
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+      const kind = sniffSheet(rows, { file: s.name, sheet: sn });
+      if (!R.project) R.project = projectNameFrom(rows);
+      R.sheets.push({ path: s.path, name: s.name, sheet: sn, kind: kind || "unknown" });
+      try {
+        if (kind === "dc-config" && !R.elec) {
+          const E = parseDcConfig(rows);
+          if (E) {
+            E.src = s.name;
+            R.elec = E;
+          }
+        } else if (kind === "eboq") {
+          const B = parseEboq(XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" }));
+          if (B && (!R.boq || R.boq.kind !== "eboq" || B.lines.length > R.boq.lines.length)) R.boq = { ...B, kind: "eboq", source: "EBOQ · " + s.name };
+        } else if (kind === "cable-list" && (!R.boq || R.boq.kind === "cable")) {
+          const B = parseCableList(rows);
+          if (B && (!R.boq || B.lines.length > R.boq.lines.length)) R.boq = { ...B, kind: "cable", source: "כמויות תכנון · " + s.name + " · " + sn };
+        } else if (kind === "bom-schletter" && !R.bom) {
+          const B = parseSchletterBom(rows);
+          if (B && B.lines.length) {
+            B.source = "BOM שלטר (" + s.name.replace(/\.xlsx?$/i, "") + ")";
+            R.bom = B;
+          }
+        } else if (kind === "status" && !R.status) {
+          const wb2 = XLSX.read(await e.read("uint8array"), { type: "array", cellDates: true });
+          const A = parseStatusWorkbook(wb2);
+          if (A && A.length) R.status = { acts: A, source: s.name };
+        } else if (kind === "cba") R.cba.push(s.name);
+      } catch (err) {
+      }
+    }
+  }
+  prog(95, "מסכם…");
+  return R;
+}
+const hasStatusPanels = () => (shared.STATUS || []).some((a) => /פאנל/.test(a.name || ""));
+function itemsOf(R) {
+  const it = [], N2 = fmtN;
+  const plansHave = new Set((shared.PLANS || []).map((p) => (p.name || "") + "|" + (p.rev || "")));
+  if (R.elec) {
+    const t = R.elec.totals;
+    const d = elecDoc();
+    const exists = !!(d && (d.struct || d.gen)) || !!currentElec();
+    it.push({ k: "elec", title: "מבנה החשמל", detail: t.stations + " תחנות · " + t.icbs + " כניסות ICB · " + t.inverters + " ממירים · " + N2(t.strings) + " סטרינגים", src: R.elec.src, exists });
+  }
+  if (R.elec && !R.status && R.elec.totals.panels) {
+    const t = R.elec.totals;
+    it.push({ k: "target", title: "יעד פאנלים", detail: N2(t.panels) + " פאנלים" + (t.moduleW ? " · " + t.moduleW + "W · " + N2(t.kwp) + " kWp" : ""), src: R.elec.src, exists: hasStatusPanels() });
+  }
+  if (R.boq) it.push({ k: "boq", title: R.boq.kind === "eboq" ? "כתב כמויות (EBOQ) והזמנות" : "כתב כמויות תכנוני", detail: N2(R.boq.lines.length) + " פריטים" + (R.boq.kind === "eboq" ? " · " + N2(R.boq.lines.filter((l) => l.po).length) + " עם הזמנת רכש" : "") + " · בלי מחירים", src: R.boq.source.replace(/^[^·]+· /, ""), exists: (shared.boq || []).length > 0 });
+  if (R.bom) it.push({ k: "bom", title: "כמויות לשולחן (BOM)", detail: N2(R.bom.lines.length) + " פריטים" + (R.bom.types.length ? " · " + R.bom.types.length + " סוגי שולחנות · " + N2(R.bom.types.reduce((s, t) => s + (Number(t.count) || 0), 0)) + " שולחנות" : ""), src: R.bom.source, exists: shared.kitSource !== KIT_SOURCE_DEFAULT || !!SITE.bomImported });
+  if (R.status) it.push({ k: "status", title: "סטטוס התקדמות", detail: R.status.acts.length + " פעילויות", src: R.status.source, exists: (shared.STATUS || []).length > 0 });
+  const plans = R.cls.plans.map((p) => ({ ...p, dup: plansHave.has(p.title + "|" + (p.rev || "")) }));
+  const fresh = plans.filter((p) => !p.dup);
+  if (plans.length) {
+    const by = {};
+    fresh.forEach((p) => {
+      by[p.kind] = (by[p.kind] || 0) + 1;
+    });
+    it.push({ k: "plans", title: "תוכניות", detail: fresh.length ? N2(fresh.length) + " העדכניות · " + Object.entries(by).map(([k, n]) => k + " " + n).join(" · ") : "כולן כבר במופע", list: plans, exists: false, none: !fresh.length });
+  }
+  it.forEach((x) => {
+    x.on = !x.exists && !x.none;
+  });
+  return it;
+}
+function missingOf(R, chosen) {
+  const on = (k) => chosen.some((x) => x.k === k && x.on);
+  const m = [];
+  if (!on("bom") && shared.kitSource === KIT_SOURCE_DEFAULT && !SITE.bomImported) m.push({ k: "bom", l: "כמויות לשולחן (BOM של הקונסטרוקציה)", s: "מזה נגזר לכמה שולחנות המלאי מספיק", btn: "ייבוא BOM", act: () => openBomImport() });
+  if (!currentLayout()) m.push({ k: "layout", l: "מבנה השדות והשורות", s: "למפת הביצוע. מתוכנית קונסטרוקציה או מהמספרים", btn: "מבנה האתר", act: () => openLayout() });
+  if (!on("elec") && !currentElec()) m.push({ k: "elec", l: "מבנה החשמל", s: "טבלת DC CONFIG, או במספרים", btn: "מבנה החשמל", act: () => openElecSetup() });
+  if (!on("boq") && !(shared.boq || []).length) m.push({ k: "boq", l: "כתב כמויות (EBOQ)", s: "מה הוזמן, מה הגיע ומה חסר", btn: "ייבוא EBOQ", act: () => openBoqImport() });
+  if (!R.chats.length && !shared.deliveries.length) m.push({ k: "stock", l: "מלאי פתיחה", s: "ייצוא וואטסאפ של קבוצת תעודות המשלוח, כולל מדיה", btn: "ייבוא מוואטסאפ", act: () => openImport() });
+  return m;
+}
+async function apply(R, items, siteName, step2) {
+  const on = (k) => items.some((x) => x.k === k && x.on);
+  const done = [], fail = [];
+  const T = async (label, fn) => {
+    try {
+      const r = await fn();
+      if (r) done.push(r);
+    } catch (e) {
+      fail.push(label);
+    }
+  };
+  if (on("elec")) await T("מבנה החשמל", async () => {
+    step2("מבנה החשמל");
+    await saveElecCfg({ struct: { src: R.elec.src, stringPanels: R.elec.stringPanels, stations: R.elec.stations }, from: "zip" });
+    return "מבנה החשמל: " + R.elec.totals.inverters + " ממירים";
+  });
+  if (on("target")) await T("יעד פאנלים", async () => {
+    step2("יעד פאנלים");
+    const ex = (shared.STATUS || []).find((a) => /פאנל/.test(a.name || ""));
+    const doc = { ...ex || {}, id: ex ? ex.id : "st_panels", name: ex ? ex.name : "פאנלים", order: ex ? ex.order : 4, total: R.elec.totals.panels, workDays: ex ? ex.workDays || 0 : 0, daily: ex ? ex.daily || [] : [], source: "תיקיית הפרויקט · " + R.elec.src, ts: Date.now() };
+    if (shared.DB) await shared.DB.doc("status/" + doc.id).set(doc);
+    else {
+      shared.STATUS = (shared.STATUS || []).filter((x) => x.id !== doc.id).concat(doc);
+      ls.set("status", JSON.stringify(shared.STATUS));
+    }
+    return "יעד פאנלים: " + fmtN(doc.total);
+  });
+  if (on("boq")) await T("כתב כמויות", async () => {
+    step2("כתב כמויות");
+    await saveBoq(R.boq.lines, R.boq.source);
+    return "כתב כמויות: " + fmtN(R.boq.lines.length) + " פריטים";
+  });
+  if (on("status")) await T("סטטוס", async () => {
+    step2("סטטוס התקדמות");
+    for (const a of R.status.acts) {
+      const ex = (shared.STATUS || []).find((x) => x.name === a.name);
+      const doc = { ...ex || {}, ...a, id: ex ? ex.id : a.id, ts: Date.now() };
+      if (shared.DB) await shared.DB.doc("status/" + doc.id).set(doc);
+      else shared.STATUS = (shared.STATUS || []).filter((x) => x.id !== doc.id).concat(doc);
+    }
+    if (!shared.DB) ls.set("status", JSON.stringify(shared.STATUS));
+    return "סטטוס: " + R.status.acts.length + " פעילויות";
+  });
+  if (on("bom")) await T("כמויות לשולחן", async () => {
+    step2("כמויות לשולחן");
+    const types = R.bom.types.length ? R.bom.types.map((t) => ({ id: t.id, label: t.label, count: t.count, customized: true })) : shared.kitTypes;
+    const tot = types.reduce((s, t) => s + (Number(t.count) || 0), 0) || 1;
+    const nm = await hebrewNames(R.bom.lines);
+    const lines = R.bom.lines.map((l, i) => {
+      const h = nm[i] || { heb: l.name, kit: false };
+      return { code: l.code, no: l.no, name: h.heb + " (מק״ט " + l.code + ")", def: !!h.kit, per: Object.fromEntries(types.map((t) => [t.id, Math.round(l.calc / tot * 10) / 10])), carton: 0 };
+    }).filter((l) => l.def);
+    shared.kitTypes = types;
+    await saveKit(lines, R.bom.source, "כמויות לשולחן מתיקיית הפרויקט · " + lines.length + " פריטים · " + R.bom.source);
+    return "כמויות לשולחן: " + lines.length + " פריטים לקיט";
+  });
+  await T("הגדרות האתר", async () => {
+    const was = SITE.name, name = siteName || SITE.name;
+    await saveSite({ name, company: SITE.company, panelsPerTable: SITE.panelsPerTable, bomImported: !!SITE.bomImported || on("bom") });
+    return name !== was ? "שם האתר: " + name : null;
+  });
+  if (on("plans")) {
+    const list = items.find((x) => x.k === "plans").list.filter((p) => !p.dup);
+    let n = 0, saved = 0, big = 0;
+    for (const p of list) {
+      step2("תוכנית " + ++n + " מתוך " + list.length);
+      try {
+        const e = R.byPath.get(p.path);
+        const blob = await e.read("blob");
+        const file = new File([blob], p.name, { type: "application/pdf" });
+        const id = "pl" + Date.now().toString(36) + n;
+        const doc = { id, name: p.title, kind: p.kind, rev: p.rev || "", mime: "application/pdf", size: file.size, ts: Date.now(), by: actorName(), asset: "", url: "", src: "zip", path: p.path };
+        if (shared.ASSETS) {
+          const a = await shared.ASSETS.upload(file);
+          doc.asset = a.id;
+          doc.url = a.url || "";
+        } else if (file.size <= MAX_INLINE) {
+          doc.url = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = rej;
+            r.readAsDataURL(file);
+          });
+        } else {
+          big++;
+          continue;
+        }
+        if (shared.DB) await shared.DB.doc("plans/" + id).set(doc);
+        else {
+          shared.PLANS = (shared.PLANS || []).concat(doc);
+          ls.set("plans", JSON.stringify(shared.PLANS));
+        }
+        saved++;
+      } catch (err) {
+        fail.push("תוכנית " + p.title);
+      }
+    }
+    if (saved) done.push("תוכניות: " + saved);
+    if (big) fail.push(big + " תוכניות גדולות מ-1.5MB (אין כאן אחסון קבצים)");
+  }
+  if (done.length && shared.demoStock) {
+    shared.demoStock = false;
+    ls.set("demoDoneS", "1");
+  }
+  logAct("settings", "add", "הקמה מתיקיית הפרויקט: " + done.join(" · ") + (fail.length ? " · לא נשמרו: " + fail.join(", ") : ""), "setup");
+  return { done, fail };
+}
+function openZipSetup() {
+  if (ROLE !== "owner") {
+    toast("הקמת אתר: בעלים בלבד.");
+    return;
+  }
+  const scrim = popup('<div class="sheet zs" role="dialog" aria-modal="true" aria-label="הקמה מתיקיית הפרויקט"><div class="grab"></div><h2>הקמה מתיקיית הפרויקט</h2><div id="zsBody"><p class="zs-lead">את כל התיקייה כמו שהיא: תוכניות, BOM, EBOQ, חישובי חשמל, סטטוס וייצוא וואטסאפ. האפליקציה ממיינת, מראה מה נמצא, ושום דבר לא נשמר לפני שמאשרים.</p><div class="pick zs-pick"><i class="ic ic-folder big" aria-hidden="true"></i>בחירת קובץ ZIP<small>אפשר כמה קבצים, למשל הפרויקט וייצוא הוואטסאפ</small><input type="file" id="zsZip" accept=".zip,application/zip,application/x-zip-compressed" multiple></div><label class="zs-folder" for="zsDir">או בחירת תיקייה מהמחשב<input type="file" id="zsDir" webkitdirectory directory multiple hidden></label></div><div class="acts"><button class="save" id="zsGo" type="button" hidden>הקם את האתר</button><button class="cancel" id="zsClose" type="button">סגור</button></div></div>');
+  const close = closer(scrim);
+  const q = (s) => scrim.querySelector(s), body = () => q("#zsBody");
+  q("#zsClose").onclick = close;
+  const prog = (pct, t) => {
+    body().innerHTML = '<div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div><div class="prog-t"><span>' + esc(t) + "</span></div>";
+  };
+  let R = null, items = [];
+  const run = async (files) => {
+    if (!files.length) return;
+    try {
+      R = await analyze(files, prog);
+    } catch (e) {
+      body().innerHTML = '<div class="empty">' + (e && /load/.test(e.message || "") ? "הספריות לקריאת ZIP ואקסל לא נטענו. צריך חיבור לאינטרנט." : "לא הצלחתי לפתוח את הקבצים. קובץ גדול מאוד נפתח טוב יותר מהמחשב.") + "</div>";
+      return;
+    }
+    items = itemsOf(R);
+    review();
+  };
+  q("#zsZip").onchange = (e) => run([...e.target.files]);
+  q("#zsDir").onchange = (e) => run([...e.target.files]);
+  function review() {
+    const c = R.cls, N2 = fmtN;
+    const unknown = R.sheets.filter((s) => s.kind === "unknown" || s.kind === "error");
+    const unknownFiles = [...new Set(unknown.map((s) => s.name))];
+    const skipped = skippedSummary(c);
+    const skippedN = skipped.reduce((s, x) => s + x.n, 0) + unknownFiles.length;
+    const any = items.length || R.chats.length;
+    const miss = missingOf(R, items);
+    body().innerHTML = '<div class="imp-sum"><span>קבצים <b>' + N2(c.total) + "</b></span><span>לשימוש <b>" + N2(items.reduce((s, x) => s + (x.k === "plans" ? x.list.filter((p) => !p.dup).length : 1), 0)) + "</b></span><span>דולגו <b>" + N2(skippedN) + '</b></span></div><div class="f"><label for="zsName">שם האתר</label><input type="text" id="zsName" value="' + esc(SITE.custom ? SITE.name : R.project ? "אתר הקמה " + R.project : SITE.name) + '" autocomplete="off"></div>' + (any ? '<h3 class="zs-h">מה יוקם</h3><div class="zs-items" id="zsItems">' + items.map((x, i) => '<label class="zs-item' + (x.none ? " none" : "") + '"><input type="checkbox" data-i="' + i + '"' + (x.on ? " checked" : "") + (x.none ? " disabled" : "") + '><span class="zs-t"><b>' + esc(x.title) + "</b><span>" + esc(x.detail) + "</span>" + (x.src ? "<small>" + esc(x.src) + "</small>" : "") + (x.exists ? '<small class="zs-warn">כבר קיים במופע. סימון יחליף אותו.</small>' : "") + "</span></label>" + (x.k === "plans" ? '<details class="zs-plans"><summary>רשימת התוכניות (' + N2(x.list.length) + ')</summary><div class="dlines">' + x.list.map((p) => "<div><span>" + esc(p.title) + (p.dup ? " <small>(כבר במופע)</small>" : "") + "</span><b>" + esc(p.rev || p.kind) + "</b></div>").join("") + "</div></details>" : "")).join("") + "</div>" : '<div class="empty">לא נמצא בתיקייה שום קובץ שאפשר להקים ממנו. בדוק שזו תיקיית הפרויקט, או התחל צעד אחר צעד.</div>') + (R.chats.length ? '<div class="note-card">נמצא ייצוא וואטסאפ (' + R.chats.length + "). התעודות נקלטות אחרי ההקמה, בקליטה הרגילה, כשאתה מאשר כל אחת.</div>" : "") + (R.cba.length ? '<div class="legend">קובץ CBA לא נקלט אוטומטית, כי יש בו מחירים. אפשר לייבא אותו ידנית בהגדרות.</div>' : "") + (miss.length ? '<h3 class="zs-h">לא נמצא בתיקייה</h3><ul class="zs-miss">' + miss.map((m) => "<li><b>" + esc(m.l) + "</b> " + esc(m.s) + "</li>").join("") + "</ul>" : "") + (skippedN ? '<details class="zs-skip"><summary>דולגו ' + N2(skippedN) + " קבצים</summary><ul>" + skipped.map((s) => "<li>" + esc(s.label) + ": <b>" + N2(s.n) + "</b></li>").join("") + (unknownFiles.length ? "<li>גיליונות שלא זוהו: <b>" + unknownFiles.length + "</b><br><small>" + unknownFiles.map(esc).join(" · ") + "</small></li>" : "") + "</ul></details>" : "");
+    scrim.querySelectorAll("#zsItems input[type=checkbox]").forEach((cb) => cb.onchange = () => {
+      items[+cb.dataset.i].on = cb.checked;
+      sync();
+    });
+    const sync = () => {
+      const b = q("#zsGo");
+      b.hidden = !any;
+      b.disabled = !items.some((x) => x.on) && !R.chats.length;
+      b.textContent = items.some((x) => x.on) ? "הקם את האתר" : "המשך לקליטת התעודות";
+    };
+    sync();
+    q("#zsGo").onclick = go;
+  }
+  async function go() {
+    const b = q("#zsGo");
+    b.disabled = true;
+    const name = (q("#zsName") || {}).value;
+    const siteName = String(name || "").trim();
+    let res = { done: [], fail: [] };
+    if (items.some((x) => x.on)) {
+      prog(5, "שומר…");
+      res = await apply(R, items, siteName, (t) => {
+        const p = q(".prog i"), s = q(".prog-t span");
+        if (s) s.textContent = t;
+        if (p) p.style.width = Math.min(95, (parseFloat(p.style.width) || 5) + 6) + "%";
+      });
+    }
+    try {
+      render();
+      renderStock();
+      renderElec();
+      renderPlans();
+      renderStatus();
+      renderWorkMap();
+    } catch (e) {
+    }
+    const miss = missingOf(R, items.map((x) => ({ ...x, on: false })));
+    body().innerHTML = (res.done.length ? '<h3 class="zs-h">האתר הוקם</h3><ul class="zs-done">' + res.done.map((d) => '<li><i class="ic ic-check" aria-hidden="true"></i>' + esc(d) + "</li>").join("") + "</ul>" : "") + (res.fail.length ? '<div class="note-card zs-fail">לא נשמרו: ' + res.fail.map(esc).join(", ") + ". אפשר להריץ שוב; מה שכבר נשמר לא יוכפל.</div>" : "") + (R.chats.length ? '<button class="add" type="button" id="zsChat"><i class="ic ic-doc"></i>קליטת תעודות מהוואטסאפ</button>' : "") + (miss.length ? '<h3 class="zs-h">כדי שהמספרים יהיו מלאים</h3><div class="zs-next">' + miss.map((m, i) => '<button class="slip" type="button" data-m="' + i + '"><b>' + esc(m.l) + "</b><span>" + esc(m.s) + '</span><span class="zs-go">' + esc(m.btn) + " ›</span></button>").join("") + "</div>" : "") + (items.some((x) => x.k === "bom" && x.on) ? '<button class="ghost strong" type="button" id="zsKit" style="width:100%;margin-top:10px">בדיקת הכמויות לשולחן</button>' : "");
+    b.hidden = true;
+    q("#zsClose").textContent = "סיום";
+    scrim.querySelectorAll("[data-m]").forEach((x) => x.onclick = () => {
+      close();
+      miss[+x.dataset.m].act();
+    });
+    const ch = q("#zsChat");
+    if (ch) ch.onclick = async () => {
+      const c = R.chats[0];
+      let f = c.file;
+      if (!f && c.entry) {
+        const bl = await c.entry.read("blob");
+        f = new File([bl], c.name || "whatsapp.zip", { type: "application/zip" });
+      }
+      close();
+      openImport([f]);
+    };
+    const kb = q("#zsKit");
+    if (kb) kb.onclick = () => {
+      close();
+      openKitEditor();
+    };
+    if (res.done.length) toast("האתר הוקם מתיקיית הפרויקט.");
+  }
+}
+function __init$b() {
+  const b = $("#onbZip");
+  if (b) b.onclick = openZipSetup;
+}
+const m23 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  __init: __init$b,
+  openZipSetup
 }, Symbol.toStringTag, { value: "Module" }));
 let KIT_SOURCE_DEFAULT, APP_VERSION, SHOW_PRICES, SITE, csvOf;
 function applySite(d) {
@@ -6574,7 +7176,7 @@ async function saveSite(doc) {
 function openSettings() {
   let types = shared.kitTypes.map((t) => ({ ...t }));
   const F = (id, l, v, hint, ph) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="text" id="' + id + '" value="' + esc(v ?? "") + '" placeholder="' + esc(ph || "") + '" autocomplete="off">' + (hint ? '<div class="hint">' + hint + "</div>" : "") + "</div>";
-  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2><div class="setgrid"><button class="ghost" type="button" id="stLog">יומן פעולות<small>מי שמר, מתי ומה</small></button><button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button><button class="ghost" type="button" id="stZip">ייצוא לאקסל<small>כל הטבלאות ב-ZIP</small></button><button class="ghost" type="button" id="stBom">ייבוא BOM / EBOQ / CBA<small>קונסטרוקציה · חשמל · מסחרי</small></button><button class="ghost" type="button" id="stLayout">מבנה האתר<small>שדות ושורות למפת הביצוע</small></button></div>' + F("stName", "שם האתר", SITE.name, "", "למשל: אתר הקמה עין תמר") + F("stCo", "חברה", SITE.company, "", "BELECTRIC") + F("stMe", "השם שלך", ls.get("issuer") || "", "נשמר במכשיר הזה וממולא אוטומטית כמנפיק / סופר / מדווח.", "השם שלך") + '<div class="f"><label>סוגי שולחנות וכמות באתר</label><div class="kitrows" id="stTypes"></div><button class="addline" type="button" id="stAddType" style="margin-top:8px">+ סוג שולחן</button><div class="hint">סה״כ שולחנות באתר הוא הסכום. ממנו מחושבים «נותרו» ו«לכמה שולחנות המלאי מספיק».</div></div>' + F("stPpt", "פאנלים לשולחן", SITE.panelsPerTable, "משמש להערכת כמה שולחנות עומדים לפי הפאנלים המותקנים.", "81") + '<div class="f" id="stDanger" hidden><label>ניהול</label><div class="setgrid"><button class="ghost danger" type="button" id="stRestore">שחזור מגיבוי<small>כותב את כל הנתונים מקובץ JSON</small></button><button class="ghost" type="button" id="stDemo">איפוס תצוגת דוגמה<small>מציג שוב נתוני דוגמה במכשיר הזה</small></button></div></div><div class="acts"><button class="save" id="stSave" type="button">שמור הגדרות</button><button class="cancel" id="stCancel" type="button">סגור</button></div><div class="hint" style="text-align:center;margin-top:14px">יומן אתר · גרסה ' + APP_VERSION + " · הנתונים נשמרים במרחב של האפליקציה ונגישים לכל מי שקיבל קישור" + (shared.DB ? "" : " · <b>כרגע במכשיר הזה בלבד</b>") + "</div></div>");
+  const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="הגדרות"><div class="grab"></div><h2>הגדרות</h2><div class="setgrid"><button class="ghost" type="button" id="stLog">יומן פעולות<small>מי שמר, מתי ומה</small></button><button class="ghost" type="button" id="stBackup">גיבוי מלא<small>קובץ JSON של כל הנתונים</small></button><button class="ghost" type="button" id="stZip">ייצוא לאקסל<small>כל הטבלאות ב-ZIP</small></button><button class="ghost" type="button" id="stZip2">הקמה מתיקיית הפרויקט<small>ZIP או תיקייה: הכל בפעם אחת</small></button><button class="ghost" type="button" id="stBom">ייבוא BOM / EBOQ / CBA<small>קונסטרוקציה · חשמל · מסחרי</small></button><button class="ghost" type="button" id="stLayout">מבנה האתר<small>שדות ושורות למפת הביצוע</small></button></div>' + F("stName", "שם האתר", SITE.name, "", "למשל: אתר הקמה עין תמר") + F("stCo", "חברה", SITE.company, "", "BELECTRIC") + F("stMe", "השם שלך", ls.get("issuer") || "", "נשמר במכשיר הזה וממולא אוטומטית כמנפיק / סופר / מדווח.", "השם שלך") + '<div class="f"><label>סוגי שולחנות וכמות באתר</label><div class="kitrows" id="stTypes"></div><button class="addline" type="button" id="stAddType" style="margin-top:8px">+ סוג שולחן</button><div class="hint">סה״כ שולחנות באתר הוא הסכום. ממנו מחושבים «נותרו» ו«לכמה שולחנות המלאי מספיק».</div></div>' + F("stPpt", "פאנלים לשולחן", SITE.panelsPerTable, "משמש להערכת כמה שולחנות עומדים לפי הפאנלים המותקנים.", "81") + '<div class="f" id="stDanger" hidden><label>ניהול</label><div class="setgrid"><button class="ghost danger" type="button" id="stRestore">שחזור מגיבוי<small>כותב את כל הנתונים מקובץ JSON</small></button><button class="ghost" type="button" id="stDemo">איפוס תצוגת דוגמה<small>מציג שוב נתוני דוגמה במכשיר הזה</small></button></div></div><div class="acts"><button class="save" id="stSave" type="button">שמור הגדרות</button><button class="cancel" id="stCancel" type="button">סגור</button></div><div class="hint" style="text-align:center;margin-top:14px">יומן אתר · גרסה ' + APP_VERSION + " · הנתונים נשמרים במרחב של האפליקציה ונגישים לכל מי שקיבל קישור" + (shared.DB ? "" : " · <b>כרגע במכשיר הזה בלבד</b>") + "</div></div>");
   const q = (s) => scrim.querySelector(s);
   function drawTypes() {
     const box = q("#stTypes");
@@ -6619,6 +7221,10 @@ function openSettings() {
     scrim.remove();
     openImportChooser();
   };
+  q("#stZip2").onclick = () => {
+    scrim.remove();
+    openZipSetup();
+  };
   q("#stLayout").onclick = () => {
     scrim.remove();
     openLayout();
@@ -6639,7 +7245,7 @@ function openSettings() {
   const showAdmin = ROLE === "owner";
   q("#stDanger").hidden = !showAdmin;
   if (ROLE !== "owner") {
-    ["#stSave", "#stAddType", "#stBom"].forEach((x) => {
+    ["#stSave", "#stAddType", "#stBom", "#stZip2"].forEach((x) => {
       const e = q(x);
       if (e) e.hidden = true;
     });
@@ -7113,7 +7719,7 @@ function showTab(which) {
 }
 function __init$a() {
   KIT_SOURCE_DEFAULT = "BOM שלטר 21.4.2026 ומדריך התקנה FS Duo";
-  APP_VERSION = "61";
+  APP_VERSION = "62";
   SHOW_PRICES = false;
   SITE = { name: "אתר הקמה עין תמר", company: "BELECTRIC", panelsPerTable: 81, custom: false };
   $("#btnSettings").onclick = openSettings;
@@ -8950,9 +9556,9 @@ function matchBarcode(text) {
     k = shared.kit.find((x) => x.code === m[2]);
     if (k) return k;
   }
-  const m23 = T.match(/(?:^|\D)(\d{3})(?:\D|$)/);
-  if (m23) {
-    const ks = shared.kit.filter((x) => x.code === m23[1]);
+  const m24 = T.match(/(?:^|\D)(\d{3})(?:\D|$)/);
+  if (m24) {
+    const ks = shared.kit.filter((x) => x.code === m24[1]);
     if (ks.length === 1) return ks[0];
   }
   return null;
@@ -8986,7 +9592,7 @@ function beep() {
 }
 function openBarcodeScanner(opts) {
   opts = opts || {};
-  const mode = opts.mode || "count";
+  const mode2 = opts.mode || "count";
   const hits = /* @__PURE__ */ new Map();
   let det = null, zx = null, stream = null, loop = null, lastText = "", lastAt = 0, busy = false, live = false;
   const root = document.createElement("div");
@@ -8994,7 +9600,7 @@ function openBarcodeScanner(opts) {
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-modal", "true");
   root.setAttribute("aria-label", "סריקת ברקודים");
-  root.innerHTML = '<div class="scan-top"><span id="bcTitle">סריקת ברקודים · ' + (mode === "count" ? "ספירת קרטונים" : "קליטת קרטונים") + '</span><button type="button" id="bcClose" aria-label="סגור">✕</button></div><div class="scan-stage" id="bcStage" style="padding:0"><div class="bc-cam"><video id="bcVideo" playsinline autoplay muted></video><div class="bc-frame"></div><div class="bc-last" id="bcLast" hidden></div></div></div><div class="scan-bot" id="bcBot"></div><input type="file" accept="image/*" capture="environment" id="bcFile" hidden>';
+  root.innerHTML = '<div class="scan-top"><span id="bcTitle">סריקת ברקודים · ' + (mode2 === "count" ? "ספירת קרטונים" : "קליטת קרטונים") + '</span><button type="button" id="bcClose" aria-label="סגור">✕</button></div><div class="scan-stage" id="bcStage" style="padding:0"><div class="bc-cam"><video id="bcVideo" playsinline autoplay muted></video><div class="bc-frame"></div><div class="bc-last" id="bcLast" hidden></div></div></div><div class="scan-bot" id="bcBot"></div><input type="file" accept="image/*" capture="environment" id="bcFile" hidden>';
   document.body.appendChild(root);
   const q = (s) => root.querySelector(s);
   const video = q("#bcVideo");
@@ -9032,7 +9638,7 @@ function openBarcodeScanner(opts) {
   }
   function drawBot() {
     const list = [...hits.values()];
-    q("#bcBot").innerHTML = '<div class="hint3" id="bcHint">' + (live ? "כוון את המצלמה לברקוד שעל הקרטון. כל סריקה = קרטון אחד." : "צלם ברקוד אחד, או כמה קרטונים בתמונה אחת: כל ברקוד שמזוהה = קרטון. אם הברקוד לא נקרא, המק״ט המודפס נקרא מהתמונה.") + "</div>" + (list.length ? '<div class="bc-list">' + list.map((h) => '<div class="bc-row" data-t="' + esc(h.text) + '"><div class="t"><b>' + esc(h.item ? shortName(h.item.name) : "לא מזוהה: " + h.text) + "</b><span>" + (h.item ? "מק״ט " + esc(h.item.code) + " · " + esc(h.text) : '<u data-assign="' + esc(h.text) + '">הצמד לפריט</u>') + (mode === "lines" ? ' · <input type="text" inputmode="numeric" data-per="' + esc(h.text) + '" value="' + esc(h.per || "") + '" placeholder="יח׳ בקרטון" style="width:92px;padding:5px 6px;font-size:.8rem;background:#222;color:#fff;border:1px solid #555">' : "") + '</span></div><div class="n"><button type="button" data-dec="' + esc(h.text) + '" aria-label="פחות">−</button><b>' + h.n + '</b><button type="button" data-inc="' + esc(h.text) + '" aria-label="עוד">+</button></div></div>').join("") + "</div>" : "") + '<div class="scan-row">' + (live ? "" : '<button class="ghost" type="button" id="bcShoot"><i class="ic ic-cam"></i>צלם ברקוד</button>') + '<button class="ghost" type="button" id="bcManual">הקלד מק״ט</button><button class="save" type="button" id="bcDone">סיום' + (list.length ? " · " + list.reduce((s, h) => s + h.n, 0) + " קרטונים" : "") + "</button></div>";
+    q("#bcBot").innerHTML = '<div class="hint3" id="bcHint">' + (live ? "כוון את המצלמה לברקוד שעל הקרטון. כל סריקה = קרטון אחד." : "צלם ברקוד אחד, או כמה קרטונים בתמונה אחת: כל ברקוד שמזוהה = קרטון. אם הברקוד לא נקרא, המק״ט המודפס נקרא מהתמונה.") + "</div>" + (list.length ? '<div class="bc-list">' + list.map((h) => '<div class="bc-row" data-t="' + esc(h.text) + '"><div class="t"><b>' + esc(h.item ? shortName(h.item.name) : "לא מזוהה: " + h.text) + "</b><span>" + (h.item ? "מק״ט " + esc(h.item.code) + " · " + esc(h.text) : '<u data-assign="' + esc(h.text) + '">הצמד לפריט</u>') + (mode2 === "lines" ? ' · <input type="text" inputmode="numeric" data-per="' + esc(h.text) + '" value="' + esc(h.per || "") + '" placeholder="יח׳ בקרטון" style="width:92px;padding:5px 6px;font-size:.8rem;background:#222;color:#fff;border:1px solid #555">' : "") + '</span></div><div class="n"><button type="button" data-dec="' + esc(h.text) + '" aria-label="פחות">−</button><b>' + h.n + '</b><button type="button" data-inc="' + esc(h.text) + '" aria-label="עוד">+</button></div></div>').join("") + "</div>" : "") + '<div class="scan-row">' + (live ? "" : '<button class="ghost" type="button" id="bcShoot"><i class="ic ic-cam"></i>צלם ברקוד</button>') + '<button class="ghost" type="button" id="bcManual">הקלד מק״ט</button><button class="save" type="button" id="bcDone">סיום' + (list.length ? " · " + list.reduce((s, h) => s + h.n, 0) + " קרטונים" : "") + "</button></div>";
     q("#bcDone").onclick = finish;
     const sh = q("#bcShoot");
     if (sh) sh.onclick = () => q("#bcFile").click();
@@ -10485,15 +11091,16 @@ const m6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
 function renderOnboarding() {
   const card = $("#onbCard"), box = $("#onbSteps");
   if (!card) return;
-  shared.deliveries.some((n) => n.source === "bom");
   const steps = [
     { l: "הגדרות אתר", s: "שם האתר, סוגי השולחנות וכמה מכל סוג. מזה נגזר «לכמה שולחנות המלאי מספיק».", done: !!(SITE.custom || shared.kitTypes.some((t) => Number(t.count) > 0 && t.customized)), act: openSettings, btn: "הגדר" },
     { l: "כמויות לשולחן (BOM)", s: "מה יוצא לשולחן אחד מכל סוג. ייבוא מאקסל של היצרן, או עריכה ידנית.", done: shared.kitSource !== KIT_SOURCE_DEFAULT || !!SITE.bomImported, act: () => openBomImport(), btn: "ייבוא" },
+    { l: "מבנה החשמל ותוכניות", s: "תחנות, ממירים וסטרינגים, והתוכניות העדכניות. מתיקיית הפרויקט, או במספרים.", done: !!currentElec() && (shared.PLANS || []).length > 0, act: openElecSetup, btn: "מבנה החשמל" },
     { l: "מלאי פתיחה", s: "מה הגיע לאתר. קליטת תעודות, או ייבוא הצ׳אט של הקבוצה.", done: shared.deliveries.length > 0, act: openImport, btn: "ייבוא" },
     { l: "מאזן פאנלים ראשון", s: "כמה פאנלים באתר, מותקנים, שבורים. מהמאזן השני יש קצב וצפי.", done: shared.panelBal.length > 0, act: openPanelBal, btn: "הזן" }
   ];
   const left = steps.filter((s) => !s.done).length;
-  const show = ROLE === "owner" && !shared.demoStock && (!shared.issues.length || left >= 2);
+  const fresh = !shared.deliveries.length && !shared.issues.length;
+  const show = ROLE === "owner" && (!shared.demoStock || fresh) && (!shared.issues.length || left >= 2) && left > 0;
   card.hidden = !show;
   if (!show) return;
   box.innerHTML = "";
@@ -11114,7 +11721,7 @@ async function collectFiles(files) {
   }
   return out;
 }
-function openImport() {
+function openImport(pre) {
   let ctl = null, items = [], results = [];
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="ייבוא מוואטסאפ"><div class="grab"></div><h2>ייבוא מוואטסאפ</h2><div class="note-card">בקבוצה: <b>⋮ → עוד → ייצוא צ׳אט → כולל מדיה</b>. תבחר כאן את קובץ ה-ZIP שנוצר, או תמונות מהגלריה. צילומים כפולים ותעודות שכבר נקלטו ידולגו; חול, מנופים ויומני עבודה מסוננים לפי הכללים שלך.</div><div id="impBody"><div class="pick">בחר ZIP של הייצוא או תמונות<small>משתמש בשימוש ה-Claude שלך — כשנייה עד דקה לכל תעודה</small><input type="file" id="impFile" accept=".zip,application/zip,image/*" multiple></div></div><div class="acts"><button class="save" id="impMain" hidden>שמור</button><button class="cancel" id="impCancel">סגור</button></div></div>');
   const q = (s) => scrim.querySelector(s), body = () => q("#impBody");
@@ -11133,6 +11740,7 @@ function openImport() {
     const fs = [...e.target.files];
     if (fs.length) run(fs);
   };
+  if (Array.isArray(pre) && pre.length) setTimeout(() => run(pre), 0);
   async function run(files) {
     if (!shared.SAMPLE) {
       body().innerHTML = '<div class="empty">קריאה אוטומטית לא זמינה בתצוגה הזאת.</div>';
@@ -11462,7 +12070,7 @@ function openConcreteNote() {
   const today = /* @__PURE__ */ new Date();
   const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
   const sups = [...new Set(curConcrete().map((c) => c.supplier).filter(Boolean))];
-  const F = (id, l, v, ph, mode) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="text" id="' + id + '" value="' + esc(v) + '" placeholder="' + esc(ph || "") + '"' + (mode ? ' inputmode="' + mode + '"' : "") + ' autocomplete="off"></div>';
+  const F = (id, l, v, ph, mode2) => '<div class="f"><label for="' + id + '">' + l + '</label><input type="text" id="' + id + '" value="' + esc(v) + '" placeholder="' + esc(ph || "") + '"' + (mode2 ? ' inputmode="' + mode2 + '"' : "") + ' autocomplete="off"></div>';
   const scrim = popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="קליטת תעודת בטון"><div class="grab"></div><h2>קליטת תעודת בטון</h2><div class="note-card">צלם את תעודת המשלוח של הערבל. הכמות, המספר, המצטבר ומיקום היציקה ייקראו לבד. <b>אתה מאשר או מתקן לפני שמירה.</b></div><div class="f"><div class="pages" id="cnPages"></div><button class="scanbtn" type="button" id="bScanCn"><i class="ic ic-cam"></i>סרוק את תעודת הבטון</button><div class="ai" id="aiCn"></div></div><div class="f"><label for="cnSup">ספק</label><input type="text" id="cnSup" list="cnSupList" placeholder="מפעל הבטון" value="' + esc(sups[0] || "") + '" autocomplete="off"><datalist id="cnSupList">' + sups.map((s) => '<option value="' + esc(s) + '"></option>').join("") + "</datalist></div>" + F("cnNo", "מספר תעודה", "", "מספר", "numeric") + '<div class="f"><label for="cnDate">תאריך</label><input type="date" id="cnDate" value="' + iso + '"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + F("cnM3", "מ״ק במשלוח", "", "למשל 8", "decimal") + F("cnCum", "מצטבר להיום (אם מודפס)", "", "מ״ק", "decimal") + "</div>" + F("cnEl", "איפה נוצק", "", "שדה / שורה / שולחן") + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + F("cnMix", "סוג בטון", "", "ב-30") + F("cnTruck", "ערבל / רישוי", "", "ערבל 54") + "</div>" + F("cnNote", "הערה", "", "נהג, שעות, הזמנה חלקית") + '<div class="acts"><button class="save" id="cnSave" type="button" disabled>שמור תעודה</button><button class="cancel" id="cnCancel" type="button">ביטול</button></div></div>');
   const close = closer(scrim);
   const q = (s) => scrim.querySelector(s);
@@ -12857,9 +13465,9 @@ function wrData(endIso) {
     hasPlan: acts.some((a) => a.planEnd)
   };
 }
-function wrHtml(mode, D, o) {
+function wrHtml(mode2, D, o) {
   o = o || {};
-  const C = mode === "client", e = esc, N2 = (v) => '<span class="n">' + fmtN(v) + "</span>", NP = (v) => '<span class="n">+' + fmtN(v) + "</span>", P = (x) => '<span class="n">' + wrPct(x) + "%</span>";
+  const C = mode2 === "client", e = esc, N2 = (v) => '<span class="n">' + fmtN(v) + "</span>", NP = (v) => '<span class="n">+' + fmtN(v) + "</span>", P = (x) => '<span class="n">' + wrPct(x) + "%</span>";
   const P1 = (x, plus) => {
     const v = Math.round(x * 1e3) / 10;
     return '<span class="n">+' + (v > 0 && v < 1 ? "<1" : Math.round(v)) + "%</span>";
@@ -12905,8 +13513,8 @@ function wrHtml(mode, D, o) {
   h += '<div class="ft"><span>' + (C ? e(SITE.company || "BELECTRIC") + " · " + e(site) : "נוצר אוטומטית מיומן אתר · מסמך פנימי, לא להעביר") + '</span><span>נתונים נכון ל-<span class="n">' + e(isoText(D.endIso)) + "</span></span></div></div></body></html>";
   return h;
 }
-function wrText(mode, D, o) {
-  const C = mode === "client", site = SITE.name || "האתר", pan = D.panels;
+function wrText(mode2, D, o) {
+  const C = mode2 === "client", site = SITE.name || "האתר", pan = D.panels;
   const L = [];
   L.push((C ? "עדכון שבועי · " : "דוח סטטוס שבועי · ") + site + " · " + wrRange(D.startIso, D.endIso));
   L.push("");
@@ -12942,7 +13550,7 @@ async function wrShrink(file) {
 }
 function openWeekly() {
   droneWatch();
-  let mode = "mgr", endIso = isoOf(Date.now()), lead = "", localImg = null;
+  let mode2 = "mgr", endIso = isoOf(Date.now()), lead = "", localImg = null;
   const scrim = popup('<div class="sheet wr-sheet" role="dialog" aria-modal="true" aria-label="דוח שבועי"><div class="grab"></div><h2>דוח שבועי</h2><div class="note-card">דף אחד שנבנה לבד מהנתונים באפליקציה: סטטוס התקדמות, מאזן פאנלים, בטון, ניפוקים, תעודות ורכש. «ליזם» בלי ספקים, קבלנים, מחירים וכמויות קטנות.</div><div class="chips" id="wrMode"><button type="button" class="chip2" data-m="mgr" aria-pressed="true">למנהלים</button><button type="button" class="chip2" data-m="client" aria-pressed="false">ליזם</button></div><div class="f"><label for="wrEnd">השבוע שמסתיים ב-</label><input type="date" id="wrEnd" value="' + endIso + '"></div><div class="f" id="wrDrone"></div><div class="f"><label for="wrLead">משפט פתיחה (לא חובה)</label><input type="text" id="wrLead" maxlength="200" placeholder="למשל: השבוע הושלמה הרכבת הפאנלים בשדה 2"></div>' + (ROLE === "owner" ? '<details class="wr-plan"><summary>תאריכי יעד מול הגאנט</summary><div class="note">כשיש לוח זמנים מהפרויקט: תאריך סיום מתוכנן לכל פעילות. בלי תאריך, השורה «מול התוכנית» נשארת ריקה.</div><div id="wrPlan"></div><button class="ghost" id="wrPlanSave" type="button" style="width:100%;margin-top:8px">שמור תאריכי יעד</button></details>' : "") + '<iframe class="wr-frame" id="wrFrame" title="תצוגת הדוח"></iframe><div class="acts"><button class="save" id="wrDl" type="button">הורדת הדוח</button><button class="ghost" id="wrPrint" type="button">הדפסה</button></div><div class="acts" style="margin-top:8px"><button class="ghost" id="wrMail" type="button">העתק טקסט למייל</button><button class="cancel" type="button">סגור</button></div></div>');
   const q = (s) => scrim.querySelector(s);
   const close = closer(scrim, () => {
@@ -12992,12 +13600,12 @@ function openWeekly() {
   };
   const draw2 = () => {
     const D = wrData(endIso), p = photo();
-    q("#wrFrame").srcdoc = wrHtml(mode, D, imgOpts(p, prevShot(p)));
+    q("#wrFrame").srcdoc = wrHtml(mode2, D, imgOpts(p, prevShot(p)));
     drawDrone();
   };
   wrRedraw = draw2;
   scrim.querySelectorAll("#wrMode [data-m]").forEach((b) => b.onclick = () => {
-    mode = b.dataset.m;
+    mode2 = b.dataset.m;
     scrim.querySelectorAll("#wrMode [data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     draw2();
   });
@@ -13041,8 +13649,8 @@ function openWeekly() {
     } catch (e) {
       toast("התמונה לא נכנסה לקובץ.");
     }
-    const name = "דוח-שבועי-" + (mode === "client" ? "יזם" : "מנהלים") + "-" + (SITE.name || "אתר").replace(/^אתר הקמה\s*/, "").replace(/\s+/g, "-") + "-" + endIso + ".html";
-    if (await saveFile(name, new Blob([wrHtml(mode, D, imgOpts(ep, ep && epv))], { type: "text/html" }))) logAct("progress", "add", "דוח שבועי " + (mode === "client" ? "ליזם" : "למנהלים") + " · " + wrRange(D.startIso, D.endIso), "weekly");
+    const name = "דוח-שבועי-" + (mode2 === "client" ? "יזם" : "מנהלים") + "-" + (SITE.name || "אתר").replace(/^אתר הקמה\s*/, "").replace(/\s+/g, "-") + "-" + endIso + ".html";
+    if (await saveFile(name, new Blob([wrHtml(mode2, D, imgOpts(ep, ep && epv))], { type: "text/html" }))) logAct("progress", "add", "דוח שבועי " + (mode2 === "client" ? "ליזם" : "למנהלים") + " · " + wrRange(D.startIso, D.endIso), "weekly");
     b.disabled = false;
   };
   q("#wrPrint").onclick = () => {
@@ -13053,7 +13661,7 @@ function openWeekly() {
     }
   };
   q("#wrMail").onclick = async () => {
-    const t = wrText(mode, wrData(endIso), { lead });
+    const t = wrText(mode2, wrData(endIso), { lead });
     try {
       await navigator.clipboard.writeText(t);
       toast("הטקסט הועתק. להדביק במייל ולצרף את הקובץ.");
@@ -13120,7 +13728,7 @@ const m15 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty(
   wrShrink,
   wrText
 }, Symbol.toStringTag, { value: "Module" }));
-const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22];
+const mods = [m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23];
 for (const m of mods) m.__init();
 for (const m of mods) for (const k in m) if (k !== "__init") window[k] = m[k];</script>
   <style rel="stylesheet" crossorigin>/* ברנד: BELECTRIC (אדום #E40033, אפור #666B6E, ענבר #FFAA00, ירוק #9AC339, כחול #3199CC, פונט עברי Alef) · אנרגיה: בילטון (לבן/שחור, FAB צהוב, טבעות אחוז ירוקות) */
@@ -13615,6 +14223,44 @@ input[type=date]{width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13
 .setgrid .ghost{flex:none;width:100%;min-height:52px}
 .setgrid .ghost small{display:block;font-weight:500;font-size:.72rem;color:var(--ink3)}
 .onb .step .s{line-height:1.4}
+/* אתר חדש: הקמה מתיקיית הפרויקט (גרסה 62) */
+.onb .onb-zip{margin:2px 0 8px}
+.onb-zip-hint{font-size:.8rem;color:var(--ink3);line-height:1.45;margin-bottom:14px}
+.onb-or{display:flex;align-items:center;gap:10px;font-size:.76rem;color:var(--ink3);margin:0 0 12px}
+.onb-or::before,.onb-or::after{content:"";flex:1;height:1px;background:var(--line2)}
+.zs-lead{font-size:.88rem;color:var(--ink2);line-height:1.5;margin:0 0 14px;max-width:62ch}
+.zs-pick{position:relative}
+.zs-folder{display:block;text-align:center;font-size:.85rem;color:var(--info);font-weight:700;padding:12px 0 2px;cursor:pointer;min-height:44px;text-decoration:underline;text-underline-offset:3px}
+.zs-h{font-size:.95rem;font-weight:700;margin:18px 0 8px}
+.zs-items{display:flex;flex-direction:column;gap:8px}
+.zs-item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px;cursor:pointer}
+.zs-item:has(input:checked){border-color:var(--ink2)}
+.zs-item.none{opacity:.6;cursor:default}
+.zs-item input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--ink);cursor:inherit}
+.zs-item input:focus-visible{outline:2px solid var(--info);outline-offset:2px}
+.zs-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.zs-t b{font-size:.93rem}
+.zs-t span{font-size:.84rem;color:var(--ink2);font-variant-numeric:tabular-nums}
+.zs-t small{font-size:.76rem;color:var(--ink3);overflow-wrap:anywhere}
+.zs-t small.zs-warn{color:var(--amber);font-weight:700}
+.zs-plans,.zs-skip{margin:-2px 0 2px;font-size:.84rem}
+.zs-plans summary,.zs-skip summary{cursor:pointer;color:var(--ink2);font-weight:700;padding:8px 2px;min-height:44px;display:flex;align-items:center}
+.zs-plans summary::-webkit-details-marker,.zs-skip summary::-webkit-details-marker{display:none}
+.zs-plans summary::after,.zs-skip summary::after{content:"‹";margin-inline-start:6px;transition:transform .15s}
+.zs-plans[open] summary::after,.zs-skip[open] summary::after{transform:rotate(-90deg)}
+.zs-plans summary{color:var(--info)}
+.zs-plans .dlines{max-height:260px;overflow:auto}
+.zs-plans .dlines small{color:var(--ink3)}
+.zs-miss,.zs-skip ul,.zs-done{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;font-size:.84rem;color:var(--ink2);line-height:1.45}
+.zs-miss b{color:var(--ink)}
+.zs-skip ul{padding:4px 2px 8px}
+.zs-skip small{color:var(--ink3);overflow-wrap:anywhere}
+.zs-done li{display:flex;align-items:center;gap:2px;font-weight:700;color:var(--ink)}
+.zs-done .ic{color:var(--sage)}
+.zs-fail{margin-top:12px}
+.zs-next{display:flex;flex-direction:column;gap:8px}
+.zs-next .zs-go{grid-column:2;grid-row:1 / span 2;font-weight:700;color:var(--info);font-size:.82rem;white-space:nowrap}
+.sheet.zs .add{margin-top:14px}
 .danger{border-color:var(--clay)!important;color:var(--clay)!important}
 .typerow{display:grid;grid-template-columns:minmax(0,1fr) 84px 44px;gap:8px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
 .typerow input{padding:9px}
@@ -13701,6 +14347,7 @@ input[type=date]{width:100%;font-family:var(--ui);font-size:1rem;padding:12px 13
 .ic-doc{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M6%203h8l4%204v14H6z%27%2F%3E%3Cpath%20d%3D%27M14%203v4h4%27%2F%3E%3Cpath%20d%3D%27M9%2012h6M9%2016h6%27%2F%3E%3C%2Fsvg%3E")}
 .ic-gal{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%273%27%20y%3D%275%27%20width%3D%2718%27%20height%3D%2714%27%20rx%3D%272%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%2710%27%20r%3D%271.6%27%2F%3E%3Cpath%20d%3D%27M21%2016l-5-5-7%207%27%2F%3E%3C%2Fsvg%3E")}
 .ic-gear{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%273%27%2F%3E%3Cpath%20d%3D%27M12%202v3M12%2019v3M2%2012h3M19%2012h3M4.9%204.9l2.1%202.1M17%2017l2.1%202.1M4.9%2019.1L7%2017M17%207l2.1-2.1%27%2F%3E%3C%2Fsvg%3E")}
+.ic-folder{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%206.5h6l2%202.5h10v9.5H3z%27%2F%3E%3Cpath%20d%3D%27M12%2011.5v5M9.5%2014l2.5-2.5%202.5%202.5%27%2F%3E%3C%2Fsvg%3E")}
 .ic-check{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M5%2012l5%205L20%206%27%2F%3E%3C%2Fsvg%3E")}
 .ic-scan{--m:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M4%207V4h3M17%204h3v3M20%2017v3h-3M7%2020H4v-3%27%2F%3E%3Cpath%20d%3D%27M7%2012h10%27%2F%3E%3C%2Fsvg%3E")}
 /* שלד טעינה */
@@ -13907,8 +14554,11 @@ body.net-off .tabs{top:var(--netH,0px)}
   <div class="alerts" id="ovAlerts" hidden></div>
 
   <div class="card onb" id="onbCard" hidden>
-    <h3>אתר חדש: מה צריך כדי שהמספרים יהיו אמיתיים</h3>
-    <div class="note">ארבעה צעדים, פעם אחת. אחר כך הכל מתעדכן מהעבודה היומיומית.</div>
+    <h3>אתר חדש</h3>
+    <div class="note">מעלים את תיקיית הפרויקט פעם אחת, כמו שהיא. משם הכל מתעדכן מהעבודה היומיומית.</div>
+    <button class="add onb-zip" id="onbZip" type="button"><i class="ic ic-folder"></i>הקמה מתיקיית הפרויקט</button>
+    <div class="onb-zip-hint">ZIP אחד או תיקייה מהמחשב. האפליקציה ממיינת, מראה מה נמצא ומה חסר, ומקימה בלחיצה אחת.</div>
+    <div class="onb-or"><span>או צעד אחר צעד</span></div>
     <div class="steps" id="onbSteps"></div>
   </div>
 

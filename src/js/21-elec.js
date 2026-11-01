@@ -15,7 +15,9 @@ const COL={dc:"#2F80ED",disc:"#FFAA00",ac:"#5B9A3C",com:"#7E57C2"};
 
 /* ---------- המבנה ---------- */
 export function elecDoc(){ return shared.ELECCFG||null; }
-export function currentElec(){ const d=elecDoc(); if(d&&d.gen){ const E=genElec(d.gen); if(E) return E; } return siteElecFor(SITE&&SITE.name); }
+// סדר עדיפות: מספרים בהגדרות (gen), מבנה מתיקיית הפרויקט (struct, גרסה 62), המבנה המובנה של האתר
+export function currentElec(){ const d=elecDoc(); if(d&&d.gen){ const E=genElec(d.gen); if(E) return E; } if(d&&d.struct&&validStruct(d.struct)) return d.struct; return siteElecFor(SITE&&SITE.name); }
+const validStruct=s=>Array.isArray(s.stations)&&s.stations.length>0&&s.stations.every(st=>st&&Array.isArray(st.icbs)&&st.icbs.every(c=>c&&Array.isArray(c.inv)&&c.inv.every(x=>Array.isArray(x)&&x.length===2&&Number(x[1])>0)));
 // רשימה שטוחה של פריטים: תחנות וממירים, בסדר התצוגה
 export function elecItems(E){
   const out=[]; if(!E) return out;
@@ -164,16 +166,16 @@ export function openElecReport(preId){
 
 /* ---------- מבנה החשמל (בעלים) ---------- */
 export function openElecSetup(){
-  const d=elecDoc()||{}, g=d.gen||{stations:2,inv:10,strings:18}; const builtIn=siteElecFor(SITE&&SITE.name);
-  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה החשמל"><div class="grab"></div><h2>מבנה החשמל</h2><div class="note-card">'+(builtIn?"לאתר הזה יש מבנה מובנה מתוכנית החשמל ("+esc(builtIn.src)+"). אפשר להחליף אותו במספרים, ולחזור אליו עם «נקה».":"אין עדיין מבנה חשמל מתוכנית. קובעים אותו במספרים: תחנות, ממירים לתחנה, סטרינגים לממיר.")+'</div>'
+  const d=elecDoc()||{}, g=d.gen||{stations:2,inv:10,strings:18}; const builtIn=d.struct&&validStruct(d.struct)?{src:"תיקיית הפרויקט: "+d.struct.src}:siteElecFor(SITE&&SITE.name);
+  const scrim=popup('<div class="sheet" role="dialog" aria-modal="true" aria-label="מבנה החשמל"><div class="grab"></div><h2>מבנה החשמל</h2><div class="note-card">'+(builtIn?"לאתר הזה יש מבנה מתוכנית החשמל ("+esc(builtIn.src)+"). אפשר להחליף אותו במספרים, ולחזור אליו עם «נקה».":"אין עדיין מבנה חשמל מתוכנית. קובעים אותו במספרים: תחנות, ממירים לתחנה, סטרינגים לממיר.")+'</div>'
     +'<div class="f"><label for="esSt">תחנות (סקידים)</label><input type="text" inputmode="numeric" id="esSt" value="'+esc(g.stations)+'"></div>'
     +'<div class="f"><label for="esInv">ממירים לתחנה</label><input type="text" inputmode="numeric" id="esInv" value="'+esc(g.inv)+'"></div>'
     +'<div class="f"><label for="esStr">סטרינגים לממיר</label><input type="text" inputmode="numeric" id="esStr" value="'+esc(g.strings)+'"></div>'
     +'<div class="acts"><button class="save" id="esSave" type="button">שמור מבנה</button>'+(d.gen?'<button class="ghost" id="esClear" type="button">נקה</button>':'')+'<button class="cancel" type="button">סגור</button></div></div>');
   const close=closer(scrim); const q=s=>scrim.querySelector(s); q(".cancel").onclick=close;
   q("#esSave").onclick=async()=>{ const gen={stations:Number(q("#esSt").value),inv:Number(q("#esInv").value),strings:Number(q("#esStr").value)}; if(!genElec(gen)){ toast("צריך מספרים חיוביים."); return; }
-    try{ await saveElecCfg({gen}); }catch(e){ toast("השמירה נכשלה."); return; } logAct("settings","edit","מבנה חשמל: "+gen.stations+" תחנות × "+gen.inv+" ממירים × "+gen.strings+" סטרינגים","settings/elec"); close(); toast("המבנה נשמר."); };
-  const c=q("#esClear"); if(c) c.onclick=async()=>{ if(!await ask("לנקות את המבנה מהמספרים?"+(builtIn?" המבנה המובנה יחזור.":""),"נקה")) return; try{ await saveElecCfg({}); }catch(e){ toast("השמירה נכשלה."); return; } close(); };
+    try{ await saveElecCfg({...(d.struct?{struct:d.struct}:{}),gen}); }catch(e){ toast("השמירה נכשלה."); return; } logAct("settings","edit","מבנה חשמל: "+gen.stations+" תחנות × "+gen.inv+" ממירים × "+gen.strings+" סטרינגים","settings/elec"); close(); toast("המבנה נשמר."); };
+  const c=q("#esClear"); if(c) c.onclick=async()=>{ if(!await ask("לנקות את המבנה מהמספרים?"+(builtIn?" המבנה המובנה יחזור.":""),"נקה")) return; try{ await saveElecCfg(d.struct?{struct:d.struct}:{}); }catch(e){ toast("השמירה נכשלה."); return; } close(); };
 }
 
 export function __init(){
