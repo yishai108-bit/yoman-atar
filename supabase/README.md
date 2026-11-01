@@ -25,7 +25,7 @@
 
 ## יומן אתר · קבלן חשמל (S.E.E)
 «יומן אתר» שייך לבלקטריק; «יומן אתר · קבלן חשמל» משרת קבלני חשמל. אותו קוד, **פריסות נפרדות לגמרי**: פרויקט Vercel נפרד
-(`yoman-hashmal-see`, כתובת `https://yoman-hashmal-see.vercel.app`), פרויקט Supabase נפרד, בלי נתונים או משתמשים משותפים.
+(`yoman-hashmal-see`, כתובת `https://yoman-kablan-hashmal.vercel.app`), פרויקט Supabase נפרד, בלי נתונים או משתמשים משותפים.
 הצד נקבע ב-`VITE_ORG` (`belectric` / `see`) בפרויקט ה-Vercel; בלי `VITE_ORG` (בדיקות, מקומי) לפי הדומיין או `?org=see`.
 משתני הסביבה בפרויקט של קבלן החשמל: `VITE_SEE_SUPABASE_URL`, `VITE_SEE_SUPABASE_ANON_KEY`. ההקמה זהה; האתרים מ-`5-אתרי-SEE.sql` (עד 10, עם `company` ו-`ord`).
 
