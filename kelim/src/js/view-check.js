@@ -1,7 +1,7 @@
 // טופס הבדיקה השבועית (ממלאים בטלפון): בחירת כלי → כותרת → סעיפים V/X → סיכום → חתימה וצילומים → שמירה
 import { state, saveCheck, saveDefect, saveEquipment, eqById, siteList } from "./store.js";
 import { esc, isoDate, fmtDate, fmtNum, toast, el } from "./util.js";
-import { KINDS, SUMMARY, allItems } from "./forms.js";
+import { KINDS, SUMMARY, allItems, DEFAULT_INTERVAL } from "./forms.js";
 import { equipmentStatus, serviceState, defectsFromCheck, suggestSummary, countItems } from "./logic.js";
 import { openSheet, closeSheet } from "./sheet.js";
 import { showCheck } from "./view-history.js";
@@ -10,29 +10,37 @@ import { editEquipment } from "./view-eq.js";
 const LS = { get: k => { try { return localStorage.getItem("kelim." + k) || ""; } catch { return ""; } }, set: (k, v) => { try { localStorage.setItem("kelim." + k, v); } catch {} } };
 
 // בחירת הכלי: קודם מה שעוד לא נבדק השבוע
+const NEW_BTNS = `<div class="row2" style="margin-top:12px"><button type="button" class="ghost" data-new="tool">＋ כלי שעוד לא ברשימה<small style="display:block;font-weight:400;font-size:.76rem">טרקטור משא / מיול</small></button><button type="button" class="ghost" data-new="trailer">＋ נגרר שעוד לא ברשימה<small style="display:block;font-weight:400;font-size:.76rem">פתוח עד 750 ק״ג</small></button></div>`;
 export function openCheckChooser(eqId){
   if (eqId && eqById(eqId)) return openCheckForm(eqById(eqId));
   const st = state.equipment.filter(e => e.active !== false).map(e => equipmentStatus(e, state.checks, state.defects)).sort((a, b) => (a.checkedThisWeek - b.checkedThisWeek) || a.eq.name.localeCompare(b.eq.name, "he"));
-  if (!st.length){ toast("קודם מוסיפים את הכלי, אחר כך הטופס"); editEquipment(null); return; }
-  const sh = openSheet(`<h2>בדיקה שבועית · איזה כלי?</h2><div class="list">${st.map(s => `<button type="button" class="rec ${s.level}" data-pick="${s.eq.id}"><div class="ttl">${esc(s.eq.name)}</div><div class="meta"><span>${KINDS[s.eq.kind].label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>${s.last ? `<span>נבדק ${fmtDate(s.last.date)}</span>` : "<span>עוד לא נבדק</span>"}</div><div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לבדוק"}</span></div></button>`).join("")}</div>`);
+  if (!st.length){
+    // אין כלים עדיין: בוחרים רק סוג, והטופס עצמו יוצר את הכלי
+    const sh0 = openSheet(`<h2>בדיקה שבועית · מה בודקים?</h2><p class="note">הכלי יתווסף לרשימה מתוך הטופס.</p>${NEW_BTNS}`);
+    sh0.querySelectorAll("[data-new]").forEach(b => b.onclick = () => openCheckForm({ kind: b.dataset.new, isNew: true, name: "", plate: "", site: "" }));
+    return;
+  }
+  const sh = openSheet(`<h2>בדיקה שבועית · איזה כלי?</h2><div class="list">${st.map(s => `<button type="button" class="rec ${s.level}" data-pick="${s.eq.id}"><div class="ttl">${esc(s.eq.name)}</div><div class="meta"><span>${KINDS[s.eq.kind].label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>${s.last ? `<span>נבדק ${fmtDate(s.last.date)}</span>` : "<span>עוד לא נבדק</span>"}</div><div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לבדוק"}</span></div></button>`).join("")}</div>${NEW_BTNS}`);
   sh.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => openCheckForm(eqById(b.dataset.pick)));
+  sh.querySelectorAll("[data-new]").forEach(b => b.onclick = () => openCheckForm({ kind: b.dataset.new, isNew: true, name: "", plate: "", site: "" }));
 }
 
 export function openCheckForm(eq){
   if (!state.canWrite){ toast("אין לך הרשאת כתיבה במאגר", "bad"); return; }
   const k = KINDS[eq.kind]; const items = allItems(eq.kind);
-  const svc = serviceState(eq, state.checks);
+  const svc = eq.isNew ? null : serviceState(eq, state.checks);
   const me = (state.me && state.me.name) || "";
   const data = { items: {}, notes: {}, summary: "", photos: [] };
-  let h = `<h2>${esc(k.formTitle)}</h2>
-    <p class="note" style="margin-bottom:12px"><b>${esc(eq.name)}</b>${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · מס׳ רישוי <span class=num>" + esc(eq.plate) + "</span>" : ""}${eq.model ? " · " + esc(eq.model) : ""}</p>
+  let h = `<h2>${esc(k.formTitle)}</h2>` + (eq.isNew
+    ? `<p class="note" style="margin-bottom:8px">${k.label} חדש: יתווסף לרשימה עם השמירה.</p><div class="grid2"><div class="f"><label>שם / כינוי ה${k.label}</label><input type="text" id="cEqName" value="" placeholder="${k.kind === "tool" ? "למשל: מיול 2" : "למשל: נגרר כלים"}"></div><div class="f"><label>מס׳ רישוי</label><input type="text" id="cPlate" value="" inputmode="numeric" style="direction:ltr"></div></div>`
+    : `<p class="note" style="margin-bottom:12px"><b>${esc(eq.name)}</b>${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · מס׳ רישוי <span class=num>" + esc(eq.plate) + "</span>" : ""}${eq.model ? " · " + esc(eq.model) : ""}</p>`) + `
     <div class="grid2">
       <div class="f"><label>תאריך</label><input type="date" id="cDate" value="${isoDate()}"></div>
       <div class="f"><label>אתר</label><input type="text" id="cSite" value="${esc(eq.site || LS.get("site") || "")}" list="siteOpts" placeholder="מאיזה אתר">${siteList("siteOpts")}</div>
       <div class="f"><label>שם הבודק</label><input type="text" id="cName" value="${esc(LS.get("name") || me)}" autocomplete="name"></div>
       <div class="f"><label>תפקיד הבודק</label><input type="text" id="cRole" value="${esc(LS.get("role") || "לוגיסטיקה")}" list="roles"><datalist id="roles"><option value="לוגיסטיקה"><option value="מנהל אתר"><option value="מפעיל"></datalist></div>
-      ${k.hasHours ? `<div class="f"><label>שעות מנוע</label><input type="number" id="cHours" inputmode="numeric" value="${svc ? svc.hours || "" : ""}" min="0"><div class="hint">קודם: <span class="num">${svc ? fmtNum(svc.hours) : "—"}</span> · טיפול הבא ב-<span class="num">${svc ? fmtNum(svc.next) : "—"}</span></div></div>` : ""}
-      ${!eq.plate ? `<div class="f"><label>מס׳ רישוי</label><input type="text" id="cPlate" value="" style="direction:ltr"></div>` : ""}
+      ${k.hasHours ? `<div class="f"><label>שעות מנוע</label><input type="number" id="cHours" inputmode="numeric" value="${svc ? svc.hours || "" : ""}" min="0"><div class="hint">${svc ? `קודם: <span class="num">${fmtNum(svc.hours)}</span> · טיפול הבא ב-<span class="num">${fmtNum(svc.next)}</span>` : "לפי מד השעות בכלי"}</div></div>` : ""}
+      ${!eq.plate && !eq.isNew ? `<div class="f"><label>מס׳ רישוי</label><input type="text" id="cPlate" value="" style="direction:ltr"></div>` : ""}
     </div>
     <div class="prog" id="prog"><span id="progT">0/${items.length} סומנו</span><i><b id="progB"></b></i></div>
     <p class="note" style="margin:0 0 8px">סמן V או X לפי הממצאים. X = לא תקין, חובה לפרט בהערות.</p>
@@ -71,6 +79,8 @@ export function openCheckForm(eq){
   sh.querySelector("#cSave").onclick = async () => {
     const name = sh.querySelector("#cName").value.trim(); if (!name){ toast("צריך שם בודק", "bad"); sh.querySelector("#cName").focus(); return; }
     const site = sh.querySelector("#cSite").value.trim(); if (!site){ toast("צריך לכתוב מאיזה אתר", "bad"); sh.querySelector("#cSite").focus(); return; }
+    const eqNameEl = sh.querySelector("#cEqName"); const eqName = eqNameEl ? eqNameEl.value.trim() : eq.name;
+    if (eqNameEl && !eqName){ toast("צריך שם ל" + k.label, "bad"); eqNameEl.focus(); return; }
     const missing = items.filter(it => !data.items[it.key]); if (missing.length){ toast("נשארו " + missing.length + " סעיפים בלי V או X", "bad"); sh.querySelector(`.chk[data-key="${missing[0].key}"]`).scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     const noNote = items.filter(it => data.items[it.key] === "bad" && !(data.notes[it.key] || "").trim()); if (noNote.length){ toast("X בלי פירוט: " + noNote[0].text.slice(0, 30), "bad"); sh.querySelector(`.chk[data-key="${noNote[0].key}"] .nt`).focus(); return; }
     if (!data.summary) setSummary(suggestSummary(data.items), true);
@@ -78,12 +88,17 @@ export function openCheckForm(eq){
     if (hoursEl && hoursEl.value === ""){ toast("צריך שעות מנוע", "bad"); hoursEl.focus(); return; }
     if (hoursEl && svc && hours < svc.hours && !confirm("שעות המנוע (" + hours + ") נמוכות מהקודמות (" + svc.hours + "). לשמור בכל זאת?")) return;
     const btn = sh.querySelector("#cSave"); btn.disabled = true; btn.textContent = "שומר…";
-    const check = { eqId: eq.id, eqName: eq.name, kind: eq.kind, date: sh.querySelector("#cDate").value || isoDate(), inspector: name, role: sh.querySelector("#cRole").value.trim(), site,
+    const check = { eqId: eq.id, eqName: eqName, kind: eq.kind, date: sh.querySelector("#cDate").value || isoDate(), inspector: name, role: sh.querySelector("#cRole").value.trim(), site,
       plate: eq.plate || (sh.querySelector("#cPlate") ? sh.querySelector("#cPlate").value.trim() : ""), hours: hoursEl ? hours : "", items: { ...data.items }, notes: Object.fromEntries(Object.entries(data.notes).filter(([k, v]) => data.items[k] === "bad" && v.trim()).map(([k, v]) => [k, v.trim()])),
       summary: data.summary, defectsText: data.summary === "ok" ? "" : sh.querySelector("#cDef").value.trim(), owner: data.summary === "ok" ? "" : sh.querySelector("#cOwner").value.trim(), due: data.summary === "ok" ? "" : sh.querySelector("#cDue").value,
       signature: sig.isEmpty() ? "" : sig.toDataURL(), photos: data.photos };
     LS.set("name", name); LS.set("role", check.role); LS.set("site", site);
     try {
+      if (eq.isNew){
+        // הכלי נוצר מתוך הטופס
+        const created = await saveEquipment({ kind: eq.kind, name: eqName, plate: check.plate, site, model: "", hours: hoursEl ? hours : "", interval: eq.kind === "tool" ? (state.settings.interval || DEFAULT_INTERVAL) : "", lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true });
+        eq = created; check.eqId = created.id;
+      }
       await saveCheck(check);
       for (const d of defectsFromCheck(check, state.defects)) await saveDefect(d);
       const patch = {}; if (hoursEl && hours > (Number(eq.hours) || 0)) patch.hours = hours;

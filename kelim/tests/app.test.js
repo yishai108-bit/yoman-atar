@@ -34,7 +34,7 @@ test("נטען בלי שגיאות JS, ברוחב 400 בלי גלילה אופק
 test("מאגר ריק: הודעה ברורה וכפתור הוספה, בלי שגיאות", async () => {
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: {} } });
   assert.deepStrictEqual(errors, []);
-  assert.ok((await page.textContent("#view")).includes("צעד ראשון"));
+  assert.ok((await page.textContent("#view")).includes("ממלאים את הטופס בטלפון"));
   await page.click("#btnFirstEq"); assert.ok((await page.textContent(".sheet h2")).includes("כלי או נגרר חדש"), "הכפתור פותח ישירות את הוספת הכלי");
   await page.keyboard.press("Escape"); await page.click(".scrim", { position: { x: 5, y: 5 } }).catch(() => {});
   await page.click(".tab[data-view=eq]");
@@ -235,6 +235,28 @@ test("בלי מאגר (use(db) → null): הכלי נטען עם פס «אין �
   const { page, errors, ctx } = await openApp(browser, { mock: { noDb: true } });
   assert.strictEqual(await page.isHidden("#netBar"), false);
   assert.ok((await page.textContent("#netMsg")).includes("אין חיבור"));
+  assert.deepStrictEqual(errors, []);
+  await ctx.close();
+});
+
+test("טופס בלי כלי רשום: בוחרים סוג, ממלאים שם ורישוי בטופס, והשמירה יוצרת גם את הכלי", async () => {
+  const { page, errors, ctx } = await openApp(browser, { mock: { seed: {} } });
+  await page.click("#btnNewCheck");
+  assert.ok((await page.textContent(".sheet h2")).includes("מה בודקים"));
+  await page.click('.sheet [data-new="tool"]');
+  assert.ok((await page.textContent(".sheet h2")).includes("טרקטור משא"));
+  assert.strictEqual(await page.locator(".sheet .chk").count(), 11);
+  await page.fill("#cEqName", "מיול חדש"); await page.fill("#cPlate", "99-888-77"); await page.fill("#cSite", "אתר א"); await page.fill("#cName", "בודק"); await page.fill("#cHours", "100");
+  await page.click("#allOk"); await page.click("#cSave"); await page.waitForTimeout(300);
+  const store = await page.evaluate(() => Object.fromEntries([...window.__MOCK_STORE__.entries()]));
+  const eq = Object.values(store).find(d => d.kind === "tool" && d.name === "מיול חדש");
+  assert.ok(eq, "הכלי נוצר"); assert.strictEqual(eq.plate, "99-888-77"); assert.strictEqual(eq.site, "אתר א"); assert.strictEqual(eq.hours, 100); assert.strictEqual(eq.interval, 250);
+  const ck = Object.values(store).find(d => d.inspector === "בודק"); assert.strictEqual(ck.eqId, eq.id); assert.strictEqual(ck.summary, "ok"); assert.strictEqual(ck.plate, "99-888-77");
+  await page.keyboard.press("Escape"); await page.click(".scrim", { position: { x: 5, y: 5 } }).catch(() => {});
+  await page.click(".tab[data-view=week]"); const t = await page.textContent("#view"); assert.ok(t.includes("1/1") && t.includes("מיול חדש"));
+  // עם כלים ברשימה: הבוחר מציע גם «נגרר שעוד לא ברשימה»
+  await page.click("#btnNewCheck"); await page.click('.sheet [data-new="trailer"]');
+  assert.strictEqual(await page.locator(".sheet .chk").count(), 23); assert.strictEqual(await page.locator("#cHours").count(), 0);
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });

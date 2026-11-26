@@ -21,10 +21,10 @@ export function renderWeek(root, nav){
   let h = allSites.length > 1 ? `<div class="filters" id="siteFilters"><button type="button" data-site="" aria-pressed="${!siteFilter}">כל האתרים</button>${allSites.map(s => `<button type="button" data-site="${esc(s)}" aria-pressed="${siteFilter === s}">${esc(s)}</button>`).join("")}</div>` : "";
   h += `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
   if (!st.length && !allSites.length){
-    h += `<div class="empty"><b>צעד ראשון:</b> מוסיפים את הכלים והנגררים של האתר (שם, מס׳ רישוי, שעות מנוע, תאריכי תוקף).<br>אחרי זה הטופס השבועי זמין לכל אחד מהם בלחיצה.</div>
-      <button type="button" class="add" id="btnFirstEq" ${state.canWrite ? "" : "disabled"}>＋ הוספת כלי או נגרר</button>
-      <div class="row2"><button type="button" class="ghost" data-go="history">🖨 טופס ריק להדפסה</button></div>`;
-    root.innerHTML = h; root.querySelector("#btnFirstEq").onclick = () => editEquipment(null); root.querySelector("[data-go]").onclick = () => nav("history"); return;
+    h += `<button type="button" class="add" id="btnNewCheck" ${state.canWrite ? "" : "disabled"}>📋 בדיקה שבועית חדשה</button>
+      <div class="empty">ממלאים את הטופס בטלפון: בוחרים כלי או נגרר, מסמנים V/X לכל סעיף, חותמים ושומרים. הכלי נוסף לרשימה מתוך הטופס הראשון שלו.<br>אפשר גם להוסיף כלים מראש, עם שעות מנוע ותאריכי תוקף.</div>
+      <div class="row2"><button type="button" class="ghost" id="btnFirstEq" ${state.canWrite ? "" : "disabled"}>＋ הוספת כלי או נגרר</button><button type="button" class="ghost" data-go="history">🖨 טופס ריק להדפסה</button></div>`;
+    root.innerHTML = h; root.querySelector("#btnNewCheck").onclick = () => openCheckChooser(); root.querySelector("#btnFirstEq").onclick = () => editEquipment(null); root.querySelector("[data-go]").onclick = () => nav("history"); return;
   }
   h += `<div class="stats">
     <div class="stat ${notChecked.length ? "warn" : "ok"}"><div class="v num">${checked.length}/${st.length}</div><div class="k">נבדקו השבוע</div></div>
