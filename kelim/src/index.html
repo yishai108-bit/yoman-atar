@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>בקרת כלים ונגררים</title>
+<script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Heebo:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="./style.css">
+
+<div id="app" class="skel">
+  <div class="netbar" id="netBar" role="status" aria-live="polite" hidden><span id="netMsg"></span></div>
+  <header class="top">
+    <h1><span class="mark" aria-hidden="true"></span><span>בקרת כלים ונגררים</span></h1>
+    <div class="side">
+      <span class="site" id="siteName"><b>BELECTRIC</b><span id="siteLabel">לוגיסטיקה</span></span>
+      <button class="gear" id="btnSettings" type="button" aria-label="הגדרות" title="הגדרות">⚙</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-view="week" aria-selected="true">השבוע<span class="tbadge" id="badgeWeek" hidden></span></button>
+    <button class="tab" role="tab" data-view="eq" aria-selected="false">כלים</button>
+    <button class="tab" role="tab" data-view="defects" aria-selected="false">ליקויים<span class="tbadge" id="badgeDefects" hidden></span></button>
+    <button class="tab" role="tab" data-view="history" aria-selected="false">בדיקות</button>
+    <button class="tab" role="tab" data-view="remind" aria-selected="false">תזכורות</button>
+  </nav>
+
+  <main id="view" role="tabpanel"></main>
+  <footer class="foot">לוגיסטיקה · BELECTRIC · לפי נוהל בקרה שבועית לכלים ונגררים · <span id="verLabel"></span></footer>
+</div>
+<div id="printArea" class="print-only" aria-hidden="true"></div>
+<script type="module" src="./js/main.js"></script>
+</body></html>

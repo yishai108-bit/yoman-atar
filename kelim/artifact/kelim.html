@@ -1,0 +1,1658 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>  <script type="module" crossorigin>const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const uid = (p = "") => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad2 = (n) => String(n).padStart(2, "0");
+function isoDate(d = /* @__PURE__ */ new Date()) {
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+function parseDate(s) {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+function fmtDate(s) {
+  const d = parseDate(s);
+  return d ? pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear() : "—";
+}
+function fmtShort(s) {
+  const d = parseDate(s);
+  return d ? d.getDate() + "." + (d.getMonth() + 1) : "—";
+}
+function addDays(s, n) {
+  const d = parseDate(s);
+  d.setDate(d.getDate() + n);
+  return isoDate(d);
+}
+function daysUntil(s, today = isoDate()) {
+  const a = parseDate(s), b = parseDate(today);
+  if (!a || !b) return null;
+  return Math.round((a - b) / 864e5);
+}
+function weekStart(s = isoDate()) {
+  const d = parseDate(s);
+  d.setDate(d.getDate() - d.getDay());
+  return isoDate(d);
+}
+function weekEnd(s = isoDate()) {
+  return addDays(weekStart(s), 6);
+}
+function inWeek(dateStr, ref = isoDate()) {
+  return dateStr >= weekStart(ref) && dateStr <= weekEnd(ref);
+}
+const DAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+function fmtNum(n) {
+  return n === null || n === void 0 || n === "" || isNaN(n) ? "—" : Number(n).toLocaleString("he-IL");
+}
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+function el(html) {
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+function toast(msg, kind = "") {
+  let t = $("#toast");
+  if (!t) {
+    t = el('<div id="toast" role="status" aria-live="polite"></div>');
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = "show " + kind;
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.className = "", 2600);
+}
+const KINDS = {
+  tool: {
+    id: "tool",
+    label: "כלי",
+    plural: "כלים",
+    formTitle: "טופס טיפול בטרקטור משא / מיול",
+    sub: "טיפול שבועי (איש לוגיסטיקה)",
+    hasHours: true,
+    groups: [
+      { title: "", items: [
+        { key: "fluids", text: "מפלסי נוזלים: שמן מנוע / שמן גיר / מים / דלק" },
+        { key: "leaks", text: "בדיקת נזילות: דלק / שמן מנוע / מים / שמן גיר / הגה ובלמים" },
+        { key: "tires", text: "בדיקה ויזואלית של הצמיגים לגילוי צמיגים שחוקים / לקויים / קרועים / בלויים" },
+        { key: "dash", text: "בדיקת לוח שעונים ווידוא שאין נורות הזהרה דולקות" },
+        { key: "mirrors", text: "בדיקת מראות הרכב שבורות / סדוקות" },
+        { key: "horn", text: "בדיקת צופר" },
+        { key: "lights", text: "בדיקת מערכת תאורה: פנסים ראשיים, וינקרים, אורות בלם" },
+        { key: "brakes", text: "בדיקת בלימה ובלם חנייה" },
+        { key: "belts", text: "בדיקת חגורות בטיחות" },
+        { key: "clean", text: "ניקיון המיול מבפנים ומבחוץ" },
+        { key: "exhaust", text: "מפלט: רעש חריג / חופשים" }
+      ] }
+    ],
+    notes: [
+      "כל 250 שעות עבודה בכלי נדרש טיפול ע״י מוסך (באחריות איש הלוגיסטיקה לעדכן את דנה / מחמוד).",
+      "ברגע שנתגלה ליקוי כלשהו במהלך הבדיקה אין להתחיל לעבוד בציוד עד לתיקון הליקוי ויש לדווח למנהל אתר.",
+      "יש לעדכן את אלירן (קצין רכב) לפחות שבועיים מראש על תפוגת רישיון הרכב, ביטוח או תסקיר. בטלפון: 054-8963036"
+    ]
+  },
+  trailer: {
+    id: "trailer",
+    label: "נגרר",
+    plural: "נגררים",
+    formTitle: "טופס בקרה שבועית – נגרר פתוח עד 750 ק״ג",
+    sub: "",
+    hasHours: false,
+    groups: [
+      { title: "בדיקות כלליות", items: [
+        { key: "license", text: "רישיון הנגרר בתוקף" },
+        { key: "plate", text: "לוחית רישוי תקינה וקריאה" },
+        { key: "vin", text: "מספר שלדה תואם לרישיון" }
+      ] },
+      { title: "מערכת חיבור וגרירה", items: [
+        { key: "coupler", text: "ראש חיבור הגרירה תקין" },
+        { key: "lock", text: "מנגנון נעילה תקין" },
+        { key: "cable", text: "כבל ביטחון תקין" },
+        { key: "jockey", text: "גלגל תמיכה תקין" }
+      ] },
+      { title: "תאורה וחשמל", items: [
+        { key: "l_park", text: "אורות חניה" },
+        { key: "l_brake", text: "אורות בלם" },
+        { key: "l_right", text: "איתות ימני" },
+        { key: "l_left", text: "איתות שמאלי" },
+        { key: "l_plate", text: "תאורת לוחית רישוי" },
+        { key: "plug", text: "מחבר חשמל תקין" }
+      ] },
+      { title: "צמיגים וגלגלים", items: [
+        { key: "t_press", text: "לחץ אוויר תקין" },
+        { key: "t_tread", text: "עומק חריצים תקין" },
+        { key: "t_cuts", text: "ללא חתכים או סדקים" },
+        { key: "t_nuts", text: "אומי גלגל מהודקים" }
+      ] },
+      { title: "שלדה ומרכב", items: [
+        { key: "frame", text: "שלדה ללא סדקים או עיוותים" },
+        { key: "floor", text: "רצפת הנגרר תקינה" },
+        { key: "sides", text: "דפנות ומנגנוני סגירה תקינים" },
+        { key: "hooks", text: "ווים ונקודות עיגון תקינים" },
+        { key: "axles", text: "מתלים וסרנים תקינים" },
+        { key: "clean", text: "ניקיון הנגרר" }
+      ] }
+    ],
+    notes: [
+      "יש לבצע בדיקה שבועית ולשמור בקלסר האתר. במקרה של ליקוי בטיחותי אין להשתמש בנגרר עד לתיקון ואישור כשירות."
+    ]
+  }
+};
+const SUMMARY = [
+  { key: "ok", text: "תקין וכשיר לשימוש" },
+  { key: "repair", text: "נדרש תיקון" },
+  { key: "down", text: "מושבת עד לתיקון" }
+];
+const SUMMARY_LABEL = Object.fromEntries(SUMMARY.map((s) => [s.key, s.text]));
+const DEFAULT_INTERVAL = 250;
+const SERVICE_SOON = 20;
+const EXPIRY_WARN_DAYS = 14;
+const EXPIRIES = [
+  { key: "licenseExp", label: "רישיון רכב" },
+  { key: "insuranceExp", label: "ביטוח" },
+  { key: "testExp", label: "תסקיר" }
+];
+function allItems(kind) {
+  return KINDS[kind].groups.flatMap((g) => g.items);
+}
+function itemText(kind, key) {
+  const it = allItems(kind).find((i) => i.key === key);
+  return it ? it.text : key;
+}
+const state = {
+  db: null,
+  user: null,
+  assets: null,
+  downloads: null,
+  me: null,
+  canWrite: true,
+  ready: false,
+  offline: false,
+  equipment: [],
+  checks: [],
+  defects: [],
+  services: [],
+  settings: { interval: DEFAULT_INTERVAL, weeklyDow: 0, weeklyTime: "07:30" }
+};
+const listeners = /* @__PURE__ */ new Set();
+function onChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+function emit() {
+  for (const fn of listeners) fn();
+}
+const COLLS = ["equipment", "checks", "defects", "services"];
+async function connect() {
+  const claude = window.claude;
+  if (!claude || typeof claude.use !== "function") {
+    state.ready = true;
+    state.offline = true;
+    emit();
+    return;
+  }
+  const [db, user, assets, downloads] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("assets"), claude.use("downloads")]);
+  state.db = db;
+  state.user = user;
+  state.assets = assets;
+  state.downloads = downloads;
+  if (user) {
+    try {
+      state.me = await user.me();
+      const w = await user.can("data.write");
+      if (w === false) state.canWrite = false;
+    } catch {
+    }
+  }
+  if (!db) {
+    state.ready = true;
+    state.offline = true;
+    emit();
+    return;
+  }
+  let pending = COLLS.length + 1;
+  const timer = setTimeout(() => {
+    if (!state.ready) {
+      state.ready = true;
+      state.offline = true;
+      emit();
+    }
+  }, 1e4);
+  const arrived = () => {
+    if (--pending <= 0 && !state.ready) {
+      clearTimeout(timer);
+      state.ready = true;
+      state.offline = false;
+      emit();
+    } else if (state.ready) emit();
+  };
+  for (const c of COLLS) {
+    let first = true;
+    db.collection(c).onSnapshot((snap) => {
+      state[c] = snap.docs.filter((d) => d.exists).map((d) => ({ ...d.data(), id: d.id }));
+      if (first) {
+        first = false;
+        arrived();
+      } else emit();
+    }, () => {
+      if (first) {
+        first = false;
+        arrived();
+      }
+    });
+  }
+  let firstS = true;
+  db.doc("settings/main").onSnapshot((snap) => {
+    if (snap.exists) state.settings = { ...state.settings, ...snap.data() };
+    if (firstS) {
+      firstS = false;
+      arrived();
+    } else emit();
+  }, () => {
+    if (firstS) {
+      firstS = false;
+      arrived();
+    }
+  });
+}
+function need() {
+  if (!state.db) throw new Error("אין חיבור למאגר");
+  if (!state.canWrite) throw new Error("אין הרשאת כתיבה");
+  return state.db;
+}
+const clean = (o) => JSON.parse(JSON.stringify(o));
+async function write(coll, doc) {
+  const db = need();
+  const list = state[coll];
+  const i = list.findIndex((x) => x.id === doc.id);
+  const prev = i >= 0 ? list[i] : null;
+  if (i >= 0) list[i] = doc;
+  else list.push(doc);
+  emit();
+  try {
+    await db.collection(coll).doc(doc.id).set(clean(doc));
+  } catch (e) {
+    if (prev) list[i] = prev;
+    else list.splice(list.indexOf(doc), 1);
+    emit();
+    throw e;
+  }
+}
+async function saveEquipment(eq) {
+  if (!eq.id) eq.id = uid("eq_");
+  eq.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+  await write("equipment", eq);
+  return eq;
+}
+async function deleteEquipment(id) {
+  const db = need();
+  state.equipment = state.equipment.filter((e) => e.id !== id);
+  emit();
+  await db.collection("equipment").doc(id).delete();
+}
+async function saveCheck(check) {
+  if (!check.id) check.id = uid("ck_");
+  if (!check.createdAt) check.createdAt = (/* @__PURE__ */ new Date()).toISOString();
+  if (state.me) check.by = state.me.id;
+  await write("checks", check);
+  return check;
+}
+async function deleteCheck(id) {
+  const db = need();
+  state.checks = state.checks.filter((e) => e.id !== id);
+  emit();
+  await db.collection("checks").doc(id).delete();
+}
+async function saveDefect(d) {
+  if (!d.id) d.id = uid("df_");
+  await write("defects", d);
+  return d;
+}
+async function saveService(s) {
+  if (!s.id) s.id = uid("sv_");
+  await write("services", s);
+  return s;
+}
+async function saveSettings(patch) {
+  const db = need();
+  state.settings = { ...state.settings, ...patch };
+  emit();
+  await db.doc("settings/main").set(clean(state.settings));
+}
+const eqById = (id) => state.equipment.find((e) => e.id === id) || null;
+const sites = () => [...new Set([...state.equipment.map((e) => e.site), ...state.checks.map((c) => c.site)].map((s) => (s || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "he"));
+const siteList = (id) => `<datalist id="${id}">${sites().map((s) => `<option value="${s.replace(/"/g, "&quot;")}">`).join("")}</datalist>`;
+function lastCheck(checks, eqId) {
+  return checks.filter((c) => c.eqId === eqId).sort((a, b) => (b.date + (b.createdAt || "")).localeCompare(a.date + (a.createdAt || "")))[0] || null;
+}
+function currentHours(eq, checks) {
+  let h = Number(eq.hours) || 0;
+  for (const c of checks) if (c.eqId === eq.id && Number(c.hours) > h) h = Number(c.hours);
+  return h;
+}
+function serviceState(eq, checks) {
+  if (eq.kind !== "tool") return null;
+  const interval = Number(eq.interval) || DEFAULT_INTERVAL;
+  const last = Number(eq.lastServiceHours) || 0;
+  const hours = currentHours(eq, checks);
+  const next = last + interval;
+  const left = next - hours;
+  return { hours, next, left, interval, last, state: left <= 0 ? "due" : left <= SERVICE_SOON ? "soon" : "ok" };
+}
+function expiryStates(eq, today = isoDate()) {
+  return EXPIRIES.filter((e) => eq[e.key]).map((e) => {
+    const days = daysUntil(eq[e.key], today);
+    return { ...e, date: eq[e.key], days, state: days < 0 ? "expired" : days <= EXPIRY_WARN_DAYS ? "soon" : "ok" };
+  });
+}
+function equipmentStatus(eq, checks, defects, today = isoDate()) {
+  const last = lastCheck(checks, eq.id);
+  const open = defects.filter((d) => d.eqId === eq.id && d.status !== "closed");
+  const svc = serviceState(eq, checks);
+  const exps = expiryStates(eq, today);
+  const checkedThisWeek = !!last && inWeek(last.date, today);
+  const down = open.some((d) => d.severity === "down") || last && last.summary === "down" && open.length > 0;
+  let level = "ok";
+  if (down || svc && svc.state === "due" || exps.some((e) => e.state === "expired")) level = "bad";
+  else if (open.length || !checkedThisWeek || svc && svc.state === "soon" || exps.some((e) => e.state === "soon")) level = "warn";
+  return { eq, last, open, svc, exps, checkedThisWeek, down, level };
+}
+function defectsFromCheck(check, existingOpen) {
+  const out = [];
+  for (const [key, v] of Object.entries(check.items || {})) {
+    if (v !== "bad") continue;
+    if (existingOpen.some((d) => d.eqId === check.eqId && d.item === key && d.status !== "closed")) continue;
+    out.push({
+      eqId: check.eqId,
+      kind: check.kind,
+      checkId: check.id,
+      item: key,
+      text: itemText(check.kind, key),
+      note: (check.notes || {})[key] || "",
+      openedAt: check.date,
+      status: "open",
+      severity: check.summary === "down" ? "down" : "repair",
+      owner: check.owner || "",
+      due: check.due || ""
+    });
+  }
+  return out;
+}
+function suggestSummary(items) {
+  return Object.values(items || {}).some((v) => v === "bad") ? "repair" : "ok";
+}
+function countItems(items) {
+  let ok = 0, bad = 0, none = 0;
+  for (const v of Object.values(items || {})) v === "ok" ? ok++ : v === "bad" ? bad++ : none++;
+  return { ok, bad, none };
+}
+const icsEsc = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, ";").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+const fold = (line) => {
+  const out = [];
+  let s = line;
+  while (s.length > 70) {
+    out.push(s.slice(0, 70));
+    s = " " + s.slice(70);
+  }
+  out.push(s);
+  return out.join("\r\n");
+};
+const stamp = (d = /* @__PURE__ */ new Date()) => d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + "T" + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + pad2(d.getUTCSeconds()) + "Z";
+const local = (dateStr, hhmm) => dateStr.replace(/-/g, "") + "T" + hhmm.replace(":", "") + "00";
+const BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+function nextDow(dow, from = isoDate()) {
+  const d = parseDate(from);
+  const diff = (dow - d.getDay() + 7) % 7;
+  return addDays(from, diff);
+}
+function icsEvent(ev, now = /* @__PURE__ */ new Date()) {
+  const L = ["BEGIN:VEVENT", "UID:" + ev.uid + "@kelim.belectric", "DTSTAMP:" + stamp(now), "SUMMARY:" + icsEsc(ev.title)];
+  if (ev.allDay) {
+    L.push("DTSTART;VALUE=DATE:" + ev.date.replace(/-/g, ""));
+    L.push("DTEND;VALUE=DATE:" + addDays(ev.date, 1).replace(/-/g, ""));
+  } else {
+    const [h, m] = ev.time.split(":").map(Number);
+    const end = pad2(Math.floor((h * 60 + m + (ev.minutes || 30)) / 60) % 24) + ":" + pad2((h * 60 + m + (ev.minutes || 30)) % 60);
+    L.push("DTSTART;TZID=Asia/Jerusalem:" + local(ev.date, ev.time));
+    L.push("DTEND;TZID=Asia/Jerusalem:" + local(ev.date, end));
+  }
+  if (ev.weeklyDow !== void 0 && ev.weeklyDow !== null) L.push("RRULE:FREQ=WEEKLY;BYDAY=" + BYDAY[ev.weeklyDow]);
+  if (ev.desc) L.push("DESCRIPTION:" + icsEsc(ev.desc));
+  L.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(ev.title), "TRIGGER:-PT15M", "END:VALARM", "END:VEVENT");
+  return L.map(fold).join("\r\n");
+}
+function icsCalendar(events, now = /* @__PURE__ */ new Date()) {
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//BELECTRIC//בקרת כלים ונגררים//HE",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...events.map((e) => icsEvent(e, now)),
+    "END:VCALENDAR"
+  ].join("\r\n") + "\r\n";
+}
+function gcalLink(ev) {
+  const p = new URLSearchParams({ action: "TEMPLATE", text: ev.title, ctz: "Asia/Jerusalem", details: ev.desc || "" });
+  if (ev.allDay) p.set("dates", ev.date.replace(/-/g, "") + "/" + addDays(ev.date, 1).replace(/-/g, ""));
+  else {
+    const [h, m] = ev.time.split(":").map(Number);
+    const t = h * 60 + m + (ev.minutes || 30);
+    p.set("dates", local(ev.date, ev.time) + "/" + local(ev.date, pad2(Math.floor(t / 60) % 24) + ":" + pad2(t % 60)));
+  }
+  if (ev.weeklyDow !== void 0 && ev.weeklyDow !== null) p.set("recur", "RRULE:FREQ=WEEKLY;BYDAY=" + BYDAY[ev.weeklyDow]);
+  return "https://calendar.google.com/calendar/render?" + p.toString();
+}
+function reminderEvents(settings, equipment, checks, today = isoDate()) {
+  const dow = settings.weeklyDow ?? 0, time = settings.weeklyTime || "07:30";
+  const site = (settings.site || "").trim();
+  const evs = [{
+    uid: "weekly-" + (site || "belectric"),
+    title: "בדיקה שבועית לכלים ונגררים – " + (site || "BELECTRIC"),
+    desc: "למלא טופס לכל כלי ונגרר בבעלות BELECTRIC, לצלם ולשמור בקלסר. ליקוי = דיווח מיידי.",
+    date: nextDow(dow, today),
+    time,
+    minutes: 60,
+    weeklyDow: dow
+  }];
+  for (const eq of equipment) {
+    if (eq.active === false) continue;
+    for (const e of expiryStates(eq, today)) {
+      if (e.days === null || e.days < 0) continue;
+      const remind = addDays(e.date, -EXPIRY_WARN_DAYS);
+      evs.push({
+        uid: "exp-" + eq.id + "-" + e.key,
+        title: "לעדכן את אלירן: " + e.label + " של " + eq.name + " פג ב-" + e.date.split("-").reverse().join("."),
+        desc: "מס׳ רישוי " + (eq.plate || "—") + ". לפי הנוהל: הודעה לקצין הרכב לפחות שבועיים מראש.",
+        date: remind >= today ? remind : today,
+        allDay: true
+      });
+    }
+    const svc = serviceState(eq, checks);
+    if (svc && svc.state !== "ok") evs.push({
+      uid: "svc-" + eq.id + "-" + svc.next,
+      title: "טיפול מוסך " + svc.next + " שעות – " + eq.name + (svc.state === "due" ? " (עבר)" : ""),
+      desc: "שעות מנוע כעת " + svc.hours + ". לעדכן את דנה / מחמוד ולתאם מוסך מורשה.",
+      date: svc.state === "due" ? today : nextDow(dow, today),
+      time,
+      minutes: 30
+    });
+  }
+  return evs;
+}
+function openSheet(html, { onClose } = {}) {
+  closeSheet();
+  const scrim = el('<div class="scrim" role="dialog" aria-modal="true"><div class="sheet"><div class="grab" aria-hidden="true"></div>' + html + "</div></div>");
+  scrim.addEventListener("click", (e) => {
+    if (e.target === scrim) closeSheet();
+  });
+  scrim._onClose = onClose;
+  document.body.appendChild(scrim);
+  document.body.classList.add("noscroll");
+  const first = scrim.querySelector("input,select,textarea,button");
+  if (first && window.innerWidth > 700) first.focus();
+  return scrim.querySelector(".sheet");
+}
+function closeSheet() {
+  const s = $(".scrim");
+  if (s) {
+    if (s._onClose) s._onClose();
+    s.remove();
+  }
+  document.body.classList.remove("noscroll");
+}
+function confirmBox(msg, { ok = "כן", danger = false } = {}) {
+  return new Promise((res) => {
+    const sh = openSheet('<h2>לאשר?</h2><p class="confirm-msg"></p><div class="row2"><button type="button" class="ghost" data-x="no">ביטול</button><button type="button" class="add ' + (danger ? "danger" : "") + '" data-x="yes" style="margin:0;flex:1"></button></div>', { onClose: () => res(false) });
+    sh.querySelector(".confirm-msg").textContent = msg;
+    sh.querySelector("[data-x=yes]").textContent = ok;
+    sh.querySelector("[data-x=no]").onclick = () => closeSheet();
+    sh.querySelector("[data-x=yes]").onclick = () => {
+      const s = $(".scrim");
+      s._onClose = null;
+      closeSheet();
+      res(true);
+    };
+  });
+}
+const PRINT_CSS = '@import url("https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap");body{margin:0;background:#f2f2f2;color:#000;font-family:"Alef",Arial,sans-serif;font-size:11pt}.bar{position:sticky;top:0;display:flex;gap:12px;align-items:center;background:#121212;color:#fff;padding:10px 14px;font-size:10pt}.bar button{background:#E40033;color:#fff;border:0;border-radius:4px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}.pform{background:#fff;max-width:200mm;margin:10px auto;padding:12mm;box-shadow:0 1px 6px rgba(0,0,0,.15)}.pform{page-break-after:always;break-after:page;font-family:"Alef",Arial,sans-serif}.pform:last-child{page-break-after:auto;break-after:auto}.pform .ph{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #E40033;padding-bottom:6px;margin-bottom:10px}.pform .ph .brand{font-weight:900;letter-spacing:.14em;color:#E40033;font-size:13pt}.pform .ph .brand small{display:block;letter-spacing:0;color:#666B6E;font-size:9pt;font-weight:700}.pform h1{font-size:15pt;margin:0 0 8px;text-align:center}.pform .hdr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:10.5pt;margin-bottom:8px}.pform .hdr div{border-bottom:1px solid #999;padding:3px 0}.pform .hdr b{color:#333;font-weight:700}.pform .legend{font-size:9.5pt;color:#333;margin-bottom:6px}.pform table{width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:8px}.pform th,.pform td{border:1px solid #444;padding:4px 6px;text-align:start;vertical-align:top}.pform th{background:#eee;font-weight:700}.pform td.vx{text-align:center;width:11mm;font-weight:900;font-size:12pt}.pform td.vx.ok{color:#4F7F0B} .pform td.vx.bad{color:#E40033}.pform tr.grp td{background:#f4f4f4;font-weight:700}.pform td.notes{width:38%}.pform .sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:10.5pt;margin:8px 0}.pform .sum .box{border:1px solid #444;padding:3px 8px;font-weight:700}.pform .sum .box.on{background:#121212;color:#fff}.pform .lines div{border-bottom:1px solid #999;padding:3px 0;font-size:10.5pt;min-height:20px}.pform .psig{display:flex;align-items:flex-end;gap:12px;margin-top:6px;font-size:10.5pt}.pform .psig img{height:16mm;border-bottom:1px solid #444}.pform .notes-list{font-size:9.5pt;color:#333;margin-top:8px;border-top:1px solid #999;padding-top:6px}.pform .notes-list div{margin-bottom:3px}.pform .photos img{height:30mm;margin:2mm;border:1px solid #999}.pform .ft{font-size:8.5pt;color:#666;margin-top:6px;display:flex;justify-content:space-between}@media print{@page{size:A4;margin:12mm}body{background:#fff}.bar{display:none}.pform{max-width:none;margin:0;padding:0;box-shadow:none}}';
+function formHtml(c, eq) {
+  const k = KINDS[c.kind];
+  const blank = !c.id;
+  const tool = c.kind === "tool";
+  const hdr = tool ? [["תפקיד הבודק", c.role], ["שם הבודק", c.inspector], ["תאריך", blank ? "" : fmtDate(c.date)], ["אתר", c.site], ["שעות מנוע", blank ? "" : fmtNum(c.hours)], ["מס׳ רישוי", c.plate]] : [["שם האתר", c.site], ["תאריך", blank ? "" : fmtDate(c.date)], ["מספר רישוי", c.plate], ["שם הבודק", c.inspector], ["", ""], ["", ""]];
+  let h = `<section class="pform"><div class="ph"><div class="brand">BELECTRIC<small>לוגיסטיקה</small></div><div style="font-size:9pt;color:#666">${esc(eq ? eq.name : c.eqName || "")}</div></div>
+    <h1>${esc(k.formTitle)}</h1>
+    <div class="hdr">${hdr.map(([l, v]) => l ? `<div><b>${l}:</b> ${esc(v || "")}</div>` : "<div style='border:0'></div>").join("")}</div>`;
+  if (tool) h += `<div class="legend">סמן V או X לפי הממצאים ופרט בהערות לתיקון (V – תקין, X – לא תקין, יש לפרט).</div>`;
+  h += `<table><thead><tr>${tool ? `<th>${esc(k.sub)}</th><th style="width:14mm;text-align:center">V או X</th><th class="notes">הערות</th>` : `<th>סעיף לבדיקה</th><th style="width:12mm;text-align:center">תקין</th><th style="width:14mm;text-align:center">לא תקין</th><th class="notes">הערות</th>`}</tr></thead><tbody>`;
+  for (const g of k.groups) {
+    if (g.title) h += `<tr class="grp"><td colspan="${tool ? 3 : 4}">${esc(g.title)}</td></tr>`;
+    for (const it of g.items) {
+      const v = (c.items || {})[it.key];
+      const note = esc((c.notes || {})[it.key] || "");
+      h += tool ? `<tr><td>${esc(it.text)}</td><td class="vx ${v || ""}">${v === "ok" ? "V" : v === "bad" ? "X" : ""}</td><td class="notes">${note}</td></tr>` : `<tr><td>${esc(it.text)}</td><td class="vx ok">${v === "ok" ? "☑" : "☐"}</td><td class="vx bad">${v === "bad" ? "☒" : "☐"}</td><td class="notes">${note}</td></tr>`;
+    }
+  }
+  h += `</tbody></table>
+    <div style="font-weight:700;font-size:10.5pt">סיכום הבדיקה</div>
+    <div class="sum">${SUMMARY.map((s) => `<div class="box ${c.summary === s.key ? "on" : ""}">${c.summary === s.key ? "☑" : "☐"} ${s.text}</div>`).join("")}</div>
+    <div class="lines"><div><b>פירוט ליקויים:</b> ${esc(c.defectsText || "")}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><span><b>אחראי לטיפול:</b> ${esc(c.owner || "")}</span><span><b>תאריך יעד:</b> ${c.due ? fmtDate(c.due) : ""}</span></div></div>
+    <div class="psig"><b>חתימת הבודק:</b> ${c.signature ? `<img src="${c.signature}" alt="חתימה">` : `<span style="display:inline-block;width:50mm;border-bottom:1px solid #444">&nbsp;</span>`}</div>`;
+  if (k.notes.length) h += `<div class="notes-list"><b>דגשים:</b>${k.notes.map((n) => `<div>• ${esc(n)}</div>`).join("")}</div>`;
+  if ((c.photos || []).length) h += `<div class="photos">${c.photos.map((p) => `<img src="/_blob/${esc(p)}" alt="צילום">`).join("")}</div>`;
+  h += `<div class="ft"><span>בקרת כלים ונגררים · BELECTRIC לוגיסטיקה</span><span>${blank ? "" : "נשמר במערכת " + fmtDate((c.createdAt || "").slice(0, 10) || c.date) + " · הודפס " + fmtDate(isoDate())}</span></div></section>`;
+  return h;
+}
+function standaloneDoc(html, title) {
+  const abs = html.replace(/src="\/_blob\//g, 'src="' + location.origin + "/_blob/");
+  return '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(title) + "</title><style>" + PRINT_CSS + '</style></head><body><div class="bar"><button type="button" onclick="window.print()">🖨 הדפסה / שמירה כ-PDF</button><span>אפשר גם דרך תפריט הדפדפן: שיתוף ← הדפסה</span></div>' + abs + "</body></html>";
+}
+const PRINT_MODE = { last: "" };
+function run(html, title = "טופס בדיקה") {
+  const doc = standaloneDoc(html, title);
+  let w = null;
+  try {
+    w = window.open("", "_blank");
+  } catch {
+    w = null;
+  }
+  if (w && !w.closed) {
+    try {
+      w.document.open();
+      w.document.write(doc);
+      w.document.close();
+      w.focus();
+      PRINT_MODE.last = "window";
+      return;
+    } catch {
+    }
+  }
+  if (state.downloads) {
+    PRINT_MODE.last = "download";
+    state.downloads.save({ filename: title.replace(/[\\/:*?"<>|]/g, "-") + ".html", data: doc }).then(() => toast("הקובץ ירד; פתח אותו והדפס / שמור כ-PDF")).catch((e) => {
+      if (!(e && e.code === "not_granted")) inPage(html);
+    });
+    return;
+  }
+  inPage(html);
+}
+function inPage(html) {
+  PRINT_MODE.last = "inpage";
+  const area = document.getElementById("printArea");
+  area.innerHTML = html;
+  const done = () => {
+    area.innerHTML = "";
+    window.removeEventListener("afterprint", done);
+  };
+  window.addEventListener("afterprint", done);
+  const imgs = [...area.querySelectorAll("img")].filter((i) => !i.complete);
+  Promise.all(imgs.map((i) => new Promise((r) => {
+    i.onload = i.onerror = r;
+  }))).then(() => setTimeout(() => {
+    try {
+      window.print();
+    } catch {
+      toast("ההדפסה לא נפתחה", "bad");
+    }
+  }, 50));
+}
+function printChecks(ids) {
+  const cs = ids.map((id) => state.checks.find((c) => c.id === id)).filter(Boolean);
+  if (!cs.length) {
+    toast("אין מה להדפיס", "bad");
+    return;
+  }
+  run(cs.map((c) => formHtml(c, eqById(c.eqId))).join(""), cs.length === 1 ? "טופס בדיקה " + ((eqById(cs[0].eqId) || {}).name || cs[0].eqName || "") + " " + fmtDate(cs[0].date) : "טפסי בדיקה " + fmtDate(cs[0].date) + " (" + cs.length + ")");
+}
+function printWeek(ref = isoDate()) {
+  const cs = state.checks.filter((c) => c.date >= weekStart(ref) && c.date <= weekEnd(ref)).sort((a, b) => ((eqById(a.eqId) || {}).name || "").localeCompare((eqById(b.eqId) || {}).name || "", "he") || a.date.localeCompare(b.date));
+  if (!cs.length) {
+    toast("אין בדיקות השבוע", "bad");
+    return;
+  }
+  printChecks(cs.map((c) => c.id));
+}
+function printBlank(kind) {
+  run(formHtml({ kind, site: "", items: {}, notes: {} }, null), KINDS[kind].formTitle + " (ריק)");
+}
+function renderHistory(root, nav2, openId) {
+  const list = state.checks.slice().sort((a, b) => (b.date + (b.createdAt || "")).localeCompare(a.date + (a.createdAt || "")));
+  let h = `<div class="row2"><button type="button" class="ghost" id="blankTool">🖨 טופס ריק · כלי</button><button type="button" class="ghost" id="blankTrailer">🖨 טופס ריק · נגרר</button></div>`;
+  if (!list.length) h += `<div class="empty">עוד לא נשמרו בדיקות. כל טופס שנשמר נשאר כאן, מודפס לקלסר ומצטרף לביקורת הרבעונית של אלירן.</div>`;
+  let month = "";
+  for (const c of list) {
+    const m = c.date.slice(0, 7);
+    if (m !== month) {
+      month = m;
+      h += `<div class="sechead"><span>${monthName(m)}</span></div><div class="list" style="margin-bottom:10px">`;
+    }
+    const eq = eqById(c.eqId);
+    const n = countItems(c.items);
+    h += `<button type="button" class="rec ${c.summary === "ok" ? "ok" : c.summary === "down" ? "bad" : "warn"}" data-open="${c.id}"><div class="ttl">${esc(eq ? eq.name : c.eqName || "—")}</div>
+      <div class="meta"><span class="num">${fmtDate(c.date)}</span><span>${esc(c.inspector || "")}</span><span>${n.ok} תקין${n.bad ? " · <b style='color:var(--clay)'>" + n.bad + " לא תקין</b>" : ""}</span>${c.hours ? `<span class="num">${fmtNum(c.hours)} שעות</span>` : ""}</div>
+      <div class="side"><span class="chip ${c.summary === "ok" ? "c-ok" : c.summary === "down" ? "c-bad" : "c-warn"}">${SUMMARY_LABEL[c.summary] || ""}</span></div></button>`;
+    const next = list[list.indexOf(c) + 1];
+    if (!next || next.date.slice(0, 7) !== m) h += `</div>`;
+  }
+  root.innerHTML = h;
+  root.querySelector("#blankTool").onclick = () => printBlank("tool");
+  root.querySelector("#blankTrailer").onclick = () => printBlank("trailer");
+  root.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => showCheck(b.dataset.open));
+  if (openId && state.checks.find((c) => c.id === openId)) showCheck(openId);
+}
+const monthName = (m) => {
+  const [y, mo] = m.split("-");
+  return ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"][Number(mo) - 1] + " " + y;
+};
+function showCheck(id) {
+  const c = state.checks.find((x) => x.id === id);
+  if (!c) return;
+  const eq = eqById(c.eqId);
+  const k = KINDS[c.kind];
+  let h = `<h2>${esc(eq ? eq.name : c.eqName || "")} <small style="font-size:.8rem;color:var(--ink3)">${fmtDate(c.date)}</small></h2>
+    <p class="note">${k.formTitle}<br>בודק: <b>${esc(c.inspector || "—")}</b>${c.role ? " (" + esc(c.role) + ")" : ""} · אתר: ${esc(c.site || "")}${c.plate ? " · מס׳ רישוי <span class=num>" + esc(c.plate) + "</span>" : ""}${k.hasHours ? " · שעות מנוע <b class=num>" + fmtNum(c.hours) + "</b>" : ""}</p>
+    <table class="t" style="margin:10px 0"><tbody>`;
+  for (const g of k.groups) {
+    if (g.title) h += `<tr><th colspan="3">${g.title}</th></tr>`;
+    for (const it of g.items) {
+      const v = (c.items || {})[it.key];
+      h += `<tr><td class="vmark ${v === "ok" ? "ok" : v === "bad" ? "bad" : ""}">${v === "ok" ? "V" : v === "bad" ? "X" : "–"}</td><td>${esc(it.text)}</td><td style="color:var(--ink3)">${esc((c.notes || {})[it.key] || "")}</td></tr>`;
+    }
+  }
+  h += `</tbody></table>
+    <p class="note"><b>סיכום:</b> <span class="chip ${c.summary === "ok" ? "c-ok" : c.summary === "down" ? "c-bad" : "c-warn"}">${SUMMARY_LABEL[c.summary] || "—"}</span>${c.defectsText ? "<br><b>פירוט ליקויים:</b> " + esc(c.defectsText) : ""}${c.owner ? "<br><b>אחראי לטיפול:</b> " + esc(c.owner) : ""}${c.due ? " · <b>תאריך יעד:</b> " + fmtDate(c.due) : ""}</p>
+    ${c.signature ? `<p class="note"><b>חתימת הבודק:</b><br><img src="${c.signature}" alt="חתימה" style="height:60px;border-bottom:1px solid var(--line)"></p>` : ""}
+    ${(c.photos || []).length ? `<div class="photos">${c.photos.map((p) => `<a href="/_blob/${esc(p)}" target="_blank" rel="noopener"><img src="/_blob/${esc(p)}" alt="צילום"></a>`).join("")}</div>` : ""}
+    <button type="button" class="add" id="pPrint">🖨 הדפסה / PDF לקלסר</button>
+    <div class="row2"><button type="button" class="del" id="pDel" ${state.canWrite ? "" : "disabled"}>מחיקת הטופס</button></div>`;
+  const sh = openSheet(h);
+  sh.querySelector("#pPrint").onclick = () => printChecks([c.id]);
+  sh.querySelector("#pDel").onclick = async () => {
+    if (await confirmBox("למחוק את הטופס מ-" + fmtDate(c.date) + "? הליקויים שנפתחו ממנו נשארים.", { ok: "מחק", danger: true })) {
+      try {
+        await deleteCheck(c.id);
+        closeSheet();
+        toast("נמחק");
+      } catch {
+        toast("נכשל", "bad");
+      }
+    }
+  };
+}
+function renderEq(root, nav2, focusId) {
+  const list = state.equipment.slice().sort((a, b) => (a.kind + a.name).localeCompare(b.kind + b.name, "he"));
+  let h = `<button type="button" class="add" id="btnAddEq" ${state.canWrite ? "" : "disabled"}>＋ הוספת כלי או נגרר</button>`;
+  if (!list.length) h += `<div class="empty">הרשימה ריקה. מוסיפים כל כלי (טרקטור משא / מיול) וכל נגרר בבעלות BELECTRIC באתר, עם מס׳ רישוי, שעות מנוע ותאריכי רישיון/ביטוח/תסקיר.</div>`;
+  for (const kind of ["tool", "trailer"]) {
+    const items = list.filter((e) => e.kind === kind);
+    if (!items.length) continue;
+    h += `<div class="sechead"><span>${KINDS[kind].plural}</span><span>${items.length}</span></div><div class="list">`;
+    for (const eq of items) {
+      const s = equipmentStatus(eq, state.checks, state.defects);
+      const meta = [];
+      if (eq.site) meta.push(`<span>${esc(eq.site)}</span>`);
+      if (eq.plate) meta.push(`<span class="num">${esc(eq.plate)}</span>`);
+      if (eq.model) meta.push(`<span>${esc(eq.model)}</span>`);
+      if (s.svc) meta.push(`<span class="num">${fmtNum(s.svc.hours)} שעות</span><span>${s.svc.state === "due" ? "טיפול חלף" : "טיפול בעוד " + fmtNum(s.svc.left) + " שעות"}</span>`);
+      if (s.open.length) meta.push(`<span style="color:var(--clay);font-weight:700">${s.open.length} ליקויים</span>`);
+      if (eq.active === false) meta.push(`<span>לא פעיל</span>`);
+      h += `<button type="button" class="rec ${eq.active === false ? "" : s.level}" data-eq="${eq.id}"><div class="ttl">${esc(eq.name)}</div><div class="meta">${meta.join("")}</div>
+        <div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לא נבדק השבוע"}</span></div></button>`;
+    }
+    h += `</div>`;
+  }
+  root.innerHTML = h;
+  root.querySelector("#btnAddEq").onclick = () => editEquipment(null);
+  root.querySelectorAll("[data-eq]").forEach((b) => b.onclick = () => showEquipment(b.dataset.eq, nav2));
+  if (focusId && eqById(focusId)) showEquipment(focusId, nav2);
+}
+function showEquipment(id, nav2) {
+  const eq = eqById(id);
+  if (!eq) return;
+  const s = equipmentStatus(eq, state.checks, state.defects);
+  const k = KINDS[eq.kind];
+  let h = `<h2>${esc(eq.name)} <small style="font-size:.8rem;color:var(--ink3)">${k.label}${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · " + esc(eq.plate) : ""}</small></h2>`;
+  if (eq.model || eq.note) h += `<p class="note">${esc(eq.model || "")}${eq.model && eq.note ? " · " : ""}${esc(eq.note || "")}</p>`;
+  if (s.svc) {
+    const pct = Math.max(0, Math.min(100, Math.round((s.svc.hours - s.svc.last) / s.svc.interval * 100)));
+    h += `<div class="card" style="margin-top:10px"><h2>שעות מנוע וטיפול מוסך <small>כל ${fmtNum(s.svc.interval)} שעות</small></h2>
+      <div style="display:flex;justify-content:space-between;font-size:.9rem"><span>כעת <b class="num">${fmtNum(s.svc.hours)}</b></span><span>טיפול הבא ב-<b class="num">${fmtNum(s.svc.next)}</b></span></div>
+      <div class="svcbar ${s.svc.state}"><b style="width:${pct}%"></b></div>
+      <div class="note ${s.svc.state === "due" ? "bad" : s.svc.state === "soon" ? "warn" : ""}">${s.svc.state === "due" ? "חלף מועד הטיפול ב-" + fmtNum(-s.svc.left) + " שעות. אין להמשיך לעבוד בכלי לפני טיפול במוסך מורשה; לעדכן את דנה / מחמוד." : s.svc.state === "soon" ? "נותרו " + fmtNum(s.svc.left) + " שעות לטיפול. לתאם מוסך ולעדכן את דנה / מחמוד." : "נותרו " + fmtNum(s.svc.left) + " שעות לטיפול הבא."}
+      ${eq.lastServiceDate ? "<br>טיפול אחרון: " + fmtDate(eq.lastServiceDate) + " ב-" + fmtNum(eq.lastServiceHours || 0) + " שעות" + (eq.lastGarage ? " (" + esc(eq.lastGarage) + ")" : "") : "<br>עוד לא נרשם טיפול מוסך."}</div>
+      <div class="row2" style="margin:10px 0 0"><button type="button" class="ghost" data-x="service" ${state.canWrite ? "" : "disabled"}>🔧 רישום טיפול מוסך</button><button type="button" class="ghost" data-x="hours" ${state.canWrite ? "" : "disabled"}>⏱ עדכון שעות</button></div></div>`;
+  }
+  const exps = EXPIRIES.map((e) => ({ ...e, v: eq[e.key], st: s.exps.find((x) => x.key === e.key) }));
+  h += `<div class="card"><h2>רישיון, ביטוח, תסקיר <small>שבועיים מראש לאלירן</small></h2><table class="t"><tbody>`;
+  for (const e of exps) h += `<tr><td>${e.label}</td><td class="num">${e.v ? fmtDate(e.v) : "—"}</td><td>${e.st ? `<span class="chip ${e.st.state === "expired" ? "c-bad" : e.st.state === "soon" ? "c-warn" : "c-ok"}">${e.st.state === "expired" ? "פג" : e.st.state === "soon" ? "עוד " + e.st.days + " ימים" : "בתוקף"}</span>` : ""}</td></tr>`;
+  h += `</tbody></table></div>`;
+  const open = s.open;
+  h += `<div class="card"><h2>ליקויים פתוחים <small>${open.length}</small></h2>`;
+  h += open.length ? `<ul class="note" style="margin:0;padding-inline-start:18px">${open.map((d) => `<li>${esc(d.text)}${d.note ? " – " + esc(d.note) : ""} <span style="color:var(--ink3)">(${fmtDate(d.openedAt)})</span></li>`).join("")}</ul>` : `<p class="note">אין ליקויים פתוחים.</p>`;
+  h += `</div>`;
+  const hist = state.checks.filter((c) => c.eqId === eq.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+  h += `<div class="card"><h2>בדיקות אחרונות <small>${state.checks.filter((c) => c.eqId === eq.id).length}</small></h2>`;
+  h += hist.length ? `<table class="t"><tbody>${hist.map((c) => `<tr><td class="num">${fmtDate(c.date)}</td><td>${esc(c.inspector || "")}</td><td><span class="chip ${c.summary === "ok" ? "c-ok" : c.summary === "down" ? "c-bad" : "c-warn"}">${SUMMARY_LABEL[c.summary] || ""}</span></td><td><button type="button" class="link" data-open="${c.id}">פתח</button></td></tr>`).join("")}</tbody></table>` : `<p class="note">עוד לא נבדק.</p>`;
+  h += `</div>`;
+  h += `<button type="button" class="add" data-x="check" ${state.canWrite ? "" : "disabled"}>📋 טופס בדיקה שבועית</button>
+    <div class="row2"><button type="button" class="ghost" data-x="edit" ${state.canWrite ? "" : "disabled"}>✎ עריכת פרטים</button><button type="button" class="del" data-x="del" ${state.canWrite ? "" : "disabled"}>מחיקה</button></div>`;
+  const sh = openSheet(h);
+  sh.querySelector("[data-x=check]").onclick = () => {
+    closeSheet();
+    openCheckChooser(eq.id);
+  };
+  sh.querySelector("[data-x=edit]").onclick = () => editEquipment(eq);
+  sh.querySelector("[data-x=del]").onclick = async () => {
+    if (await confirmBox("למחוק את «" + eq.name + "» מהרשימה? הבדיקות שנשמרו לא נמחקות.", { ok: "מחק", danger: true })) {
+      try {
+        await deleteEquipment(eq.id);
+        toast("נמחק");
+      } catch (e) {
+        toast("המחיקה נכשלה", "bad");
+      }
+    }
+  };
+  const sv = sh.querySelector("[data-x=service]");
+  if (sv) sv.onclick = () => recordService(eq);
+  const hr = sh.querySelector("[data-x=hours]");
+  if (hr) hr.onclick = () => updateHours(eq);
+  sh.querySelectorAll("[data-open]").forEach((b) => b.onclick = () => {
+    closeSheet();
+    nav2("history", b.dataset.open);
+  });
+}
+function editEquipment(eq) {
+  const isNew = !eq;
+  eq = eq || { kind: "tool", site: sites().length === 1 ? sites()[0] : "", name: "", plate: "", model: "", hours: "", interval: DEFAULT_INTERVAL, lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true };
+  const h = `<h2>${isNew ? "כלי או נגרר חדש" : "עריכת פרטים"}</h2>
+    <div class="f"><label>סוג</label><div class="opts"><button type="button" class="opt" data-kind="tool" aria-pressed="${eq.kind === "tool"}">כלי<small>טרקטור משא / מיול</small></button><button type="button" class="opt" data-kind="trailer" aria-pressed="${eq.kind === "trailer"}">נגרר<small>פתוח עד 750 ק״ג</small></button></div></div>
+    <div class="f"><label>אתר</label><input type="text" id="eSite" value="${esc(eq.site || "")}" list="siteOpts" placeholder="באיזה אתר הכלי נמצא">${siteList("siteOpts")}</div>
+    <div class="f"><label>שם / כינוי באתר</label><input type="text" id="eName" value="${esc(eq.name)}" placeholder="למשל: מיול 2, נגרר כלים"></div>
+    <div class="grid2"><div class="f"><label>מס׳ רישוי</label><input type="text" id="ePlate" value="${esc(eq.plate)}" inputmode="numeric" style="direction:ltr"></div><div class="f"><label>דגם / יצרן</label><input type="text" id="eModel" value="${esc(eq.model || "")}"></div></div>
+    <div id="toolFields" ${eq.kind === "tool" ? "" : "hidden"}>
+      <div class="grid3"><div class="f"><label>שעות מנוע כעת</label><input type="number" id="eHours" value="${esc(eq.hours)}" inputmode="numeric" min="0"></div>
+      <div class="f"><label>טיפול כל (שעות)</label><input type="number" id="eInterval" value="${esc(eq.interval || DEFAULT_INTERVAL)}" inputmode="numeric" min="1"></div>
+      <div class="f"><label>טיפול אחרון בשעות</label><input type="number" id="eLastSvc" value="${esc(eq.lastServiceHours)}" inputmode="numeric" min="0"></div></div>
+      <div class="f"><label>תאריך הטיפול האחרון</label><input type="date" id="eLastSvcDate" value="${esc(eq.lastServiceDate || "")}"></div>
+    </div>
+    <h3>תוקף (לעדכן את אלירן שבועיים מראש)</h3>
+    <div class="grid3">${EXPIRIES.map((e) => `<div class="f"><label>${e.label}</label><input type="date" id="x_${e.key}" value="${esc(eq[e.key] || "")}"></div>`).join("")}</div>
+    <div class="f"><label>הערה</label><input type="text" id="eNote" value="${esc(eq.note || "")}" placeholder="מיקום קבוע, מפעיל, מה שצריך לדעת"></div>
+    ${isNew ? "" : `<div class="f"><label><input type="checkbox" id="eActive" ${eq.active !== false ? "checked" : ""} style="width:auto;min-height:0;margin-inline-end:8px">פעיל באתר (נכלל בבדיקה השבועית)</label></div>`}
+    <button type="button" class="add" id="eSave">שמירה</button>`;
+  const sh = openSheet(h);
+  let kind = eq.kind;
+  sh.querySelectorAll("[data-kind]").forEach((b) => b.onclick = () => {
+    kind = b.dataset.kind;
+    sh.querySelectorAll("[data-kind]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.kind === kind));
+    sh.querySelector("#toolFields").hidden = kind !== "tool";
+  });
+  sh.querySelector("#eSave").onclick = async () => {
+    const name = sh.querySelector("#eName").value.trim();
+    if (!name) {
+      toast("צריך שם", "bad");
+      sh.querySelector("#eName").focus();
+      return;
+    }
+    const num = (id) => {
+      const v = sh.querySelector(id).value.trim();
+      return v === "" ? "" : Number(v);
+    };
+    const site = sh.querySelector("#eSite").value.trim();
+    if (!site) {
+      toast("צריך לכתוב מאיזה אתר", "bad");
+      sh.querySelector("#eSite").focus();
+      return;
+    }
+    const out = {
+      ...eq,
+      kind,
+      site,
+      name,
+      plate: sh.querySelector("#ePlate").value.trim(),
+      model: sh.querySelector("#eModel").value.trim(),
+      note: sh.querySelector("#eNote").value.trim(),
+      hours: kind === "tool" ? num("#eHours") : "",
+      interval: kind === "tool" ? num("#eInterval") || DEFAULT_INTERVAL : "",
+      lastServiceHours: kind === "tool" ? num("#eLastSvc") : "",
+      lastServiceDate: kind === "tool" ? sh.querySelector("#eLastSvcDate").value : "",
+      active: isNew ? true : sh.querySelector("#eActive").checked
+    };
+    for (const e of EXPIRIES) out[e.key] = sh.querySelector("#x_" + e.key).value;
+    try {
+      await saveEquipment(out);
+      closeSheet();
+      toast(isNew ? "נוסף לרשימה" : "נשמר");
+    } catch (e) {
+      toast("השמירה נכשלה: " + (e.message || e), "bad");
+    }
+  };
+}
+function recordService(eq) {
+  const svc = serviceState(eq, state.checks);
+  const sh = openSheet(`<h2>רישום טיפול מוסך · ${esc(eq.name)}</h2>
+    <div class="grid2"><div class="f"><label>תאריך</label><input type="date" id="sDate" value="${isoDate()}"></div><div class="f"><label>שעות מנוע בטיפול</label><input type="number" id="sHours" value="${svc ? svc.hours : ""}" inputmode="numeric"></div></div>
+    <div class="f"><label>מוסך</label><input type="text" id="sGarage" value="${esc(eq.lastGarage || "")}" placeholder="שם המוסך המורשה"></div>
+    <div class="f"><label>מה בוצע</label><textarea id="sNote" placeholder="שמנים, פילטרים, בלמים..."></textarea></div>
+    <p class="note">הטיפול הבא ייקבע ל-${fmtNum((svc ? svc.hours : 0) + (Number(eq.interval) || DEFAULT_INTERVAL))} שעות לפי השעות שתרשום.</p>
+    <button type="button" class="add" id="sSave">שמירה</button>`);
+  sh.querySelector("#sSave").onclick = async () => {
+    const hours = Number(sh.querySelector("#sHours").value), date = sh.querySelector("#sDate").value;
+    if (!date || isNaN(hours)) {
+      toast("צריך תאריך ושעות", "bad");
+      return;
+    }
+    try {
+      await saveService({ eqId: eq.id, date, hours, garage: sh.querySelector("#sGarage").value.trim(), note: sh.querySelector("#sNote").value.trim() });
+      await saveEquipment({ ...eq, lastServiceHours: hours, lastServiceDate: date, lastGarage: sh.querySelector("#sGarage").value.trim(), hours: Math.max(Number(eq.hours) || 0, hours) });
+      closeSheet();
+      toast("הטיפול נרשם");
+    } catch (e) {
+      toast("השמירה נכשלה", "bad");
+    }
+  };
+}
+function updateHours(eq) {
+  const sh = openSheet(`<h2>עדכון שעות מנוע · ${esc(eq.name)}</h2><div class="f"><label>שעות מנוע כעת</label><input type="number" id="uHours" value="${serviceState(eq, state.checks).hours}" inputmode="numeric"></div><button type="button" class="add" id="uSave">שמירה</button>`);
+  sh.querySelector("#uSave").onclick = async () => {
+    const v = Number(sh.querySelector("#uHours").value);
+    if (isNaN(v)) {
+      toast("מספר לא תקין", "bad");
+      return;
+    }
+    try {
+      await saveEquipment({ ...eq, hours: v });
+      closeSheet();
+      toast("עודכן");
+    } catch {
+      toast("השמירה נכשלה", "bad");
+    }
+  };
+}
+const LS = { get: (k) => {
+  try {
+    return localStorage.getItem("kelim." + k) || "";
+  } catch {
+    return "";
+  }
+}, set: (k, v) => {
+  try {
+    localStorage.setItem("kelim." + k, v);
+  } catch {
+  }
+} };
+const NEW_BTNS = `<div class="row2" style="margin-top:12px"><button type="button" class="ghost" data-new="tool">＋ כלי שעוד לא ברשימה<small style="display:block;font-weight:400;font-size:.76rem">טרקטור משא / מיול</small></button><button type="button" class="ghost" data-new="trailer">＋ נגרר שעוד לא ברשימה<small style="display:block;font-weight:400;font-size:.76rem">פתוח עד 750 ק״ג</small></button></div>`;
+function openCheckChooser(eqId) {
+  if (eqId && eqById(eqId)) return openCheckForm(eqById(eqId));
+  const st = state.equipment.filter((e) => e.active !== false).map((e) => equipmentStatus(e, state.checks, state.defects)).sort((a, b) => a.checkedThisWeek - b.checkedThisWeek || a.eq.name.localeCompare(b.eq.name, "he"));
+  if (!st.length) {
+    const sh0 = openSheet(`<h2>בדיקה שבועית · מה בודקים?</h2><p class="note">הכלי יתווסף לרשימה מתוך הטופס.</p>${NEW_BTNS}`);
+    sh0.querySelectorAll("[data-new]").forEach((b) => b.onclick = () => openCheckForm({ kind: b.dataset.new, isNew: true, name: "", plate: "", site: "" }));
+    return;
+  }
+  const sh = openSheet(`<h2>בדיקה שבועית · איזה כלי?</h2><div class="list">${st.map((s) => `<button type="button" class="rec ${s.level}" data-pick="${s.eq.id}"><div class="ttl">${esc(s.eq.name)}</div><div class="meta"><span>${KINDS[s.eq.kind].label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>${s.last ? `<span>נבדק ${fmtDate(s.last.date)}</span>` : "<span>עוד לא נבדק</span>"}</div><div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לבדוק"}</span></div></button>`).join("")}</div>${NEW_BTNS}`);
+  sh.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => openCheckForm(eqById(b.dataset.pick)));
+  sh.querySelectorAll("[data-new]").forEach((b) => b.onclick = () => openCheckForm({ kind: b.dataset.new, isNew: true, name: "", plate: "", site: "" }));
+}
+function openCheckForm(eq) {
+  if (!state.canWrite) {
+    toast("אין לך הרשאת כתיבה במאגר", "bad");
+    return;
+  }
+  const k = KINDS[eq.kind];
+  const items = allItems(eq.kind);
+  const svc = eq.isNew ? null : serviceState(eq, state.checks);
+  const me = state.me && state.me.name || "";
+  const data = { items: {}, notes: {}, summary: "", photos: [] };
+  let h = `<h2>${esc(k.formTitle)}</h2>` + (eq.isNew ? `<p class="note" style="margin-bottom:8px">${k.label} חדש: יתווסף לרשימה עם השמירה.</p><div class="grid2"><div class="f"><label>שם / כינוי ה${k.label}</label><input type="text" id="cEqName" value="" placeholder="${k.kind === "tool" ? "למשל: מיול 2" : "למשל: נגרר כלים"}"></div><div class="f"><label>מס׳ רישוי</label><input type="text" id="cPlate" value="" inputmode="numeric" style="direction:ltr"></div></div>` : `<p class="note" style="margin-bottom:12px"><b>${esc(eq.name)}</b>${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · מס׳ רישוי <span class=num>" + esc(eq.plate) + "</span>" : ""}${eq.model ? " · " + esc(eq.model) : ""}</p>`) + `
+    <div class="grid2">
+      <div class="f"><label>תאריך</label><input type="date" id="cDate" value="${isoDate()}"></div>
+      <div class="f"><label>אתר</label><input type="text" id="cSite" value="${esc(eq.site || LS.get("site") || "")}" list="siteOpts" placeholder="מאיזה אתר">${siteList("siteOpts")}</div>
+      <div class="f"><label>שם הבודק</label><input type="text" id="cName" value="${esc(LS.get("name") || me)}" autocomplete="name"></div>
+      <div class="f"><label>תפקיד הבודק</label><input type="text" id="cRole" value="${esc(LS.get("role") || "לוגיסטיקה")}" list="roles"><datalist id="roles"><option value="לוגיסטיקה"><option value="מנהל אתר"><option value="מפעיל"></datalist></div>
+      ${k.hasHours ? `<div class="f"><label>שעות מנוע</label><input type="number" id="cHours" inputmode="numeric" value="${svc ? svc.hours || "" : ""}" min="0"><div class="hint">${svc ? `קודם: <span class="num">${fmtNum(svc.hours)}</span> · טיפול הבא ב-<span class="num">${fmtNum(svc.next)}</span>` : "לפי מד השעות בכלי"}</div></div>` : ""}
+      ${!eq.plate && !eq.isNew ? `<div class="f"><label>מס׳ רישוי</label><input type="text" id="cPlate" value="" style="direction:ltr"></div>` : ""}
+    </div>
+    <div class="prog" id="prog"><span id="progT">0/${items.length} סומנו</span><i><b id="progB"></b></i></div>
+    <p class="note" style="margin:0 0 8px">סמן V או X לפי הממצאים. X = לא תקין, חובה לפרט בהערות.</p>
+    <div class="allok"><button type="button" class="ghost small" id="allOk">✓ הכול תקין</button></div>`;
+  for (const g of k.groups) {
+    if (g.title) h += `<div class="sechead" style="margin-top:10px"><span>${esc(g.title)}</span></div>`;
+    for (const it of g.items) h += `<div class="chk" data-key="${it.key}"><div class="q">${esc(it.text)}</div><div class="vx"><button type="button" class="v" aria-pressed="false" aria-label="תקין">V תקין</button><button type="button" class="x" aria-pressed="false" aria-label="לא תקין">X לא תקין</button></div><textarea class="nt" placeholder="הערה / מה לתקן" hidden></textarea></div>`;
+  }
+  h += `<h3>סיכום הבדיקה</h3><div class="opts" id="sumOpts">${SUMMARY.map((s) => `<button type="button" class="opt ${s.key}" data-sum="${s.key}" aria-pressed="false">${s.text}</button>`).join("")}</div>
+    <div id="defBlock" hidden style="margin-top:10px">
+      <div class="f"><label>פירוט ליקויים</label><textarea id="cDef" placeholder="מה נמצא, מה צריך לקרות"></textarea></div>
+      <div class="grid2"><div class="f"><label>אחראי לטיפול</label><input type="text" id="cOwner" placeholder="מוסך / שם"></div><div class="f"><label>תאריך יעד</label><input type="date" id="cDue"></div></div>
+      <p class="note bad">לפי הנוהל: אין להתחיל לעבוד בציוד עד תיקון הליקוי, ומדווחים למנהל האתר.</p>
+    </div>
+    <h3>חתימת הבודק</h3><canvas class="sig" id="sig" aria-label="חתימה באצבע"></canvas><div class="sigrow"><span class="hint" style="font-size:.76rem;color:var(--ink3)">חותמים באצבע</span><button type="button" class="del" id="sigClear">ניקוי</button></div>
+    <h3>צילומים <small style="font-weight:400;color:var(--ink3)">(ליקויים, מד שעות)</small></h3>
+    <div id="photoBlock">${state.assets ? `<label class="filebtn">📷 הוספת צילום<input type="file" id="cPhoto" accept="image/*" multiple></label><div class="photos" id="photos"></div>` : `<p class="note">צילומים לא זמינים כרגע.</p>`}</div>
+    <button type="button" class="add" id="cSave" style="margin-top:16px">שמירת הטופס</button>`;
+  const sh = openSheet(h);
+  const prog = () => {
+    const n = Object.values(data.items).filter(Boolean).length;
+    sh.querySelector("#progT").textContent = n + "/" + items.length + " סומנו";
+    sh.querySelector("#progB").style.width = Math.round(n / items.length * 100) + "%";
+  };
+  const setItem = (key, v) => {
+    data.items[key] = v;
+    const row2 = sh.querySelector(`.chk[data-key="${key}"]`);
+    row2.querySelector(".v").setAttribute("aria-pressed", v === "ok");
+    row2.querySelector(".x").setAttribute("aria-pressed", v === "bad");
+    row2.classList.toggle("bad", v === "bad");
+    const nt = row2.querySelector(".nt");
+    nt.hidden = v !== "bad";
+    if (v === "bad" && !nt.value) nt.focus();
+    prog();
+    if (!data.summaryTouched) setSummary(suggestSummary(data.items), true);
+  };
+  const setSummary = (s, auto) => {
+    data.summary = s;
+    if (!auto) data.summaryTouched = true;
+    sh.querySelectorAll("[data-sum]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sum === s));
+    sh.querySelector("#defBlock").hidden = s === "ok";
+  };
+  sh.querySelectorAll(".chk").forEach((row2) => {
+    const key = row2.dataset.key;
+    row2.querySelector(".v").onclick = () => setItem(key, "ok");
+    row2.querySelector(".x").onclick = () => setItem(key, "bad");
+    row2.querySelector(".nt").oninput = (e) => data.notes[key] = e.target.value;
+  });
+  sh.querySelector("#allOk").onclick = () => items.forEach((it) => setItem(it.key, "ok"));
+  sh.querySelectorAll("[data-sum]").forEach((b) => b.onclick = () => setSummary(b.dataset.sum, false));
+  const sig = signaturePad(sh.querySelector("#sig"));
+  sh.querySelector("#sigClear").onclick = () => sig.clear();
+  const ph = sh.querySelector("#cPhoto");
+  if (ph) ph.onchange = async () => {
+    for (const f of ph.files) {
+      try {
+        const blob = await shrink(f);
+        const a = await state.assets.upload(blob);
+        data.photos.push(a.id);
+        sh.querySelector("#photos").appendChild(el(`<img src="${esc(a.url)}" alt="צילום">`));
+      } catch (e) {
+        toast("העלאת הצילום נכשלה", "bad");
+      }
+    }
+    ph.value = "";
+  };
+  sh.querySelector("#cSave").onclick = async () => {
+    const name = sh.querySelector("#cName").value.trim();
+    if (!name) {
+      toast("צריך שם בודק", "bad");
+      sh.querySelector("#cName").focus();
+      return;
+    }
+    const site = sh.querySelector("#cSite").value.trim();
+    if (!site) {
+      toast("צריך לכתוב מאיזה אתר", "bad");
+      sh.querySelector("#cSite").focus();
+      return;
+    }
+    const eqNameEl = sh.querySelector("#cEqName");
+    const eqName = eqNameEl ? eqNameEl.value.trim() : eq.name;
+    if (eqNameEl && !eqName) {
+      toast("צריך שם ל" + k.label, "bad");
+      eqNameEl.focus();
+      return;
+    }
+    const missing = items.filter((it) => !data.items[it.key]);
+    if (missing.length) {
+      toast("נשארו " + missing.length + " סעיפים בלי V או X", "bad");
+      sh.querySelector(`.chk[data-key="${missing[0].key}"]`).scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const noNote = items.filter((it) => data.items[it.key] === "bad" && !(data.notes[it.key] || "").trim());
+    if (noNote.length) {
+      toast("X בלי פירוט: " + noNote[0].text.slice(0, 30), "bad");
+      sh.querySelector(`.chk[data-key="${noNote[0].key}"] .nt`).focus();
+      return;
+    }
+    if (!data.summary) setSummary(suggestSummary(data.items), true);
+    const hoursEl = sh.querySelector("#cHours");
+    const hours = hoursEl ? Number(hoursEl.value) : "";
+    if (hoursEl && hoursEl.value === "") {
+      toast("צריך שעות מנוע", "bad");
+      hoursEl.focus();
+      return;
+    }
+    if (hoursEl && svc && hours < svc.hours && !confirm("שעות המנוע (" + hours + ") נמוכות מהקודמות (" + svc.hours + "). לשמור בכל זאת?")) return;
+    const btn = sh.querySelector("#cSave");
+    btn.disabled = true;
+    btn.textContent = "שומר…";
+    const check = {
+      eqId: eq.id,
+      eqName,
+      kind: eq.kind,
+      date: sh.querySelector("#cDate").value || isoDate(),
+      inspector: name,
+      role: sh.querySelector("#cRole").value.trim(),
+      site,
+      plate: eq.plate || (sh.querySelector("#cPlate") ? sh.querySelector("#cPlate").value.trim() : ""),
+      hours: hoursEl ? hours : "",
+      items: { ...data.items },
+      notes: Object.fromEntries(Object.entries(data.notes).filter(([k2, v]) => data.items[k2] === "bad" && v.trim()).map(([k2, v]) => [k2, v.trim()])),
+      summary: data.summary,
+      defectsText: data.summary === "ok" ? "" : sh.querySelector("#cDef").value.trim(),
+      owner: data.summary === "ok" ? "" : sh.querySelector("#cOwner").value.trim(),
+      due: data.summary === "ok" ? "" : sh.querySelector("#cDue").value,
+      signature: sig.isEmpty() ? "" : sig.toDataURL(),
+      photos: data.photos
+    };
+    LS.set("name", name);
+    LS.set("role", check.role);
+    LS.set("site", site);
+    try {
+      if (eq.isNew) {
+        const created = await saveEquipment({ kind: eq.kind, name: eqName, plate: check.plate, site, model: "", hours: hoursEl ? hours : "", interval: eq.kind === "tool" ? state.settings.interval || DEFAULT_INTERVAL : "", lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true });
+        eq = created;
+        check.eqId = created.id;
+      }
+      await saveCheck(check);
+      for (const d of defectsFromCheck(check, state.defects)) await saveDefect(d);
+      const patch = {};
+      if (hoursEl && hours > (Number(eq.hours) || 0)) patch.hours = hours;
+      if (!eq.plate && check.plate) patch.plate = check.plate;
+      if (!eq.site) patch.site = site;
+      if (Object.keys(patch).length) await saveEquipment({ ...eq, ...patch });
+      closeSheet();
+      const n = countItems(check.items);
+      toast("נשמר · " + n.ok + " תקין" + (n.bad ? ", " + n.bad + " ליקויים נפתחו" : ""));
+      showCheck(check.id);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = "שמירת הטופס";
+      toast("השמירה נכשלה: " + (e.message || e), "bad");
+    }
+  };
+}
+function signaturePad(canvas) {
+  const ratio = Math.min(2, window.devicePixelRatio || 1);
+  let drawn = false, drawing = false, last = null;
+  const fit = () => {
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(r.width * ratio));
+    canvas.height = Math.max(1, Math.round(r.height * ratio));
+    const c = canvas.getContext("2d");
+    c.lineWidth = 2.2 * ratio;
+    c.lineCap = "round";
+    c.lineJoin = "round";
+    c.strokeStyle = "#121212";
+  };
+  fit();
+  if (canvas.width <= 1) requestAnimationFrame(fit);
+  const pos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return [(e.clientX - r.left) * ratio, (e.clientY - r.top) * ratio];
+  };
+  canvas.addEventListener("pointerdown", (e) => {
+    drawing = true;
+    last = pos(e);
+    canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drawing) return;
+    const p = pos(e), c = canvas.getContext("2d");
+    c.beginPath();
+    c.moveTo(last[0], last[1]);
+    c.lineTo(p[0], p[1]);
+    c.stroke();
+    last = p;
+    drawn = true;
+  });
+  const up = () => {
+    drawing = false;
+  };
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
+  return {
+    clear() {
+      canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+      drawn = false;
+    },
+    isEmpty: () => !drawn,
+    toDataURL() {
+      const w = 360, hgt = Math.round(canvas.height / canvas.width * w) || 120;
+      const o = document.createElement("canvas");
+      o.width = w;
+      o.height = hgt;
+      o.getContext("2d").drawImage(canvas, 0, 0, w, hgt);
+      return o.toDataURL("image/png");
+    }
+  };
+}
+async function shrink(file) {
+  if (!/^image\//.test(file.type)) return file;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+    const s = Math.min(1, 1280 / Math.max(img.width, img.height));
+    if (s === 1 && file.size < 6e5) return file;
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * s);
+    c.height = Math.round(img.height * s);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise((res) => c.toBlob((b) => res(b || file), "image/jpeg", 0.82));
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+function statuses() {
+  const today = isoDate();
+  return state.equipment.filter((e) => e.active !== false).map((e) => equipmentStatus(e, state.checks, state.defects, today));
+}
+let siteFilter = "";
+function renderWeek(root, nav2) {
+  const allSites = sites();
+  if (siteFilter && !allSites.includes(siteFilter)) siteFilter = "";
+  const st = statuses().filter((s) => !siteFilter || (s.eq.site || "") === siteFilter);
+  const openDefects = state.defects.filter((d) => d.status !== "closed");
+  const checked = st.filter((s) => s.checkedThisWeek), notChecked = st.filter((s) => !s.checkedThisWeek);
+  const svcAlerts = st.filter((s) => s.svc && s.svc.state !== "ok");
+  const expAlerts = st.flatMap((s) => s.exps.filter((e) => e.state !== "ok").map((e) => ({ ...e, eq: s.eq })));
+  const weekChecks = state.checks.filter((c) => c.date >= weekStart() && c.date <= weekEnd());
+  let h = allSites.length > 1 ? `<div class="filters" id="siteFilters"><button type="button" data-site="" aria-pressed="${!siteFilter}">כל האתרים</button>${allSites.map((s) => `<button type="button" data-site="${esc(s)}" aria-pressed="${siteFilter === s}">${esc(s)}</button>`).join("")}</div>` : "";
+  h += `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
+  if (!st.length && !allSites.length) {
+    h += `<button type="button" class="add" id="btnNewCheck" ${state.canWrite ? "" : "disabled"}>📋 בדיקה שבועית חדשה</button>
+      <div class="empty">ממלאים את הטופס בטלפון: בוחרים כלי או נגרר, מסמנים V/X לכל סעיף, חותמים ושומרים. הכלי נוסף לרשימה מתוך הטופס הראשון שלו.<br>אפשר גם להוסיף כלים מראש, עם שעות מנוע ותאריכי תוקף.</div>
+      <div class="row2"><button type="button" class="ghost" id="btnFirstEq" ${state.canWrite ? "" : "disabled"}>＋ הוספת כלי או נגרר</button><button type="button" class="ghost" data-go="history">🖨 טופס ריק להדפסה</button></div>`;
+    root.innerHTML = h;
+    root.querySelector("#btnNewCheck").onclick = () => openCheckChooser();
+    root.querySelector("#btnFirstEq").onclick = () => editEquipment(null);
+    root.querySelector("[data-go]").onclick = () => nav2("history");
+    return;
+  }
+  h += `<div class="stats">
+    <div class="stat ${notChecked.length ? "warn" : "ok"}"><div class="v num">${checked.length}/${st.length}</div><div class="k">נבדקו השבוע</div></div>
+    <div class="stat ${openDefects.length ? "bad" : "ok"}"><div class="v num">${openDefects.length}</div><div class="k">ליקויים פתוחים</div></div>
+    <div class="stat ${svcAlerts.some((s) => s.svc.state === "due") || expAlerts.some((e) => e.state === "expired") ? "bad" : svcAlerts.length + expAlerts.length ? "warn" : "ok"}"><div class="v num">${svcAlerts.length + expAlerts.length}</div><div class="k">טיפולים ותפוגות</div></div>
+  </div>`;
+  h += `<button type="button" class="add" id="btnNewCheck">📋 בדיקה שבועית חדשה</button>
+    <div class="row2"><button type="button" class="ghost" id="btnPrintWeek" ${weekChecks.length ? "" : "disabled"}>🖨 הדפסת טפסי השבוע (${weekChecks.length})</button><button type="button" class="ghost" data-go="remind">🔔 תזכורת ליומן</button></div>`;
+  if (notChecked.length) {
+    h += `<div class="sechead"><span>עוד לא נבדקו השבוע</span><span>${notChecked.length}</span></div><div class="list">`;
+    for (const s of notChecked) h += row(s, `<button type="button" class="ghost small" data-check="${s.eq.id}">למלא טופס</button>`);
+    h += `</div>`;
+  }
+  if (svcAlerts.length || expAlerts.length) {
+    h += `<div class="sechead"><span>טיפולים ותפוגות</span></div><div class="list">`;
+    for (const s of svcAlerts) h += `<div class="rec ${s.svc.state === "due" ? "bad" : "warn"}" style="cursor:default"><div class="ttl">${esc(s.eq.name)} · טיפול ${fmtNum(s.svc.next)} שעות</div>
+      <div class="meta"><span>שעות מנוע כעת <b class="num">${fmtNum(s.svc.hours)}</b></span><span>${s.svc.state === "due" ? "חלף המועד ב-" + fmtNum(-s.svc.left) + " שעות" : "נותרו " + fmtNum(s.svc.left) + " שעות"}</span><span>לעדכן את דנה / מחמוד ולתאם מוסך</span></div>
+      <div class="side"><button type="button" class="ghost small" data-eq="${s.eq.id}">פרטים</button></div></div>`;
+    for (const e of expAlerts) h += `<div class="rec ${e.state === "expired" ? "bad" : "warn"}" style="cursor:default"><div class="ttl">${esc(e.eq.name)} · ${e.label}</div>
+      <div class="meta"><span>${e.state === "expired" ? "פג ב-" + fmtDate(e.date) : "פג ב-" + fmtDate(e.date) + " (עוד " + e.days + " ימים)"}</span><span>לעדכן את אלירן, קצין הרכב: <a href="tel:0548963036">054-8963036</a></span></div>
+      <div class="side"><button type="button" class="ghost small" data-eq="${e.eq.id}">פרטים</button></div></div>`;
+    h += `</div>`;
+  }
+  if (checked.length) {
+    h += `<div class="sechead"><span>נבדקו השבוע</span><span>${checked.length}</span></div><div class="list">`;
+    for (const s of checked) h += row(s, `<button type="button" class="ghost small" data-open="${s.last.id}">הטופס</button>`);
+    h += `</div>`;
+  }
+  root.innerHTML = h;
+  root.querySelectorAll("[data-site]").forEach((b) => b.onclick = () => {
+    siteFilter = b.dataset.site;
+    renderWeek(root, nav2);
+  });
+  root.querySelector("#btnNewCheck").onclick = () => openCheckChooser();
+  const pw = root.querySelector("#btnPrintWeek");
+  if (pw) pw.onclick = () => printWeek();
+  root.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => nav2(b.dataset.go));
+  root.querySelectorAll("[data-check]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation();
+    openCheckChooser(b.dataset.check);
+  });
+  root.querySelectorAll("[data-eq]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation();
+    nav2("eq", b.dataset.eq);
+  });
+  root.querySelectorAll("[data-open]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation();
+    nav2("history", b.dataset.open);
+  });
+}
+function row(s, action) {
+  const k = KINDS[s.eq.kind];
+  const meta = [`<span>${k.label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>`];
+  if (s.last) meta.push(`<span>בדיקה אחרונה ${fmtDate(s.last.date)} · ${SUMMARY_LABEL[s.last.summary] || ""}</span>`);
+  else meta.push(`<span>עוד לא נבדק</span>`);
+  if (s.open.length) meta.push(`<span style="color:var(--clay);font-weight:700">${s.open.length} ליקויים פתוחים</span>`);
+  if (s.svc && s.eq.kind === "tool") meta.push(`<span class="num">${fmtNum(s.svc.hours)} שעות</span>`);
+  return `<div class="rec ${s.level}" style="cursor:default"><div class="ttl">${esc(s.eq.name)}</div><div class="meta">${meta.join("")}</div><div class="side">${action}</div></div>`;
+}
+let filter = "open";
+function renderDefects(root, nav2) {
+  const all = state.defects.slice().sort((a, b) => (b.openedAt + b.id).localeCompare(a.openedAt + a.id));
+  const open = all.filter((d) => d.status !== "closed"), closed = all.filter((d) => d.status === "closed");
+  const list = filter === "open" ? open : closed;
+  let h = `<div class="filters"><button type="button" data-f="open" aria-pressed="${filter === "open"}">פתוחים (${open.length})</button><button type="button" data-f="closed" aria-pressed="${filter === "closed"}">נסגרו (${closed.length})</button></div>`;
+  if (filter === "open" && open.length) h += `<p class="note warn" style="margin:0 0 10px">לפי הנוהל: ליקוי מדווחים מיידית למנהל האתר ועוקבים עד סגירה. ליקוי בטיחותי = הכלי לא עובד עד תיקון.</p>`;
+  if (!list.length) h += `<div class="empty">${filter === "open" ? "אין ליקויים פתוחים. כל סעיף שמסומן X בטופס בדיקה נפתח כאן אוטומטית." : "עוד לא נסגרו ליקויים."}</div>`;
+  h += `<div class="list">`;
+  for (const d of list) {
+    const eq = eqById(d.eqId);
+    const late = d.due && d.status !== "closed" && daysUntil(d.due) < 0;
+    h += `<div class="defrow ${d.severity === "down" ? "down" : ""} ${d.status === "closed" ? "closed" : ""}"><div class="t1">${esc(eq ? eq.name : "כלי שנמחק")} · ${esc(d.text)}</div>
+      <div class="t2">${d.note ? esc(d.note) + " · " : ""}נפתח ${fmtDate(d.openedAt)}${d.owner ? " · אחראי: " + esc(d.owner) : ""}${d.due ? " · יעד " + fmtDate(d.due) + (late ? " <b style='color:var(--clay)'>(באיחור)</b>" : "") : ""}${d.status === "closed" ? " · <b style='color:var(--sage)'>נסגר " + fmtDate(d.closedAt) + "</b>" + (d.fixNote ? ": " + esc(d.fixNote) : "") : ""}</div>
+      <div class="act">${d.severity === "down" && d.status !== "closed" ? '<span class="chip c-bad">מושבת</span>' : ""}${d.status !== "closed" ? `<button type="button" class="ghost small" data-close="${d.id}" ${state.canWrite ? "" : "disabled"}>סגירה</button>` : `<button type="button" class="link" data-reopen="${d.id}" ${state.canWrite ? "" : "disabled"}>פתיחה מחדש</button>`}</div></div>`;
+  }
+  h += `</div>`;
+  root.innerHTML = h;
+  root.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => {
+    filter = b.dataset.f;
+    renderDefects(root);
+  });
+  root.querySelectorAll("[data-close]").forEach((b) => b.onclick = () => closeDefect(b.dataset.close));
+  root.querySelectorAll("[data-reopen]").forEach((b) => b.onclick = async () => {
+    const d = state.defects.find((x) => x.id === b.dataset.reopen);
+    try {
+      await saveDefect({ ...d, status: "open", closedAt: "", fixNote: "" });
+      toast("נפתח מחדש");
+    } catch {
+      toast("נכשל", "bad");
+    }
+  });
+}
+function closeDefect(id) {
+  const d = state.defects.find((x) => x.id === id);
+  if (!d) return;
+  const sh = openSheet(`<h2>סגירת ליקוי</h2><p class="note" style="margin-bottom:12px"><b>${esc(d.text)}</b>${d.note ? "<br>" + esc(d.note) : ""}</p>
+    <div class="grid2"><div class="f"><label>תאריך סגירה</label><input type="date" id="cDate" value="${isoDate()}"></div><div class="f"><label>מי טיפל</label><input type="text" id="cBy" value="${esc(d.owner || "")}" placeholder="מוסך / שם"></div></div>
+    <div class="f"><label>מה נעשה</label><textarea id="cNote" placeholder="תוקן / הוחלף / אושר כשיר"></textarea></div>
+    <button type="button" class="add" id="cSave">סגירה</button>`);
+  sh.querySelector("#cSave").onclick = async () => {
+    try {
+      await saveDefect({ ...d, status: "closed", closedAt: sh.querySelector("#cDate").value || isoDate(), closedBy: sh.querySelector("#cBy").value.trim(), fixNote: sh.querySelector("#cNote").value.trim() });
+      closeSheet();
+      toast("הליקוי נסגר");
+    } catch {
+      toast("השמירה נכשלה", "bad");
+    }
+  };
+}
+function renderRemind(root) {
+  const s = state.settings;
+  const evs = reminderEvents(s, state.equipment, state.checks);
+  const weekly = evs[0], others = evs.slice(1);
+  const share = s.shareUrl || "";
+  let h = `<div class="card"><h2>בדיקה שבועית חוזרת <small>יומן גוגל</small></h2>
+    <div class="grid2"><div class="f"><label>יום</label><select id="rDow" ${state.canWrite ? "" : "disabled"}>${DAYS.map((d, i) => `<option value="${i}" ${i === (s.weeklyDow ?? 0) ? "selected" : ""}>יום ${d}</option>`).join("")}</select></div><div class="f"><label>שעה</label><input type="time" id="rTime" value="${esc(s.weeklyTime || "07:30")}" ${state.canWrite ? "" : "disabled"}></div></div>
+    <p class="note">אירוע חוזר כל שבוע, שעה אחת, עם התראה 15 דקות לפני: «${esc(weekly.title)}».</p>
+    <div class="row2" style="margin-top:10px"><a class="ghost" href="${esc(gcalLink(weekly))}" target="_blank" rel="noopener">📅 הוספה ליומן גוגל</a><button type="button" class="ghost" id="icsWeekly">⬇ קובץ ליומן (ICS)</button></div></div>`;
+  h += `<div class="card"><h2>תפוגות וטיפולים קרובים <small>${others.length}</small></h2>`;
+  h += others.length ? `<div class="list">${others.map((e) => `<div class="rec warn" style="cursor:default"><div class="ttl" style="font-size:.9rem">${esc(e.title)}</div><div class="meta"><span class="num">${fmtDate(e.date)}</span><span>${esc(e.desc || "")}</span></div><div class="side"><a class="ghost small" href="${esc(gcalLink(e))}" target="_blank" rel="noopener">📅 ליומן</a></div></div>`).join("")}</div>
+      <div class="row2" style="margin-top:10px"><button type="button" class="ghost" id="icsAll">⬇ כל התזכורות כקובץ ICS</button></div>` : `<p class="note">אין כרגע תפוגות בטווח שבועיים או טיפולים שמתקרבים. התזכורות נוצרות אוטומטית מתאריכי הרישיון/ביטוח/תסקיר ומשעות המנוע של כל כלי.</p>`;
+  h += `</div>`;
+  h += `<div class="card"><h2>קישור לטופס המילוי השבועי</h2>
+    <p class="note">הקישור פותח את הכלי הזה בטלפון; כפתור «בדיקה שבועית חדשה» הוא הטופס. אפשר לשלוח ללוגיסטיקן או למנהל האתר.</p>
+    ${share ? `<div class="copy" style="margin-top:8px"><input type="text" id="shareUrl" value="${esc(share)}" readonly><button type="button" class="ghost small" id="copyShare">העתקה</button></div>
+      <div class="row2" style="margin-top:8px"><a class="ghost" href="https://wa.me/?text=${encodeURIComponent("טופס בדיקה שבועית לכלים ונגררים (BELECTRIC)\n" + share)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a></div>` : `<p class="note warn">הקישור יופיע כאן אחרי הפרסום (נשמר בהגדרות).</p>`}</div>`;
+  root.innerHTML = h;
+  const save = async () => {
+    try {
+      await saveSettings({ weeklyDow: Number(root.querySelector("#rDow").value), weeklyTime: root.querySelector("#rTime").value || "07:30" });
+    } catch {
+      toast("לא נשמר", "bad");
+    }
+  };
+  root.querySelector("#rDow").onchange = save;
+  root.querySelector("#rTime").onchange = save;
+  root.querySelector("#icsWeekly").onclick = () => downloadIcs("בדיקה-שבועית-כלים.ics", icsCalendar([weekly]));
+  const all = root.querySelector("#icsAll");
+  if (all) all.onclick = () => downloadIcs("תזכורות-כלים-ונגררים.ics", icsCalendar(evs));
+  const cp = root.querySelector("#copyShare");
+  if (cp) cp.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(share);
+      toast("הועתק");
+    } catch {
+      root.querySelector("#shareUrl").select();
+      toast("לא ניתן להעתיק אוטומטית, סמן והעתק", "bad");
+    }
+  };
+}
+async function downloadIcs(filename, text) {
+  if (state.downloads) {
+    try {
+      await state.downloads.save({ filename, data: text });
+      return;
+    } catch (e) {
+      if (e && e.code === "not_granted") return;
+    }
+  }
+  try {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/calendar;charset=utf-8" }));
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 2e3);
+  } catch {
+    toast("ההורדה לא נפתחה", "bad");
+  }
+}
+function openSettings() {
+  const s = state.settings;
+  const sh = openSheet(`<h2>הגדרות</h2>
+    <div class="f"><label>טיפול מוסך כל (שעות מנוע) · ברירת מחדל לכלי חדש</label><input type="number" id="sInt" value="${esc(s.interval || DEFAULT_INTERVAL)}" inputmode="numeric" ${state.canWrite ? "" : "disabled"}></div>
+    <div class="f"><label>קישור לכלי (לשיתוף ולטופס)</label><input type="text" id="sUrl" value="${esc(s.shareUrl || "")}" style="direction:ltr" placeholder="https://claude.ai/artifact/…" ${state.canWrite ? "" : "disabled"}></div>
+    <p class="note">${state.me ? "מחובר: " + esc(state.me.name || "") : "לא מזוהה"} · ${state.canWrite ? "הרשאת כתיבה" : "קריאה בלבד"} · ${state.equipment.length} פריטים, ${state.checks.length} בדיקות, ${state.defects.filter((d) => d.status !== "closed").length} ליקויים פתוחים</p>
+    <button type="button" class="add" id="sSave" ${state.canWrite ? "" : "disabled"}>שמירה</button>`);
+  sh.querySelector("#sSave").onclick = async () => {
+    try {
+      await saveSettings({ interval: Number(sh.querySelector("#sInt").value) || DEFAULT_INTERVAL, shareUrl: sh.querySelector("#sUrl").value.trim() });
+      closeSheet();
+      toast("נשמר");
+    } catch {
+      toast("לא נשמר", "bad");
+    }
+  };
+}
+const APP_VERSION = 5;
+const VIEWS = { week: renderWeek, eq: renderEq, defects: renderDefects, history: renderHistory, remind: renderRemind };
+let current = "week", arg = null;
+function nav(view, a) {
+  if (!VIEWS[view]) return;
+  current = view;
+  arg = a || null;
+  $$("#tabs .tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.view === view));
+  render();
+  arg = null;
+}
+function render() {
+  const root = $("#view");
+  if (!root) return;
+  if (!state.ready) {
+    root.innerHTML = '<div class="empty">טוען…</div>';
+    return;
+  }
+  VIEWS[current](root, nav, arg);
+  const open = state.defects.filter((d) => d.status !== "closed").length;
+  badge("#badgeDefects", open);
+  const notChecked = state.equipment.filter((e) => e.active !== false).filter((e) => !equipmentStatus(e, state.checks, state.defects).checkedThisWeek).length;
+  badge("#badgeWeek", notChecked);
+  const nb = $("#netBar");
+  if (state.offline) {
+    nb.hidden = false;
+    $("#netMsg").textContent = state.db ? "המאגר לא נענה; הנתונים אולי לא עדכניים." : "אין חיבור למאגר הנתונים; פותחים את הכלי מתוך Claude.";
+  } else nb.hidden = true;
+}
+function badge(sel, n) {
+  const b = $(sel);
+  if (!b) return;
+  b.hidden = !n;
+  b.textContent = n;
+}
+function boot() {
+  $("#verLabel").textContent = "v" + APP_VERSION;
+  $$("#tabs .tab").forEach((t) => t.onclick = () => nav(t.dataset.view));
+  $("#btnSettings").onclick = openSettings;
+  onChange(() => {
+    $("#app").classList.remove("skel");
+    render();
+  });
+  render();
+  connect().catch(() => {
+    state.ready = true;
+    state.offline = true;
+    render();
+  });
+  const route = () => {
+    const m = /^#check(?:\/([^/]+))?/.exec(location.hash || "");
+    if (!m) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    const go = () => openCheckChooser(m[1]);
+    if (state.ready) go();
+    else {
+      const off = onChange(() => {
+        if (state.ready) {
+          off();
+          go();
+        }
+      });
+    }
+  };
+  window.addEventListener("hashchange", route);
+  route();
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+window.__kelim = { state, nav };</script>
+  <style rel="stylesheet" crossorigin>/* ברנד BELECTRIC: אדום #E40033, אפור #666B6E, ענבר #FFAA00, ירוק #9AC339, כחול #3199CC, פונט עברי Alef. ערכה בהירה בלבד. */
+:root{
+  --sand:#F2F2F2; --paper:#FFFFFF; --line:#D9DADA; --line2:#ECEDED;
+  --ink:#121212; --ink2:#3F4447; --ink3:#666B6E;
+  --pv:#E40033; --pv-soft:#FDE7EC;
+  --amber:#B87400; --amber-fill:#FFAA00; --amber-soft:#FFF3D6;
+  --clay:#B30027; --clay-soft:#F9DEE3;
+  --sage:#4F7F0B; --sage-fill:#9AC339; --sage-soft:#EEF5DE;
+  --info:#1E7FB0; --info-fill:#3199CC; --info-soft:#E3F1F8;
+  --on-accent:#fff;
+  --shadow:0 1px 2px rgba(18,18,18,.06),0 4px 14px -6px rgba(18,18,18,.14);
+  --r:6px; color-scheme:light;
+  --display:"Alef","Heebo",Arial,sans-serif; --ui:"Alef","Heebo",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{background:var(--sand);color:var(--ink);font-family:var(--ui);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+body.noscroll{overflow:hidden}
+#app{direction:rtl;max-width:760px;margin:0 auto;padding:12px 16px 90px}
+#app.skel main{min-height:40vh}
+h1,h2,h3{margin:0;text-wrap:balance}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--pv);outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+a{color:var(--info)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 12px}
+.top h1{font-family:var(--display);font-weight:700;font-size:1.3rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.top h1 .mark{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--pv);box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--ink3);flex:none}
+.top .side{display:flex;align-items:center;gap:8px}
+.top .site{font-size:.74rem;color:var(--ink3);font-weight:700;text-align:left;line-height:1.3}
+.top .site b{display:block;color:var(--pv);font-size:.86rem;letter-spacing:.14em;font-weight:700}
+.gear{background:var(--paper);border:1px solid var(--line);border-radius:50%;width:44px;height:44px;font-size:1.2rem;color:var(--ink2);display:grid;place-items:center}
+.netbar{background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--r);padding:9px 12px;font-size:.84rem;margin-bottom:10px;font-weight:600}
+
+/* tabs */
+.tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;position:relative;background:none;border:0;border-radius:4px;padding:10px 10px;font-weight:700;font-size:.9rem;color:var(--ink3);min-height:44px;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--sand)}
+.tbadge{position:absolute;top:4px;inset-inline-end:4px;background:var(--pv);color:#fff;border-radius:99px;font-size:.66rem;min-width:18px;height:18px;line-height:18px;padding:0 5px;font-weight:700}
+.tab[aria-selected="true"] .tbadge{background:var(--amber-fill);color:var(--ink)}
+
+/* cards */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:12px}
+.card h2{font-family:var(--display);font-weight:700;font-size:1.05rem;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h2 small{font-size:.78rem;color:var(--ink3);font-weight:500}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;margin:14px 2px 8px;font-size:.8rem;color:var(--ink3);font-weight:700;letter-spacing:.04em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;text-align:center}
+.stat .v{font-family:var(--display);font-weight:700;font-size:1.6rem;line-height:1.1}
+.stat .k{font-size:.74rem;color:var(--ink3);margin-top:2px;font-weight:600}
+.stat.bad .v{color:var(--clay)} .stat.warn .v{color:var(--amber)} .stat.ok .v{color:var(--sage)}
+
+/* buttons */
+.add{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--pv);color:var(--on-accent);border:0;border-radius:4px;padding:15px;font-size:1.02rem;font-weight:700;margin-bottom:8px;min-height:48px}
+.add:hover{background:var(--clay)} .add:active{transform:translateY(1px)}
+.add.danger{background:var(--clay)}
+.add[disabled]{opacity:.5;cursor:default}
+.row2{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.ghost{flex:1;background:var(--paper);color:var(--ink);border:1px solid var(--ink3);border-radius:4px;padding:11px 12px;font-weight:700;font-size:.88rem;min-height:44px;text-decoration:none;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.ghost:hover{border-color:var(--pv);color:var(--pv)}
+.ghost.small{flex:0 0 auto;padding:8px 12px;font-size:.8rem;min-height:40px}
+.link{background:none;border:0;color:var(--info);font-weight:700;padding:8px 4px;min-height:40px;text-decoration:underline}
+.del{background:none;border:0;color:var(--ink3);font-size:.78rem;padding:8px 10px;font-weight:600;min-height:40px}
+.del:hover{color:var(--clay)}
+
+/* list rows */
+.list{display:flex;flex-direction:column;gap:9px}
+.rec{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;text-align:start;width:100%;color:inherit;font:inherit;cursor:pointer}
+.rec:hover{border-color:var(--ink3)}
+.rec.ok{border-inline-start:4px solid var(--sage-fill)} .rec.warn{border-inline-start:4px solid var(--amber-fill)} .rec.bad{border-inline-start:4px solid var(--pv)}
+.rec .ttl{font-weight:700;font-size:.98rem}
+.rec .meta{grid-column:1;font-size:.79rem;color:var(--ink3);display:flex;flex-wrap:wrap;gap:3px 10px}
+.rec .side{grid-row:span 2;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.chip{display:inline-block;border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:700;white-space:nowrap;border:1px solid transparent}
+.c-ok{background:var(--sage-soft);color:var(--sage);border-color:var(--sage-fill)}
+.c-warn{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-fill)}
+.c-bad{background:var(--clay-soft);color:var(--clay);border-color:var(--clay)}
+.c-info{background:var(--info-soft);color:var(--info);border-color:var(--info-fill)}
+.c-grey{background:var(--line2);color:var(--ink2);border-color:var(--ink3)}
+.empty{background:var(--paper);border:1px dashed var(--line);border-radius:var(--r);padding:26px 18px;text-align:center;color:var(--ink3);font-size:.92rem}
+.note{font-size:.84rem;color:var(--ink2);line-height:1.5}
+.note.warn{background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--r);padding:10px 12px}
+.note.bad{background:var(--clay-soft);border:1px solid var(--clay);border-radius:var(--r);padding:10px 12px}
+.foot{margin-top:28px;text-align:center;font-size:.72rem;color:var(--ink3)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,14,18,.55);display:flex;align-items:flex-end;justify-content:center;z-index:40}
+.sheet{direction:rtl;background:var(--sand);width:100%;max-width:600px;max-height:94vh;overflow-y:auto;border-radius:12px 12px 0 0;padding:8px 16px 28px;border:1px solid var(--line)}
+.grab{width:42px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 14px}
+.sheet h2{font-family:var(--display);font-weight:700;font-size:1.25rem;margin-bottom:14px;padding-inline-start:10px;border-inline-start:4px solid var(--pv)}
+.sheet h3{font-size:.9rem;color:var(--ink2);margin:16px 0 8px;font-weight:700}
+.confirm-msg{margin:0 0 16px;font-size:.95rem}
+
+/* forms */
+.f{margin-bottom:14px}
+.f>label{display:block;font-size:.8rem;font-weight:700;color:var(--ink2);margin-bottom:5px}
+.f .hint{font-size:.74rem;color:var(--ink3);font-weight:400;margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=tel],select,textarea{width:100%;font-family:var(--ui);font-size:1rem;padding:11px 12px;border-radius:4px;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-height:46px}
+input:focus,select:focus,textarea:focus{border-color:var(--pv);outline:none;box-shadow:0 0 0 3px var(--pv-soft)}
+input[type=number],input[type=date],input[type=time],input[type=tel]{direction:ltr;text-align:right}
+textarea{min-height:60px;resize:vertical}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;font-weight:700;font-size:.9rem;color:var(--ink2);flex:1 1 auto;min-height:46px}
+.opt[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--sand)}
+.opt.ok[aria-pressed="true"]{background:var(--sage);border-color:var(--sage)}
+.opt.bad[aria-pressed="true"]{background:var(--pv);border-color:var(--pv)}
+.opt.down[aria-pressed="true"]{background:var(--clay);border-color:var(--clay)}
+
+/* checklist in the weekly form */
+.chk{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px}
+.chk.bad{border-color:var(--pv);background:#FFF8F9}
+.chk .q{font-size:.92rem;font-weight:600;margin-bottom:8px;line-height:1.4}
+.chk .vx{display:flex;gap:8px}
+.vx button{flex:1;min-height:46px;border-radius:4px;border:1px solid var(--line);background:var(--paper);font-weight:700;font-size:1rem;color:var(--ink2)}
+.vx .v[aria-pressed="true"]{background:var(--sage);border-color:var(--sage);color:#fff}
+.vx .x[aria-pressed="true"]{background:var(--pv);border-color:var(--pv);color:#fff}
+.chk textarea{margin-top:8px;min-height:44px;font-size:.92rem}
+.allok{display:flex;justify-content:flex-end;margin:0 0 10px}
+.prog{position:sticky;top:0;z-index:5;background:var(--sand);padding:6px 0 8px;font-size:.8rem;color:var(--ink3);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.prog i{display:block;height:5px;border-radius:99px;background:var(--line2);flex:1;margin-inline-start:10px;overflow:hidden}
+.prog i b{display:block;height:100%;background:var(--sage-fill);width:0}
+
+/* signature */
+.sig{border:1px dashed var(--ink3);border-radius:var(--r);background:var(--paper);display:block;width:100%;height:120px;touch-action:none}
+.sigrow{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.photos img{width:72px;height:72px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
+.filebtn{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--ink3);border-radius:4px;padding:9px 12px;font-weight:700;font-size:.84rem;min-height:44px;cursor:pointer}
+.filebtn input{display:none}
+
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--sand);padding:10px 18px;border-radius:99px;font-weight:700;font-size:.9rem;opacity:0;transition:.2s;z-index:60;pointer-events:none;max-width:92vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#toast.bad{background:var(--clay)}
+
+/* detail tables */
+table.t{width:100%;border-collapse:collapse;font-size:.86rem}
+table.t th,table.t td{border-bottom:1px solid var(--line2);padding:7px 6px;text-align:start;vertical-align:top}
+table.t th{color:var(--ink3);font-weight:700;font-size:.76rem}
+.vmark{font-weight:900;font-size:1.05rem} .vmark.ok{color:var(--sage)} .vmark.bad{color:var(--pv)}
+.defrow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px;border-inline-start:4px solid var(--amber-fill)}
+.defrow.down{border-inline-start-color:var(--pv)} .defrow.closed{border-inline-start-color:var(--sage-fill);opacity:.8}
+.defrow .t1{font-weight:700;font-size:.94rem} .defrow .t2{font-size:.8rem;color:var(--ink3);grid-column:1}
+.defrow .act{grid-row:span 2;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filters button{background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:.8rem;font-weight:700;color:var(--ink2);min-height:36px}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--sand);border-color:var(--ink)}
+.copy{display:flex;gap:6px}
+.copy input{flex:1;font-size:.84rem;direction:ltr}
+.svcbar{height:8px;border-radius:99px;background:var(--line2);overflow:hidden;margin:6px 0}
+.svcbar b{display:block;height:100%;background:var(--sage-fill)} .svcbar.soon b{background:var(--amber-fill)} .svcbar.due b{background:var(--pv)}
+
+/* ===== הדפסה: הטופס כמו המקור, דף לכל בדיקה ===== */
+.print-only{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;color:#000;font-size:11pt}
+  #app{display:none}
+  .scrim,#toast{display:none!important}
+  .print-only{display:block;direction:rtl}
+  .pform{page-break-after:always;break-after:page;font-family:"Alef",Arial,sans-serif}
+  .pform:last-child{page-break-after:auto;break-after:auto}
+  .pform .ph{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #E40033;padding-bottom:6px;margin-bottom:10px}
+  .pform .ph .brand{font-weight:900;letter-spacing:.14em;color:#E40033;font-size:13pt}
+  .pform .ph .brand small{display:block;letter-spacing:0;color:#666B6E;font-size:9pt;font-weight:700}
+  .pform h1{font-size:15pt;margin:0 0 8px;text-align:center}
+  .pform .hdr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:10.5pt;margin-bottom:8px}
+  .pform .hdr div{border-bottom:1px solid #999;padding:3px 0}
+  .pform .hdr b{color:#333;font-weight:700}
+  .pform .legend{font-size:9.5pt;color:#333;margin-bottom:6px}
+  .pform table{width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:8px}
+  .pform th,.pform td{border:1px solid #444;padding:4px 6px;text-align:start;vertical-align:top}
+  .pform th{background:#eee;font-weight:700}
+  .pform td.vx{text-align:center;width:11mm;font-weight:900;font-size:12pt}
+  .pform td.vx.ok{color:#4F7F0B} .pform td.vx.bad{color:#E40033}
+  .pform tr.grp td{background:#f4f4f4;font-weight:700}
+  .pform td.notes{width:38%}
+  .pform .sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 12px;font-size:10.5pt;margin:8px 0}
+  .pform .sum .box{border:1px solid #444;padding:3px 8px;font-weight:700}
+  .pform .sum .box.on{background:#121212;color:#fff}
+  .pform .lines div{border-bottom:1px solid #999;padding:3px 0;font-size:10.5pt;min-height:20px}
+  .pform .psig{display:flex;align-items:flex-end;gap:12px;margin-top:6px;font-size:10.5pt}
+  .pform .psig img{height:16mm;border-bottom:1px solid #444}
+  .pform .notes-list{font-size:9.5pt;color:#333;margin-top:8px;border-top:1px solid #999;padding-top:6px}
+  .pform .notes-list div{margin-bottom:3px}
+  .pform .photos img{height:30mm;margin:2mm;border:1px solid #999}
+  .pform .ft{font-size:8.5pt;color:#666;margin-top:6px;display:flex;justify-content:space-between}
+}
+@media (max-width:420px){ .grid3{grid-template-columns:1fr 1fr} .stats{gap:6px} .stat{padding:8px} .stat .v{font-size:1.35rem} }</style>
+</head><body>
+<title>בקרת כלים ונגררים</title>
+<script>document.documentElement.lang="he";document.documentElement.dir="rtl";</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&family=Heebo:wght@400;500;700;900&display=swap">
+
+<div id="app" class="skel">
+  <div class="netbar" id="netBar" role="status" aria-live="polite" hidden><span id="netMsg"></span></div>
+  <header class="top">
+    <h1><span class="mark" aria-hidden="true"></span><span>בקרת כלים ונגררים</span></h1>
+    <div class="side">
+      <span class="site" id="siteName"><b>BELECTRIC</b><span id="siteLabel">לוגיסטיקה</span></span>
+      <button class="gear" id="btnSettings" type="button" aria-label="הגדרות" title="הגדרות">⚙</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-view="week" aria-selected="true">השבוע<span class="tbadge" id="badgeWeek" hidden></span></button>
+    <button class="tab" role="tab" data-view="eq" aria-selected="false">כלים</button>
+    <button class="tab" role="tab" data-view="defects" aria-selected="false">ליקויים<span class="tbadge" id="badgeDefects" hidden></span></button>
+    <button class="tab" role="tab" data-view="history" aria-selected="false">בדיקות</button>
+    <button class="tab" role="tab" data-view="remind" aria-selected="false">תזכורות</button>
+  </nav>
+
+  <main id="view" role="tabpanel"></main>
+  <footer class="foot">לוגיסטיקה · BELECTRIC · לפי נוהל בקרה שבועית לכלים ונגררים · <span id="verLabel"></span></footer>
+</div>
+<div id="printArea" class="print-only" aria-hidden="true"></div>
+</body></html>
