@@ -6,7 +6,7 @@ import { reminderEvents, gcalLink, icsCalendar } from "./logic.js";
 export function renderRemind(root){
   const s = state.settings; const evs = reminderEvents(s, state.equipment, state.checks);
   const weekly = evs[0], others = evs.slice(1);
-  const share = s.shareUrl || "";
+  const share = __CLOUD__ ? location.origin + "/" : (s.shareUrl || "");
   let h = `<div class="card"><h2>בדיקה שבועית חוזרת <small>יומן גוגל</small></h2>
     <div class="grid2"><div class="f"><label>יום</label><select id="rDow" ${state.canWrite ? "" : "disabled"}>${DAYS.map((d, i) => `<option value="${i}" ${i === (s.weeklyDow ?? 0) ? "selected" : ""}>יום ${d}</option>`).join("")}</select></div><div class="f"><label>שעה</label><input type="time" id="rTime" value="${esc(s.weeklyTime || "07:30")}" ${state.canWrite ? "" : "disabled"}></div></div>
     <p class="note">אירוע חוזר כל שבוע, שעה אחת, עם התראה 15 דקות לפני: «${esc(weekly.title)}».</p>

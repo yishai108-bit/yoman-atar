@@ -9,8 +9,11 @@ import { renderRemind } from "./view-remind.js";
 import { openSettings } from "./settings.js";
 import { openCheckChooser } from "./view-check.js";
 import { equipmentStatus } from "./logic.js";
+import { installCloud } from "./cloud.js";
 
-export const APP_VERSION = 1;
+if (__CLOUD__) installCloud();   // לינק רגיל (Vercel): אותו ממשק מאגר, בלי Claude
+
+export const APP_VERSION = 5;
 const VIEWS = { week: renderWeek, eq: renderEq, defects: renderDefects, history: renderHistory, remind: renderRemind };
 let current = "week", arg = null;
 
@@ -28,7 +31,7 @@ function render(){
   const notChecked = state.equipment.filter(e => e.active !== false).filter(e => !equipmentStatus(e, state.checks, state.defects).checkedThisWeek).length;
   badge("#badgeWeek", notChecked);
   const nb = $("#netBar");
-  if (state.offline){ nb.hidden = false; $("#netMsg").textContent = state.db ? "המאגר לא נענה; הנתונים אולי לא עדכניים." : "אין חיבור למאגר הנתונים; פותחים את הכלי מתוך Claude."; } else nb.hidden = true;
+  if (state.offline){ nb.hidden = false; $("#netMsg").textContent = state.db ? "המאגר לא נענה; הנתונים אולי לא עדכניים." : (__CLOUD__ ? "אין חיבור למאגר הנתונים; בדקו את הקליטה ונסו שוב." : "אין חיבור למאגר הנתונים; פותחים את הכלי מתוך Claude."); } else nb.hidden = true;
 }
 function badge(sel, n){ const b = $(sel); if (!b) return; b.hidden = !n; b.textContent = n; }
 

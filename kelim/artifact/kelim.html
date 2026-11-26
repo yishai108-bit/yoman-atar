@@ -928,7 +928,7 @@ function openCheckForm(eq) {
     </div>
     <h3>חתימת הבודק</h3><canvas class="sig" id="sig" aria-label="חתימה באצבע"></canvas><div class="sigrow"><span class="hint" style="font-size:.76rem;color:var(--ink3)">חותמים באצבע</span><button type="button" class="del" id="sigClear">ניקוי</button></div>
     <h3>צילומים <small style="font-weight:400;color:var(--ink3)">(ליקויים, מד שעות)</small></h3>
-    <div id="photoBlock">${state.assets ? `<label class="filebtn">📷 הוספת צילום<input type="file" id="cPhoto" accept="image/*" multiple></label><div class="photos" id="photos"></div>` : `<p class="note">צילומים זמינים רק לעורכים של הארטיפקט.</p>`}</div>
+    <div id="photoBlock">${state.assets ? `<label class="filebtn">📷 הוספת צילום<input type="file" id="cPhoto" accept="image/*" multiple></label><div class="photos" id="photos"></div>` : `<p class="note">צילומים לא זמינים כרגע.</p>`}</div>
     <button type="button" class="add" id="cSave" style="margin-top:16px">שמירת הטופס</button>`;
   const sh = openSheet(h);
   const prog = () => {
@@ -1363,7 +1363,7 @@ function openSettings() {
     }
   };
 }
-const APP_VERSION = 1;
+const APP_VERSION = 5;
 const VIEWS = { week: renderWeek, eq: renderEq, defects: renderDefects, history: renderHistory, remind: renderRemind };
 let current = "week", arg = null;
 function nav(view, a) {

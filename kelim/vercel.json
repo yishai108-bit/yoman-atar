@@ -1,0 +1,7 @@
+{
+  "framework": null,
+  "buildCommand": "npm run build:cloud",
+  "outputDirectory": "dist/cloud",
+  "rewrites": [{ "source": "/_blob/:id", "destination": "/api/blob?id=:id" }],
+  "headers": [{ "source": "/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }, { "key": "Referrer-Policy", "value": "no-referrer" }] }]
+}

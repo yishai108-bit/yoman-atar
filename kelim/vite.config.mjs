@@ -21,10 +21,12 @@ function devMock(){
   };
 }
 
+const CLOUD = process.env.KELIM_CLOUD === "1";   // npm run build:cloud → dist/cloud (לינק רגיל ב-Vercel)
 export default {
+  define: { __CLOUD__: JSON.stringify(CLOUD) },
   root: ROOT + "src",
   plugins: [devMock(), viteSingleFile({ removeViteModuleLoader: true })],
-  build: { outDir: ROOT + "dist/build", emptyOutDir: true, minify: false, cssMinify: false, target: "es2020", modulePreload: false, reportCompressedSize: false },
+  build: { outDir: ROOT + (CLOUD ? "dist/cloud" : "dist/build"), emptyOutDir: true, minify: false, cssMinify: false, target: "es2020", modulePreload: false, reportCompressedSize: false },
   server: { open: false },
   clearScreen: false,
   logLevel: "warn",

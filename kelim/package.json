@@ -5,9 +5,13 @@
   "scripts": {
     "dev": "vite",
     "build": "node tools/build.js",
+    "build:cloud": "KELIM_CLOUD=1 vite build --logLevel error",
     "test": "node --test tests/*.test.js"
   },
   "engines": { "node": ">=20" },
+  "dependencies": {
+    "@vercel/blob": "^2.9.0"
+  },
   "devDependencies": {
     "vite": "^5.4.0",
     "vite-plugin-singlefile": "^2.3.4"

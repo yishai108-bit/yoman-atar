@@ -57,7 +57,7 @@ export function openCheckForm(eq){
     </div>
     <h3>חתימת הבודק</h3><canvas class="sig" id="sig" aria-label="חתימה באצבע"></canvas><div class="sigrow"><span class="hint" style="font-size:.76rem;color:var(--ink3)">חותמים באצבע</span><button type="button" class="del" id="sigClear">ניקוי</button></div>
     <h3>צילומים <small style="font-weight:400;color:var(--ink3)">(ליקויים, מד שעות)</small></h3>
-    <div id="photoBlock">${state.assets ? `<label class="filebtn">📷 הוספת צילום<input type="file" id="cPhoto" accept="image/*" multiple></label><div class="photos" id="photos"></div>` : `<p class="note">צילומים זמינים רק לעורכים של הארטיפקט.</p>`}</div>
+    <div id="photoBlock">${state.assets ? `<label class="filebtn">📷 הוספת צילום<input type="file" id="cPhoto" accept="image/*" multiple></label><div class="photos" id="photos"></div>` : `<p class="note">צילומים לא זמינים כרגע.</p>`}</div>
     <button type="button" class="add" id="cSave" style="margin-top:16px">שמירת הטופס</button>`;
   const sh = openSheet(h);
   const prog = () => { const n = Object.values(data.items).filter(Boolean).length; sh.querySelector("#progT").textContent = n + "/" + items.length + " סומנו"; sh.querySelector("#progB").style.width = Math.round(n / items.length * 100) + "%"; };
