@@ -5,6 +5,7 @@ import { KINDS, SUMMARY, allItems } from "./forms.js";
 import { equipmentStatus, serviceState, defectsFromCheck, suggestSummary, countItems } from "./logic.js";
 import { openSheet, closeSheet } from "./sheet.js";
 import { showCheck } from "./view-history.js";
+import { editEquipment } from "./view-eq.js";
 
 const LS = { get: k => { try { return localStorage.getItem("kelim." + k) || ""; } catch { return ""; } }, set: (k, v) => { try { localStorage.setItem("kelim." + k, v); } catch {} } };
 
@@ -12,7 +13,7 @@ const LS = { get: k => { try { return localStorage.getItem("kelim." + k) || ""; 
 export function openCheckChooser(eqId){
   if (eqId && eqById(eqId)) return openCheckForm(eqById(eqId));
   const st = state.equipment.filter(e => e.active !== false).map(e => equipmentStatus(e, state.checks, state.defects)).sort((a, b) => (a.checkedThisWeek - b.checkedThisWeek) || a.eq.name.localeCompare(b.eq.name, "he"));
-  if (!st.length){ toast("קודם מוסיפים כלי או נגרר בלשונית «כלים»", "bad"); return; }
+  if (!st.length){ toast("קודם מוסיפים את הכלי, אחר כך הטופס"); editEquipment(null); return; }
   const sh = openSheet(`<h2>בדיקה שבועית · איזה כלי?</h2><div class="list">${st.map(s => `<button type="button" class="rec ${s.level}" data-pick="${s.eq.id}"><div class="ttl">${esc(s.eq.name)}</div><div class="meta"><span>${KINDS[s.eq.kind].label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>${s.last ? `<span>נבדק ${fmtDate(s.last.date)}</span>` : "<span>עוד לא נבדק</span>"}</div><div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לבדוק"}</span></div></button>`).join("")}</div>`);
   sh.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => openCheckForm(eqById(b.dataset.pick)));
 }

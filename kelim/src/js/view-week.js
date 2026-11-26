@@ -4,6 +4,7 @@ import { esc, fmtDate, weekStart, weekEnd, fmtShort, isoDate, fmtNum } from "./u
 import { equipmentStatus } from "./logic.js";
 import { KINDS, SUMMARY_LABEL } from "./forms.js";
 import { openCheckChooser } from "./view-check.js";
+import { editEquipment } from "./view-eq.js";
 import { printWeek } from "./print.js";
 
 export function statuses(){ const today = isoDate(); return state.equipment.filter(e => e.active !== false).map(e => equipmentStatus(e, state.checks, state.defects, today)); }
@@ -20,9 +21,10 @@ export function renderWeek(root, nav){
   let h = allSites.length > 1 ? `<div class="filters" id="siteFilters"><button type="button" data-site="" aria-pressed="${!siteFilter}">כל האתרים</button>${allSites.map(s => `<button type="button" data-site="${esc(s)}" aria-pressed="${siteFilter === s}">${esc(s)}</button>`).join("")}</div>` : "";
   h += `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
   if (!st.length && !allSites.length){
-    h += `<div class="empty">עדיין אין כלים או נגררים ברשימה.<br>מוסיפים בלשונית «כלים», ואז הטופס השבועי זמין לכל אחד מהם.</div>
-      <button type="button" class="add" data-go="eq">＋ הוספת כלי או נגרר</button>`;
-    root.innerHTML = h; root.querySelector("[data-go]").onclick = () => nav("eq"); return;
+    h += `<div class="empty"><b>צעד ראשון:</b> מוסיפים את הכלים והנגררים של האתר (שם, מס׳ רישוי, שעות מנוע, תאריכי תוקף).<br>אחרי זה הטופס השבועי זמין לכל אחד מהם בלחיצה.</div>
+      <button type="button" class="add" id="btnFirstEq" ${state.canWrite ? "" : "disabled"}>＋ הוספת כלי או נגרר</button>
+      <div class="row2"><button type="button" class="ghost" data-go="history">🖨 טופס ריק להדפסה</button></div>`;
+    root.innerHTML = h; root.querySelector("#btnFirstEq").onclick = () => editEquipment(null); root.querySelector("[data-go]").onclick = () => nav("history"); return;
   }
   h += `<div class="stats">
     <div class="stat ${notChecked.length ? "warn" : "ok"}"><div class="v num">${checked.length}/${st.length}</div><div class="k">נבדקו השבוע</div></div>

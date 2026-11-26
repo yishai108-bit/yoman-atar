@@ -1,5 +1,6 @@
 // הדפסה / PDF: הטופס במבנה המקורי, דף לכל בדיקה, לקלסר ולישיבה הלוגיסטית
 import { state, eqById } from "./store.js";
+import { PRINT_CSS } from "./print-css.js";
 import { esc, fmtDate, fmtNum, weekStart, weekEnd, isoDate, toast } from "./util.js";
 import { KINDS, SUMMARY } from "./forms.js";
 
@@ -31,7 +32,29 @@ export function formHtml(c, eq){
   h += `<div class="ft"><span>בקרת כלים ונגררים · BELECTRIC לוגיסטיקה</span><span>${blank ? "" : "נשמר במערכת " + fmtDate((c.createdAt || "").slice(0, 10) || c.date) + " · הודפס " + fmtDate(isoDate())}</span></div></section>`;
   return h;
 }
-function run(html){
+// מסמך עצמאי של הטופס (נפתח בחלון חדש או יורד כקובץ): צילומים מוטמעים לפי כתובת מלאה כדי שייפתחו גם מחוץ לכלי
+export function standaloneDoc(html, title){
+  const abs = html.replace(/src="\/_blob\//g, 'src="' + location.origin + "/_blob/");
+  return "<!doctype html><html lang=\"he\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + esc(title) + "</title><style>" + PRINT_CSS + "</style></head><body><div class=\"bar\"><button type=\"button\" onclick=\"window.print()\">🖨 הדפסה / שמירה כ-PDF</button><span>אפשר גם דרך תפריט הדפדפן: שיתוף ← הדפסה</span></div>" + abs + "</body></html>";
+}
+export const PRINT_MODE = { last: "" };
+function run(html, title = "טופס בדיקה"){
+  const doc = standaloneDoc(html, title);
+  // 1. חלון חדש: לא כפוף למגבלת ההדפסה של מסגרת הארטיפקט
+  let w = null; try { w = window.open("", "_blank"); } catch { w = null; }
+  if (w && !w.closed){
+    try { w.document.open(); w.document.write(doc); w.document.close(); w.focus(); PRINT_MODE.last = "window"; return; } catch {}
+  }
+  // 2. הורדת קובץ HTML (נפתח בדפדפן ומודפס משם)
+  if (state.downloads){
+    PRINT_MODE.last = "download";
+    state.downloads.save({ filename: title.replace(/[\\/:*?"<>|]/g, "-") + ".html", data: doc }).then(() => toast("הקובץ ירד; פתח אותו והדפס / שמור כ-PDF")).catch(e => { if (!(e && e.code === "not_granted")) inPage(html); });
+    return;
+  }
+  inPage(html);
+}
+function inPage(html){
+  PRINT_MODE.last = "inpage";
   const area = document.getElementById("printArea"); area.innerHTML = html;
   const done = () => { area.innerHTML = ""; window.removeEventListener("afterprint", done); };
   window.addEventListener("afterprint", done);
@@ -39,9 +62,9 @@ function run(html){
   const imgs = [...area.querySelectorAll("img")].filter(i => !i.complete);
   Promise.all(imgs.map(i => new Promise(r => { i.onload = i.onerror = r; }))).then(() => setTimeout(() => { try { window.print(); } catch { toast("ההדפסה לא נפתחה", "bad"); } }, 50));
 }
-export function printChecks(ids){ const cs = ids.map(id => state.checks.find(c => c.id === id)).filter(Boolean); if (!cs.length){ toast("אין מה להדפיס", "bad"); return; } run(cs.map(c => formHtml(c, eqById(c.eqId))).join("")); }
+export function printChecks(ids){ const cs = ids.map(id => state.checks.find(c => c.id === id)).filter(Boolean); if (!cs.length){ toast("אין מה להדפיס", "bad"); return; } run(cs.map(c => formHtml(c, eqById(c.eqId))).join(""), cs.length === 1 ? "טופס בדיקה " + ((eqById(cs[0].eqId) || {}).name || cs[0].eqName || "") + " " + fmtDate(cs[0].date) : "טפסי בדיקה " + fmtDate(cs[0].date) + " (" + cs.length + ")"); }
 export function printWeek(ref = isoDate()){
   const cs = state.checks.filter(c => c.date >= weekStart(ref) && c.date <= weekEnd(ref)).sort((a, b) => ((eqById(a.eqId) || {}).name || "").localeCompare((eqById(b.eqId) || {}).name || "", "he") || a.date.localeCompare(b.date));
   if (!cs.length){ toast("אין בדיקות השבוע", "bad"); return; } printChecks(cs.map(c => c.id));
 }
-export function printBlank(kind){ run(formHtml({ kind, site: "", items: {}, notes: {} }, null)); }
+export function printBlank(kind){ run(formHtml({ kind, site: "", items: {}, notes: {} }, null), KINDS[kind].formTitle + " (ריק)"); }

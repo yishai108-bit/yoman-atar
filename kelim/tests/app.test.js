@@ -34,8 +34,10 @@ test("נטען בלי שגיאות JS, ברוחב 400 בלי גלילה אופק
 test("מאגר ריק: הודעה ברורה וכפתור הוספה, בלי שגיאות", async () => {
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: {} } });
   assert.deepStrictEqual(errors, []);
-  assert.ok((await page.textContent("#view")).includes("עדיין אין כלים"));
-  await page.click("#view [data-go=eq]");
+  assert.ok((await page.textContent("#view")).includes("צעד ראשון"));
+  await page.click("#btnFirstEq"); assert.ok((await page.textContent(".sheet h2")).includes("כלי או נגרר חדש"), "הכפתור פותח ישירות את הוספת הכלי");
+  await page.keyboard.press("Escape"); await page.click(".scrim", { position: { x: 5, y: 5 } }).catch(() => {});
+  await page.click(".tab[data-view=eq]");
   assert.ok((await page.textContent("#view")).includes("הרשימה ריקה"));
   await page.screenshot({ path: path.join(SHOTS, "03-empty.png") });
   await ctx.close();
@@ -156,35 +158,38 @@ test("כלים: פרטי כלי, רישום טיפול מוסך מאפס את ה
 
 test("הדפסה: הטופס השמור נבנה במבנה המקורי (כותרות, V/X, סיכום, חתימה, דגשים) וטופס ריק לשני הסוגים", async () => {
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: fixture } });
-  await page.evaluate(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
-  await page.click(".tab[data-view=history]"); await page.click('[data-open="ck_1"]'); await page.click("#pPrint"); await page.waitForTimeout(300);
-  assert.strictEqual(await page.evaluate(() => window.__printed), 1);
-  const html = await page.innerHTML("#printArea");
+  // בארטיפקט ההדפסה במקום חסומה (iframe), לכן הטופס נפתח בחלון חדש; בבדיקה: חלון חדש נפתח עם המסמך
+  await page.click(".tab[data-view=history]"); await page.click('[data-open="ck_1"]');
+  const [popup] = await Promise.all([page.waitForEvent("popup"), page.click("#pPrint")]);
+  await popup.waitForLoadState("domcontentloaded").catch(() => {}); await page.waitForTimeout(200);
+  const html = await popup.evaluate(() => document.body.innerHTML);
+  assert.ok(html.includes("הדפסה / שמירה כ-PDF"), "כפתור הדפסה בחלון החדש");
   assert.ok(html.includes("טופס טיפול בטרקטור משא / מיול") && html.includes("BELECTRIC") && html.includes("V או X"));
   assert.ok(html.includes('class="vx bad">X<') && html.includes("צמיג אחורי שמאלי שחוק") && html.includes("☑ נדרש תיקון") && html.includes("250 שעות"));
   assert.ok(html.includes("1,230") && html.includes("12-345-67"));
-  await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
-  assert.strictEqual(await page.innerHTML("#printArea"), "", "אזור ההדפסה מתנקה");
+  await popup.close();
   await page.keyboard.press("Escape"); await page.click(".scrim", { position: { x: 5, y: 5 } }).catch(() => {});
-  await page.click("#blankTrailer"); await page.waitForTimeout(200);
-  const blank = await page.innerHTML("#printArea");
+  const [p2] = await Promise.all([page.waitForEvent("popup"), page.click("#blankTrailer")]); await p2.waitForLoadState("domcontentloaded").catch(() => {}); await page.waitForTimeout(200);
+  const blank = await p2.evaluate(() => document.body.innerHTML);
   assert.ok(blank.includes("נגרר פתוח עד 750") && blank.includes("מערכת חיבור וגרירה") && (blank.match(/☐/g) || []).length >= 46);
   assert.ok(!blank.includes("הודפס"), "טופס ריק בלי חותמת זמן");
-  // תצוגת הדפסה: דף A4 כמו שהדפדפן מדפיס
-  await page.emulateMedia({ media: "print" });
-  await page.screenshot({ path: path.join(SHOTS, "09-print-blank-trailer.png"), fullPage: true });
-  await page.emulateMedia({ media: "screen" });
+  await p2.setViewportSize({ width: 800, height: 1100 }); await p2.waitForTimeout(300);
+  await p2.screenshot({ path: path.join(SHOTS, "09-print-blank-trailer.png"), fullPage: true }); await p2.close();
+  const [p3] = await Promise.all([page.waitForEvent("popup"), page.click("#blankTool")]); await p3.waitForLoadState("domcontentloaded").catch(() => {});
+  assert.ok((await p3.evaluate(() => document.body.innerHTML)).includes("טופס טיפול בטרקטור משא")); await p3.close();
+  // בלי חלונות קופצים (כמו בטלפון שחוסם): יורד קובץ HTML דרך downloads
+  await page.evaluate(() => { window.open = () => null; });
   await page.click("#blankTool"); await page.waitForTimeout(200);
-  assert.ok((await page.innerHTML("#printArea")).includes("טופס טיפול בטרקטור משא"));
+  const saved = await page.evaluate(() => window.__MOCK_SAVED__);
+  assert.strictEqual(saved.length, 1); assert.ok(saved[0].filename.endsWith(".html") && saved[0].data.includes("טופס טיפול בטרקטור משא") && saved[0].data.startsWith("<!doctype html>"));
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
 
 test("הדפסת טפסי השבוע: רק הבדיקות של השבוע הנוכחי", async () => {
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: fixture } });
-  await page.evaluate(() => { window.print = () => {}; });
-  await page.click("#btnPrintWeek"); await page.waitForTimeout(200);
-  assert.strictEqual(await page.locator("#printArea .pform").count(), 1);
+  const [popup] = await Promise.all([page.waitForEvent("popup"), page.click("#btnPrintWeek")]); await popup.waitForLoadState("domcontentloaded").catch(() => {}); await page.waitForTimeout(200);
+  assert.strictEqual(await popup.locator(".pform").count(), 1); await popup.close();
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
