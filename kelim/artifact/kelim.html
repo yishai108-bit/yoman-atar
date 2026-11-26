@@ -171,7 +171,7 @@ const state = {
   checks: [],
   defects: [],
   services: [],
-  settings: { site: "אתר הקמה עין תמר", interval: DEFAULT_INTERVAL, weeklyDow: 0, weeklyTime: "07:30" }
+  settings: { interval: DEFAULT_INTERVAL, weeklyDow: 0, weeklyTime: "07:30" }
 };
 const listeners = /* @__PURE__ */ new Set();
 function onChange(fn) {
@@ -319,6 +319,8 @@ async function saveSettings(patch) {
   await db.doc("settings/main").set(clean(state.settings));
 }
 const eqById = (id) => state.equipment.find((e) => e.id === id) || null;
+const sites = () => [...new Set([...state.equipment.map((e) => e.site), ...state.checks.map((c) => c.site)].map((s) => (s || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "he"));
+const siteList = (id) => `<datalist id="${id}">${sites().map((s) => `<option value="${s.replace(/"/g, "&quot;")}">`).join("")}</datalist>`;
 function lastCheck(checks, eqId) {
   return checks.filter((c) => c.eqId === eqId).sort((a, b) => (b.date + (b.createdAt || "")).localeCompare(a.date + (a.createdAt || "")))[0] || null;
 }
@@ -442,10 +444,10 @@ function gcalLink(ev) {
 }
 function reminderEvents(settings, equipment, checks, today = isoDate()) {
   const dow = settings.weeklyDow ?? 0, time = settings.weeklyTime || "07:30";
-  const site = settings.site || "האתר";
+  const site = (settings.site || "").trim();
   const evs = [{
-    uid: "weekly-" + site,
-    title: "בדיקה שבועית לכלים ונגררים – " + site,
+    uid: "weekly-" + (site || "belectric"),
+    title: "בדיקה שבועית לכלים ונגררים – " + (site || "BELECTRIC"),
     desc: "למלא טופס לכל כלי ונגרר בבעלות BELECTRIC, לצלם ולשמור בקלסר. ליקוי = דיווח מיידי.",
     date: nextDow(dow, today),
     time,
@@ -576,7 +578,7 @@ function printWeek(ref = isoDate()) {
   printChecks(cs.map((c) => c.id));
 }
 function printBlank(kind) {
-  run(formHtml({ kind, site: state.settings.site || "", items: {}, notes: {} }, null));
+  run(formHtml({ kind, site: "", items: {}, notes: {} }, null));
 }
 function renderHistory(root, nav2, openId) {
   const list = state.checks.slice().sort((a, b) => (b.date + (b.createdAt || "")).localeCompare(a.date + (a.createdAt || "")));
@@ -661,7 +663,7 @@ function openCheckChooser(eqId) {
     toast("קודם מוסיפים כלי או נגרר בלשונית «כלים»", "bad");
     return;
   }
-  const sh = openSheet(`<h2>בדיקה שבועית · איזה כלי?</h2><div class="list">${st.map((s) => `<button type="button" class="rec ${s.level}" data-pick="${s.eq.id}"><div class="ttl">${esc(s.eq.name)}</div><div class="meta"><span>${KINDS[s.eq.kind].label}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>${s.last ? `<span>נבדק ${fmtDate(s.last.date)}</span>` : "<span>עוד לא נבדק</span>"}</div><div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לבדוק"}</span></div></button>`).join("")}</div>`);
+  const sh = openSheet(`<h2>בדיקה שבועית · איזה כלי?</h2><div class="list">${st.map((s) => `<button type="button" class="rec ${s.level}" data-pick="${s.eq.id}"><div class="ttl">${esc(s.eq.name)}</div><div class="meta"><span>${KINDS[s.eq.kind].label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>${s.last ? `<span>נבדק ${fmtDate(s.last.date)}</span>` : "<span>עוד לא נבדק</span>"}</div><div class="side"><span class="chip ${s.checkedThisWeek ? "c-ok" : "c-warn"}">${s.checkedThisWeek ? "נבדק השבוע" : "לבדוק"}</span></div></button>`).join("")}</div>`);
   sh.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => openCheckForm(eqById(b.dataset.pick)));
 }
 function openCheckForm(eq) {
@@ -675,10 +677,10 @@ function openCheckForm(eq) {
   const me = state.me && state.me.name || "";
   const data = { items: {}, notes: {}, summary: "", photos: [] };
   let h = `<h2>${esc(k.formTitle)}</h2>
-    <p class="note" style="margin-bottom:12px"><b>${esc(eq.name)}</b>${eq.plate ? " · מס׳ רישוי <span class=num>" + esc(eq.plate) + "</span>" : ""}${eq.model ? " · " + esc(eq.model) : ""}</p>
+    <p class="note" style="margin-bottom:12px"><b>${esc(eq.name)}</b>${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · מס׳ רישוי <span class=num>" + esc(eq.plate) + "</span>" : ""}${eq.model ? " · " + esc(eq.model) : ""}</p>
     <div class="grid2">
       <div class="f"><label>תאריך</label><input type="date" id="cDate" value="${isoDate()}"></div>
-      <div class="f"><label>אתר</label><input type="text" id="cSite" value="${esc(state.settings.site || "")}"></div>
+      <div class="f"><label>אתר</label><input type="text" id="cSite" value="${esc(eq.site || LS.get("site") || "")}" list="siteOpts" placeholder="מאיזה אתר">${siteList("siteOpts")}</div>
       <div class="f"><label>שם הבודק</label><input type="text" id="cName" value="${esc(LS.get("name") || me)}" autocomplete="name"></div>
       <div class="f"><label>תפקיד הבודק</label><input type="text" id="cRole" value="${esc(LS.get("role") || "לוגיסטיקה")}" list="roles"><datalist id="roles"><option value="לוגיסטיקה"><option value="מנהל אתר"><option value="מפעיל"></datalist></div>
       ${k.hasHours ? `<div class="f"><label>שעות מנוע</label><input type="number" id="cHours" inputmode="numeric" value="${svc ? svc.hours || "" : ""}" min="0"><div class="hint">קודם: <span class="num">${svc ? fmtNum(svc.hours) : "—"}</span> · טיפול הבא ב-<span class="num">${svc ? fmtNum(svc.next) : "—"}</span></div></div>` : ""}
@@ -756,6 +758,12 @@ function openCheckForm(eq) {
       sh.querySelector("#cName").focus();
       return;
     }
+    const site = sh.querySelector("#cSite").value.trim();
+    if (!site) {
+      toast("צריך לכתוב מאיזה אתר", "bad");
+      sh.querySelector("#cSite").focus();
+      return;
+    }
     const missing = items.filter((it) => !data.items[it.key]);
     if (missing.length) {
       toast("נשארו " + missing.length + " סעיפים בלי V או X", "bad");
@@ -787,7 +795,7 @@ function openCheckForm(eq) {
       date: sh.querySelector("#cDate").value || isoDate(),
       inspector: name,
       role: sh.querySelector("#cRole").value.trim(),
-      site: sh.querySelector("#cSite").value.trim(),
+      site,
       plate: eq.plate || (sh.querySelector("#cPlate") ? sh.querySelector("#cPlate").value.trim() : ""),
       hours: hoursEl ? hours : "",
       items: { ...data.items },
@@ -801,12 +809,14 @@ function openCheckForm(eq) {
     };
     LS.set("name", name);
     LS.set("role", check.role);
+    LS.set("site", site);
     try {
       await saveCheck(check);
       for (const d of defectsFromCheck(check, state.defects)) await saveDefect(d);
       const patch = {};
       if (hoursEl && hours > (Number(eq.hours) || 0)) patch.hours = hours;
       if (!eq.plate && check.plate) patch.plate = check.plate;
+      if (!eq.site) patch.site = site;
       if (Object.keys(patch).length) await saveEquipment({ ...eq, ...patch });
       closeSheet();
       const n = countItems(check.items);
@@ -902,15 +912,19 @@ function statuses() {
   const today = isoDate();
   return state.equipment.filter((e) => e.active !== false).map((e) => equipmentStatus(e, state.checks, state.defects, today));
 }
+let siteFilter = "";
 function renderWeek(root, nav2) {
-  const st = statuses();
+  const allSites = sites();
+  if (siteFilter && !allSites.includes(siteFilter)) siteFilter = "";
+  const st = statuses().filter((s) => !siteFilter || (s.eq.site || "") === siteFilter);
   const openDefects = state.defects.filter((d) => d.status !== "closed");
   const checked = st.filter((s) => s.checkedThisWeek), notChecked = st.filter((s) => !s.checkedThisWeek);
   const svcAlerts = st.filter((s) => s.svc && s.svc.state !== "ok");
   const expAlerts = st.flatMap((s) => s.exps.filter((e) => e.state !== "ok").map((e) => ({ ...e, eq: s.eq })));
   const weekChecks = state.checks.filter((c) => c.date >= weekStart() && c.date <= weekEnd());
-  let h = `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
-  if (!st.length) {
+  let h = allSites.length > 1 ? `<div class="filters" id="siteFilters"><button type="button" data-site="" aria-pressed="${!siteFilter}">כל האתרים</button>${allSites.map((s) => `<button type="button" data-site="${esc(s)}" aria-pressed="${siteFilter === s}">${esc(s)}</button>`).join("")}</div>` : "";
+  h += `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
+  if (!st.length && !allSites.length) {
     h += `<div class="empty">עדיין אין כלים או נגררים ברשימה.<br>מוסיפים בלשונית «כלים», ואז הטופס השבועי זמין לכל אחד מהם.</div>
       <button type="button" class="add" data-go="eq">＋ הוספת כלי או נגרר</button>`;
     root.innerHTML = h;
@@ -945,6 +959,10 @@ function renderWeek(root, nav2) {
     h += `</div>`;
   }
   root.innerHTML = h;
+  root.querySelectorAll("[data-site]").forEach((b) => b.onclick = () => {
+    siteFilter = b.dataset.site;
+    renderWeek(root, nav2);
+  });
   root.querySelector("#btnNewCheck").onclick = () => openCheckChooser();
   const pw = root.querySelector("#btnPrintWeek");
   if (pw) pw.onclick = () => printWeek();
@@ -964,7 +982,7 @@ function renderWeek(root, nav2) {
 }
 function row(s, action) {
   const k = KINDS[s.eq.kind];
-  const meta = [`<span>${k.label}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>`];
+  const meta = [`<span>${k.label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>`];
   if (s.last) meta.push(`<span>בדיקה אחרונה ${fmtDate(s.last.date)} · ${SUMMARY_LABEL[s.last.summary] || ""}</span>`);
   else meta.push(`<span>עוד לא נבדק</span>`);
   if (s.open.length) meta.push(`<span style="color:var(--clay);font-weight:700">${s.open.length} ליקויים פתוחים</span>`);
@@ -982,6 +1000,7 @@ function renderEq(root, nav2, focusId) {
     for (const eq of items) {
       const s = equipmentStatus(eq, state.checks, state.defects);
       const meta = [];
+      if (eq.site) meta.push(`<span>${esc(eq.site)}</span>`);
       if (eq.plate) meta.push(`<span class="num">${esc(eq.plate)}</span>`);
       if (eq.model) meta.push(`<span>${esc(eq.model)}</span>`);
       if (s.svc) meta.push(`<span class="num">${fmtNum(s.svc.hours)} שעות</span><span>${s.svc.state === "due" ? "טיפול חלף" : "טיפול בעוד " + fmtNum(s.svc.left) + " שעות"}</span>`);
@@ -1002,7 +1021,7 @@ function showEquipment(id, nav2) {
   if (!eq) return;
   const s = equipmentStatus(eq, state.checks, state.defects);
   const k = KINDS[eq.kind];
-  let h = `<h2>${esc(eq.name)} <small style="font-size:.8rem;color:var(--ink3)">${k.label}${eq.plate ? " · " + esc(eq.plate) : ""}</small></h2>`;
+  let h = `<h2>${esc(eq.name)} <small style="font-size:.8rem;color:var(--ink3)">${k.label}${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · " + esc(eq.plate) : ""}</small></h2>`;
   if (eq.model || eq.note) h += `<p class="note">${esc(eq.model || "")}${eq.model && eq.note ? " · " : ""}${esc(eq.note || "")}</p>`;
   if (s.svc) {
     const pct = Math.max(0, Math.min(100, Math.round((s.svc.hours - s.svc.last) / s.svc.interval * 100)));
@@ -1054,9 +1073,10 @@ function showEquipment(id, nav2) {
 }
 function editEquipment(eq) {
   const isNew = !eq;
-  eq = eq || { kind: "tool", name: "", plate: "", model: "", hours: "", interval: DEFAULT_INTERVAL, lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true };
+  eq = eq || { kind: "tool", site: sites().length === 1 ? sites()[0] : "", name: "", plate: "", model: "", hours: "", interval: DEFAULT_INTERVAL, lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true };
   const h = `<h2>${isNew ? "כלי או נגרר חדש" : "עריכת פרטים"}</h2>
     <div class="f"><label>סוג</label><div class="opts"><button type="button" class="opt" data-kind="tool" aria-pressed="${eq.kind === "tool"}">כלי<small>טרקטור משא / מיול</small></button><button type="button" class="opt" data-kind="trailer" aria-pressed="${eq.kind === "trailer"}">נגרר<small>פתוח עד 750 ק״ג</small></button></div></div>
+    <div class="f"><label>אתר</label><input type="text" id="eSite" value="${esc(eq.site || "")}" list="siteOpts" placeholder="באיזה אתר הכלי נמצא">${siteList("siteOpts")}</div>
     <div class="f"><label>שם / כינוי באתר</label><input type="text" id="eName" value="${esc(eq.name)}" placeholder="למשל: מיול 2, נגרר כלים"></div>
     <div class="grid2"><div class="f"><label>מס׳ רישוי</label><input type="text" id="ePlate" value="${esc(eq.plate)}" inputmode="numeric" style="direction:ltr"></div><div class="f"><label>דגם / יצרן</label><input type="text" id="eModel" value="${esc(eq.model || "")}"></div></div>
     <div id="toolFields" ${eq.kind === "tool" ? "" : "hidden"}>
@@ -1088,9 +1108,16 @@ function editEquipment(eq) {
       const v = sh.querySelector(id).value.trim();
       return v === "" ? "" : Number(v);
     };
+    const site = sh.querySelector("#eSite").value.trim();
+    if (!site) {
+      toast("צריך לכתוב מאיזה אתר", "bad");
+      sh.querySelector("#eSite").focus();
+      return;
+    }
     const out = {
       ...eq,
       kind,
+      site,
       name,
       plate: sh.querySelector("#ePlate").value.trim(),
       model: sh.querySelector("#eModel").value.trim(),
@@ -1218,7 +1245,7 @@ function renderRemind(root) {
   h += `<div class="card"><h2>קישור לטופס המילוי השבועי</h2>
     <p class="note">הקישור פותח את הכלי הזה בטלפון; כפתור «בדיקה שבועית חדשה» הוא הטופס. אפשר לשלוח ללוגיסטיקן או למנהל האתר.</p>
     ${share ? `<div class="copy" style="margin-top:8px"><input type="text" id="shareUrl" value="${esc(share)}" readonly><button type="button" class="ghost small" id="copyShare">העתקה</button></div>
-      <div class="row2" style="margin-top:8px"><a class="ghost" href="https://wa.me/?text=${encodeURIComponent("טופס בדיקה שבועית לכלים ונגררים – " + (s.site || "") + "\n" + share)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a></div>` : `<p class="note warn">הקישור יופיע כאן אחרי הפרסום (נשמר בהגדרות).</p>`}</div>`;
+      <div class="row2" style="margin-top:8px"><a class="ghost" href="https://wa.me/?text=${encodeURIComponent("טופס בדיקה שבועית לכלים ונגררים (BELECTRIC)\n" + share)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a></div>` : `<p class="note warn">הקישור יופיע כאן אחרי הפרסום (נשמר בהגדרות).</p>`}</div>`;
   root.innerHTML = h;
   const save = async () => {
     try {
@@ -1270,14 +1297,13 @@ async function downloadIcs(filename, text) {
 function openSettings() {
   const s = state.settings;
   const sh = openSheet(`<h2>הגדרות</h2>
-    <div class="f"><label>שם האתר (מופיע בטופס)</label><input type="text" id="sSite" value="${esc(s.site || "")}" ${state.canWrite ? "" : "disabled"}></div>
     <div class="f"><label>טיפול מוסך כל (שעות מנוע) · ברירת מחדל לכלי חדש</label><input type="number" id="sInt" value="${esc(s.interval || DEFAULT_INTERVAL)}" inputmode="numeric" ${state.canWrite ? "" : "disabled"}></div>
     <div class="f"><label>קישור לכלי (לשיתוף ולטופס)</label><input type="text" id="sUrl" value="${esc(s.shareUrl || "")}" style="direction:ltr" placeholder="https://claude.ai/artifact/…" ${state.canWrite ? "" : "disabled"}></div>
     <p class="note">${state.me ? "מחובר: " + esc(state.me.name || "") : "לא מזוהה"} · ${state.canWrite ? "הרשאת כתיבה" : "קריאה בלבד"} · ${state.equipment.length} פריטים, ${state.checks.length} בדיקות, ${state.defects.filter((d) => d.status !== "closed").length} ליקויים פתוחים</p>
     <button type="button" class="add" id="sSave" ${state.canWrite ? "" : "disabled"}>שמירה</button>`);
   sh.querySelector("#sSave").onclick = async () => {
     try {
-      await saveSettings({ site: sh.querySelector("#sSite").value.trim(), interval: Number(sh.querySelector("#sInt").value) || DEFAULT_INTERVAL, shareUrl: sh.querySelector("#sUrl").value.trim() });
+      await saveSettings({ interval: Number(sh.querySelector("#sInt").value) || DEFAULT_INTERVAL, shareUrl: sh.querySelector("#sUrl").value.trim() });
       closeSheet();
       toast("נשמר");
     } catch {
@@ -1304,7 +1330,6 @@ function render() {
     return;
   }
   VIEWS[current](root, nav, arg);
-  $("#siteLabel").textContent = state.settings.site || "";
   const open = state.defects.filter((d) => d.status !== "closed").length;
   badge("#badgeDefects", open);
   const notChecked = state.equipment.filter((e) => e.active !== false).filter((e) => !equipmentStatus(e, state.checks, state.defects).checkedThisWeek).length;
@@ -1561,7 +1586,7 @@ table.t th{color:var(--ink3);font-weight:700;font-size:.76rem}
   <header class="top">
     <h1><span class="mark" aria-hidden="true"></span><span>בקרת כלים ונגררים</span></h1>
     <div class="side">
-      <span class="site" id="siteName"><b>BELECTRIC</b><span id="siteLabel">אתר הקמה עין תמר</span></span>
+      <span class="site" id="siteName"><b>BELECTRIC</b><span id="siteLabel">לוגיסטיקה</span></span>
       <button class="gear" id="btnSettings" type="button" aria-label="הגדרות" title="הגדרות">⚙</button>
     </div>
   </header>

@@ -94,8 +94,8 @@ export function gcalLink(ev){
 // כל התזכורות של האתר: בדיקה שבועית + תפוגות (שבועיים לפני) + טיפולים שמתקרבים (ליום הבדיקה הבא)
 export function reminderEvents(settings, equipment, checks, today = isoDate()){
   const dow = settings.weeklyDow ?? 0, time = settings.weeklyTime || "07:30";
-  const site = settings.site || "האתר";
-  const evs = [{ uid: "weekly-" + site, title: "בדיקה שבועית לכלים ונגררים – " + site, desc: "למלא טופס לכל כלי ונגרר בבעלות BELECTRIC, לצלם ולשמור בקלסר. ליקוי = דיווח מיידי.",
+  const site = (settings.site || "").trim();
+  const evs = [{ uid: "weekly-" + (site || "belectric"), title: "בדיקה שבועית לכלים ונגררים – " + (site || "BELECTRIC"), desc: "למלא טופס לכל כלי ונגרר בבעלות BELECTRIC, לצלם ולשמור בקלסר. ליקוי = דיווח מיידי.",
     date: nextDow(dow, today), time, minutes: 60, weeklyDow: dow }];
   for (const eq of equipment){
     if (eq.active === false) continue;

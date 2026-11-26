@@ -1,5 +1,5 @@
 // לשונית «כלים»: רשימת כלים ונגררים, הוספה/עריכה, שעות מנוע, טיפולי מוסך, תפוגות
-import { state, saveEquipment, deleteEquipment, saveService, eqById } from "./store.js";
+import { state, saveEquipment, deleteEquipment, saveService, eqById, siteList, sites } from "./store.js";
 import { esc, fmtDate, isoDate, fmtNum, toast } from "./util.js";
 import { KINDS, EXPIRIES, DEFAULT_INTERVAL, SUMMARY_LABEL } from "./forms.js";
 import { equipmentStatus, serviceState } from "./logic.js";
@@ -16,6 +16,7 @@ export function renderEq(root, nav, focusId){
     for (const eq of items){
       const s = equipmentStatus(eq, state.checks, state.defects);
       const meta = [];
+      if (eq.site) meta.push(`<span>${esc(eq.site)}</span>`);
       if (eq.plate) meta.push(`<span class="num">${esc(eq.plate)}</span>`);
       if (eq.model) meta.push(`<span>${esc(eq.model)}</span>`);
       if (s.svc) meta.push(`<span class="num">${fmtNum(s.svc.hours)} שעות</span><span>${s.svc.state === "due" ? "טיפול חלף" : "טיפול בעוד " + fmtNum(s.svc.left) + " שעות"}</span>`);
@@ -36,7 +37,7 @@ export function showEquipment(id, nav){
   const eq = eqById(id); if (!eq) return;
   const s = equipmentStatus(eq, state.checks, state.defects);
   const k = KINDS[eq.kind];
-  let h = `<h2>${esc(eq.name)} <small style="font-size:.8rem;color:var(--ink3)">${k.label}${eq.plate ? " · " + esc(eq.plate) : ""}</small></h2>`;
+  let h = `<h2>${esc(eq.name)} <small style="font-size:.8rem;color:var(--ink3)">${k.label}${eq.site ? " · " + esc(eq.site) : ""}${eq.plate ? " · " + esc(eq.plate) : ""}</small></h2>`;
   if (eq.model || eq.note) h += `<p class="note">${esc(eq.model || "")}${eq.model && eq.note ? " · " : ""}${esc(eq.note || "")}</p>`;
   if (s.svc){
     const pct = Math.max(0, Math.min(100, Math.round((s.svc.hours - s.svc.last) / s.svc.interval * 100)));
@@ -71,9 +72,10 @@ export function showEquipment(id, nav){
 }
 
 export function editEquipment(eq){
-  const isNew = !eq; eq = eq || { kind: "tool", name: "", plate: "", model: "", hours: "", interval: DEFAULT_INTERVAL, lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true };
+  const isNew = !eq; eq = eq || { kind: "tool", site: sites().length === 1 ? sites()[0] : "", name: "", plate: "", model: "", hours: "", interval: DEFAULT_INTERVAL, lastServiceHours: "", lastServiceDate: "", licenseExp: "", insuranceExp: "", testExp: "", note: "", active: true };
   const h = `<h2>${isNew ? "כלי או נגרר חדש" : "עריכת פרטים"}</h2>
     <div class="f"><label>סוג</label><div class="opts"><button type="button" class="opt" data-kind="tool" aria-pressed="${eq.kind === "tool"}">כלי<small>טרקטור משא / מיול</small></button><button type="button" class="opt" data-kind="trailer" aria-pressed="${eq.kind === "trailer"}">נגרר<small>פתוח עד 750 ק״ג</small></button></div></div>
+    <div class="f"><label>אתר</label><input type="text" id="eSite" value="${esc(eq.site || "")}" list="siteOpts" placeholder="באיזה אתר הכלי נמצא">${siteList("siteOpts")}</div>
     <div class="f"><label>שם / כינוי באתר</label><input type="text" id="eName" value="${esc(eq.name)}" placeholder="למשל: מיול 2, נגרר כלים"></div>
     <div class="grid2"><div class="f"><label>מס׳ רישוי</label><input type="text" id="ePlate" value="${esc(eq.plate)}" inputmode="numeric" style="direction:ltr"></div><div class="f"><label>דגם / יצרן</label><input type="text" id="eModel" value="${esc(eq.model || "")}"></div></div>
     <div id="toolFields" ${eq.kind === "tool" ? "" : "hidden"}>
@@ -93,7 +95,8 @@ export function editEquipment(eq){
   sh.querySelector("#eSave").onclick = async () => {
     const name = sh.querySelector("#eName").value.trim(); if (!name){ toast("צריך שם", "bad"); sh.querySelector("#eName").focus(); return; }
     const num = id => { const v = sh.querySelector(id).value.trim(); return v === "" ? "" : Number(v); };
-    const out = { ...eq, kind, name, plate: sh.querySelector("#ePlate").value.trim(), model: sh.querySelector("#eModel").value.trim(), note: sh.querySelector("#eNote").value.trim(),
+    const site = sh.querySelector("#eSite").value.trim(); if (!site){ toast("צריך לכתוב מאיזה אתר", "bad"); sh.querySelector("#eSite").focus(); return; }
+    const out = { ...eq, kind, site, name, plate: sh.querySelector("#ePlate").value.trim(), model: sh.querySelector("#eModel").value.trim(), note: sh.querySelector("#eNote").value.trim(),
       hours: kind === "tool" ? num("#eHours") : "", interval: kind === "tool" ? (num("#eInterval") || DEFAULT_INTERVAL) : "", lastServiceHours: kind === "tool" ? num("#eLastSvc") : "", lastServiceDate: kind === "tool" ? sh.querySelector("#eLastSvcDate").value : "",
       active: isNew ? true : sh.querySelector("#eActive").checked };
     for (const e of EXPIRIES) out[e.key] = sh.querySelector("#x_" + e.key).value;

@@ -19,7 +19,7 @@ export function renderRemind(root){
   h += `<div class="card"><h2>קישור לטופס המילוי השבועי</h2>
     <p class="note">הקישור פותח את הכלי הזה בטלפון; כפתור «בדיקה שבועית חדשה» הוא הטופס. אפשר לשלוח ללוגיסטיקן או למנהל האתר.</p>
     ${share ? `<div class="copy" style="margin-top:8px"><input type="text" id="shareUrl" value="${esc(share)}" readonly><button type="button" class="ghost small" id="copyShare">העתקה</button></div>
-      <div class="row2" style="margin-top:8px"><a class="ghost" href="https://wa.me/?text=${encodeURIComponent("טופס בדיקה שבועית לכלים ונגררים – " + (s.site || "") + "\n" + share)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a></div>`
+      <div class="row2" style="margin-top:8px"><a class="ghost" href="https://wa.me/?text=${encodeURIComponent("טופס בדיקה שבועית לכלים ונגררים (BELECTRIC)\n" + share)}" target="_blank" rel="noopener">שליחה בוואטסאפ</a></div>`
     : `<p class="note warn">הקישור יופיע כאן אחרי הפרסום (נשמר בהגדרות).</p>`}</div>`;
   root.innerHTML = h;
   const save = async () => { try { await saveSettings({ weeklyDow: Number(root.querySelector("#rDow").value), weeklyTime: root.querySelector("#rTime").value || "07:30" }); } catch { toast("לא נשמר", "bad"); } };

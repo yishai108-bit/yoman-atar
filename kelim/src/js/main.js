@@ -23,7 +23,6 @@ function render(){
   const root = $("#view"); if (!root) return;
   if (!state.ready){ root.innerHTML = '<div class="empty">טוען…</div>'; return; }
   VIEWS[current](root, nav, arg);
-  $("#siteLabel").textContent = state.settings.site || "";
   const open = state.defects.filter(d => d.status !== "closed").length;
   badge("#badgeDefects", open);
   const notChecked = state.equipment.filter(e => e.active !== false).filter(e => !equipmentStatus(e, state.checks, state.defects).checkedThisWeek).length;

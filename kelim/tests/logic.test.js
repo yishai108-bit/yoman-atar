@@ -60,7 +60,8 @@ test("קישור יומן גוגל: תבנית עם dates, ctz ו-recur", () => 
 });
 test("תזכורות האתר: שבועי + תפוגה שבועיים לפני + טיפול שמתקרב; כלי לא פעיל לא נכלל", () => {
   const evs = L.reminderEvents(fixture.settings.main, list(fixture.equipment), list(fixture.checks));
-  assert.strictEqual(evs[0].weeklyDow, 0); assert.ok(evs[0].title.includes("אתר בדיקה"));
+  assert.strictEqual(evs[0].weeklyDow, 0); assert.ok(evs[0].title.includes("BELECTRIC"), "בלי אתר ברירת מחדל");
+  assert.ok(L.reminderEvents({ site: "אתר א" }, [], [])[0].title.includes("אתר א"));
   assert.ok(evs.some(e => e.uid === "exp-eq_mule1-licenseExp" && e.allDay && e.title.includes("אלירן")));
   assert.ok(!evs.some(e => e.uid === "exp-eq_mule2-insuranceExp"), "ביטוח שפג לא מקבל תזכורת עתידית");
   assert.ok(evs.some(e => e.uid.startsWith("svc-eq_mule1")) && evs.some(e => e.uid.startsWith("svc-eq_mule2") && e.title.includes("(עבר)")));

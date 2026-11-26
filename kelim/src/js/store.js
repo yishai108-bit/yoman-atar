@@ -1,5 +1,5 @@
 // מצב האפליקציה ומאגר הנתונים (db של הארטיפקט). האוספים:
-//   equipment/<id>  כלי או נגרר: {id, kind, name, plate, model, hours, interval, lastServiceHours, lastServiceDate, licenseExp, insuranceExp, testExp, active, note}
+//   equipment/<id>  כלי או נגרר: {id, kind, site, name, plate, model, hours, interval, lastServiceHours, lastServiceDate, licenseExp, insuranceExp, testExp, active, note}
 //   checks/<id>     טופס בדיקה שמור: {id, eqId, kind, date, inspector, role, site, hours, plate, items:{key:"ok"|"bad"}, notes:{key:text}, summary, defectsText, owner, due, signature, photos:[assetId], createdAt, by}
 //   defects/<id>    ליקוי עד סגירה: {id, eqId, kind, checkId, item, text, note, openedAt, status, severity, owner, due, closedAt, closedBy, fixNote, photos}
 //   services/<id>   טיפול מוסך: {id, eqId, date, hours, garage, note}
@@ -11,7 +11,7 @@ export const state = {
   db: null, user: null, assets: null, downloads: null,
   me: null, canWrite: true, ready: false, offline: false,
   equipment: [], checks: [], defects: [], services: [],
-  settings: { site: "אתר הקמה עין תמר", interval: DEFAULT_INTERVAL, weeklyDow: 0, weeklyTime: "07:30" },
+  settings: { interval: DEFAULT_INTERVAL, weeklyDow: 0, weeklyTime: "07:30" },
 };
 const listeners = new Set();
 export function onChange(fn){ listeners.add(fn); return () => listeners.delete(fn); }
@@ -59,3 +59,6 @@ export async function saveDefect(d){ if (!d.id) d.id = uid("df_"); await write("
 export async function saveService(s){ if (!s.id) s.id = uid("sv_"); await write("services", s); return s; }
 export async function saveSettings(patch){ const db = need(); state.settings = { ...state.settings, ...patch }; emit(); await db.doc("settings/main").set(clean(state.settings)); }
 export const eqById = id => state.equipment.find(e => e.id === id) || null;
+// האתרים שאנשים כבר כתבו (לכלים ולטפסים), להשלמה אוטומטית
+export const sites = () => [...new Set([...state.equipment.map(e => e.site), ...state.checks.map(c => c.site)].map(s => (s || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "he"));
+export const siteList = id => `<datalist id="${id}">${sites().map(s => `<option value="${s.replace(/"/g, "&quot;")}">`).join("")}</datalist>`;

@@ -21,7 +21,10 @@ test("נטען בלי שגיאות JS, ברוחב 400 בלי גלילה אופק
   assert.ok(t.includes("מיול 2") && t.includes("טיפול 500 שעות"));
   assert.ok(t.includes("אלירן"));
   assert.strictEqual(await page.textContent("#badgeDefects"), "1");
-  assert.strictEqual(await page.textContent("#siteLabel"), "אתר בדיקה");
+  assert.strictEqual(await page.textContent("#siteLabel"), "לוגיסטיקה", "בלי שם אתר קבוע בכותרת");
+  assert.ok(t.includes("אתר שני"), "האתר של כל כלי מוצג");
+  // סינון לפי אתר כשיש יותר מאחד
+  await page.click('#siteFilters [data-site="אתר שני"]'); const t2 = await page.textContent("#view"); assert.ok(t2.includes("0/1") && !t2.includes("מיול 1")); await page.click('#siteFilters [data-site=""]');
   await page.screenshot({ path: path.join(SHOTS, "01-week.png") });
   for (const v of ["eq", "defects", "history", "remind"]){ await page.click(`.tab[data-view=${v}]`); await page.waitForTimeout(100); await noOverflow(page); await page.screenshot({ path: path.join(SHOTS, "02-" + v + ".png") }); }
   assert.deepStrictEqual(errors, []);
@@ -42,11 +45,13 @@ test("הוספת נגרר חדש נשמרת במאגר ומופיעה ברשימ
   const { page, errors, ctx } = await openApp(browser, { mock: { seed: {} } });
   await page.click(".tab[data-view=eq]"); await page.click("#btnAddEq");
   await page.click('.sheet [data-kind="trailer"]');
-  await page.fill("#eName", "נגרר חדש"); await page.fill("#ePlate", "11-222-33"); await page.fill("#x_licenseExp", "2027-03-01");
+  await page.fill("#eName", "נגרר חדש"); await page.fill("#ePlate", "11-222-33");
+  await page.click("#eSave"); assert.ok((await page.textContent("#toast")).includes("מאיזה אתר"), "אתר חובה");
+  await page.fill("#eSite", "אתר חדש"); await page.fill("#x_licenseExp", "2027-03-01");
   await page.click("#eSave"); await page.waitForTimeout(200);
   const writes = await page.evaluate(() => window.__MOCK_WRITES__);
   assert.ok(writes.some(w => w[0] === "set" && w[1].startsWith("equipment/")));
-  const t = await page.textContent("#view"); assert.ok(t.includes("נגרר חדש") && t.includes("11-222-33") && t.includes("לא נבדק השבוע"));
+  const t = await page.textContent("#view"); assert.ok(t.includes("נגרר חדש") && t.includes("11-222-33") && t.includes("אתר חדש") && t.includes("לא נבדק השבוע"));
   assert.deepStrictEqual(errors, []);
   await ctx.close();
 });
@@ -59,8 +64,12 @@ test("טופס בדיקה לכלי: חובה לסמן את כל הסעיפים, 
   await page.click('.sheet [data-pick="eq_mule2"]');
   assert.ok((await page.textContent(".sheet h2")).includes("טרקטור משא"));
   assert.strictEqual(await page.inputValue("#cHours"), "520");
+  assert.strictEqual(await page.inputValue("#cSite"), "אתר בדיקה", "האתר של הכלי ממלא את הטופס, ואפשר לשנות");
+  await page.fill("#cSite", "");
   await page.screenshot({ path: path.join(SHOTS, "04-form-top.png") });
   await page.fill("#cName", "ישראל ישראלי");
+  await page.click("#cSave"); assert.ok((await page.textContent("#toast")).includes("מאיזה אתר"), "אתר חובה בטופס");
+  await page.fill("#cSite", "אתר בדיקה");
   await page.click("#cSave"); // בלי סימונים
   assert.ok((await page.textContent("#toast")).includes("11 סעיפים"));
   await page.click("#allOk");
@@ -86,7 +95,7 @@ test("טופס בדיקה לכלי: חובה לסמן את כל הסעיפים, 
   const store = await page.evaluate(() => Object.fromEntries([...window.__MOCK_STORE__.entries()]));
   const ck = Object.entries(store).find(([k]) => k.startsWith("checks/ck_") && !fixture.checks[k.split("/")[1]])[1];
   assert.strictEqual(ck.items.horn, "bad"); assert.strictEqual(ck.notes.horn, "צופר לא עובד"); assert.strictEqual(ck.summary, "repair"); assert.strictEqual(ck.hours, 531);
-  assert.ok(ck.signature.startsWith("data:image/png")); assert.strictEqual(ck.inspector, "ישראל ישראלי");
+  assert.ok(ck.signature.startsWith("data:image/png")); assert.strictEqual(ck.inspector, "ישראל ישראלי"); assert.strictEqual(ck.site, "אתר בדיקה");
   assert.strictEqual(store["equipment/eq_mule2"].hours, 531);
   const df = Object.entries(store).find(([k]) => k.startsWith("defects/df_") && store[k].item === "horn")[1];
   assert.strictEqual(df.text, "בדיקת צופר"); assert.strictEqual(df.status, "open"); assert.strictEqual(df.owner, "מוסך");

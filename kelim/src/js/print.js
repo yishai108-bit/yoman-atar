@@ -44,4 +44,4 @@ export function printWeek(ref = isoDate()){
   const cs = state.checks.filter(c => c.date >= weekStart(ref) && c.date <= weekEnd(ref)).sort((a, b) => ((eqById(a.eqId) || {}).name || "").localeCompare((eqById(b.eqId) || {}).name || "", "he") || a.date.localeCompare(b.date));
   if (!cs.length){ toast("אין בדיקות השבוע", "bad"); return; } printChecks(cs.map(c => c.id));
 }
-export function printBlank(kind){ run(formHtml({ kind, site: state.settings.site || "", items: {}, notes: {} }, null)); }
+export function printBlank(kind){ run(formHtml({ kind, site: "", items: {}, notes: {} }, null)); }

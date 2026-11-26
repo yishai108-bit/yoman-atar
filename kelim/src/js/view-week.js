@@ -1,5 +1,5 @@
 // לשונית «השבוע»: מה נבדק, מה לא, ליקויים פתוחים, טיפולים ותפוגות
-import { state } from "./store.js";
+import { state, sites } from "./store.js";
 import { esc, fmtDate, weekStart, weekEnd, fmtShort, isoDate, fmtNum } from "./util.js";
 import { equipmentStatus } from "./logic.js";
 import { KINDS, SUMMARY_LABEL } from "./forms.js";
@@ -8,15 +8,18 @@ import { printWeek } from "./print.js";
 
 export function statuses(){ const today = isoDate(); return state.equipment.filter(e => e.active !== false).map(e => equipmentStatus(e, state.checks, state.defects, today)); }
 
+let siteFilter = "";
 export function renderWeek(root, nav){
-  const st = statuses();
+  const allSites = sites(); if (siteFilter && !allSites.includes(siteFilter)) siteFilter = "";
+  const st = statuses().filter(s => !siteFilter || (s.eq.site || "") === siteFilter);
   const openDefects = state.defects.filter(d => d.status !== "closed");
   const checked = st.filter(s => s.checkedThisWeek), notChecked = st.filter(s => !s.checkedThisWeek);
   const svcAlerts = st.filter(s => s.svc && s.svc.state !== "ok");
   const expAlerts = st.flatMap(s => s.exps.filter(e => e.state !== "ok").map(e => ({ ...e, eq: s.eq })));
   const weekChecks = state.checks.filter(c => c.date >= weekStart() && c.date <= weekEnd());
-  let h = `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
-  if (!st.length){
+  let h = allSites.length > 1 ? `<div class="filters" id="siteFilters"><button type="button" data-site="" aria-pressed="${!siteFilter}">כל האתרים</button>${allSites.map(s => `<button type="button" data-site="${esc(s)}" aria-pressed="${siteFilter === s}">${esc(s)}</button>`).join("")}</div>` : "";
+  h += `<div class="sechead"><span>שבוע ${fmtShort(weekStart())}–${fmtShort(weekEnd())}</span><span>${st.length} ${st.length === 1 ? "פריט" : "פריטים"} בבעלות BELECTRIC</span></div>`;
+  if (!st.length && !allSites.length){
     h += `<div class="empty">עדיין אין כלים או נגררים ברשימה.<br>מוסיפים בלשונית «כלים», ואז הטופס השבועי זמין לכל אחד מהם.</div>
       <button type="button" class="add" data-go="eq">＋ הוספת כלי או נגרר</button>`;
     root.innerHTML = h; root.querySelector("[data-go]").onclick = () => nav("eq"); return;
@@ -49,6 +52,7 @@ export function renderWeek(root, nav){
     h += `</div>`;
   }
   root.innerHTML = h;
+  root.querySelectorAll("[data-site]").forEach(b => b.onclick = () => { siteFilter = b.dataset.site; renderWeek(root, nav); });
   root.querySelector("#btnNewCheck").onclick = () => openCheckChooser();
   const pw = root.querySelector("#btnPrintWeek"); if (pw) pw.onclick = () => printWeek();
   root.querySelectorAll("[data-go]").forEach(b => b.onclick = () => nav(b.dataset.go));
@@ -58,7 +62,7 @@ export function renderWeek(root, nav){
 }
 function row(s, action){
   const k = KINDS[s.eq.kind];
-  const meta = [`<span>${k.label}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>`];
+  const meta = [`<span>${k.label}${s.eq.site ? " · " + esc(s.eq.site) : ""}${s.eq.plate ? " · <span class=num>" + esc(s.eq.plate) + "</span>" : ""}</span>`];
   if (s.last) meta.push(`<span>בדיקה אחרונה ${fmtDate(s.last.date)} · ${SUMMARY_LABEL[s.last.summary] || ""}</span>`); else meta.push(`<span>עוד לא נבדק</span>`);
   if (s.open.length) meta.push(`<span style="color:var(--clay);font-weight:700">${s.open.length} ליקויים פתוחים</span>`);
   if (s.svc && s.eq.kind === "tool") meta.push(`<span class="num">${fmtNum(s.svc.hours)} שעות</span>`);

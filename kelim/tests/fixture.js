@@ -4,11 +4,11 @@ const daysAgo = n => { const d = new Date(today); d.setDate(d.getDate() - n); re
 const daysAhead = n => { const d = new Date(today); d.setDate(d.getDate() + n); return iso(d); };
 const dow = today.getDay(); // כדי שבדיקה «השבוע» תיפול בשבוע הנוכחי: 0 ימים אחורה אם ראשון
 module.exports = {
-  settings: { main: { site: "אתר בדיקה", interval: 250, weeklyDow: 0, weeklyTime: "07:30", shareUrl: "https://example.test/kelim" } },
+  settings: { main: { interval: 250, weeklyDow: 0, weeklyTime: "07:30", shareUrl: "https://example.test/kelim" } },
   equipment: {
-    eq_mule1: { id: "eq_mule1", kind: "tool", name: "מיול 1", plate: "12-345-67", model: "Kubota RTV", hours: 1230, interval: 250, lastServiceHours: 1000, lastServiceDate: daysAgo(40), licenseExp: daysAhead(10), insuranceExp: daysAhead(200), testExp: "", active: true },
-    eq_mule2: { id: "eq_mule2", kind: "tool", name: "מיול 2", plate: "23-456-78", model: "", hours: 520, interval: 250, lastServiceHours: 250, lastServiceDate: daysAgo(90), licenseExp: daysAhead(120), insuranceExp: daysAgo(3), testExp: "", active: true },
-    eq_tr1: { id: "eq_tr1", kind: "trailer", name: "נגרר כלים", plate: "34-567-89", model: "", active: true, licenseExp: daysAhead(300) },
+    eq_mule1: { id: "eq_mule1", kind: "tool", site: "אתר בדיקה", name: "מיול 1", plate: "12-345-67", model: "Kubota RTV", hours: 1230, interval: 250, lastServiceHours: 1000, lastServiceDate: daysAgo(40), licenseExp: daysAhead(10), insuranceExp: daysAhead(200), testExp: "", active: true },
+    eq_mule2: { id: "eq_mule2", kind: "tool", site: "אתר בדיקה", name: "מיול 2", plate: "23-456-78", model: "", hours: 520, interval: 250, lastServiceHours: 250, lastServiceDate: daysAgo(90), licenseExp: daysAhead(120), insuranceExp: daysAgo(3), testExp: "", active: true },
+    eq_tr1: { id: "eq_tr1", kind: "trailer", site: "אתר שני", name: "נגרר כלים", plate: "34-567-89", model: "", active: true, licenseExp: daysAhead(300) },
     eq_old: { id: "eq_old", kind: "trailer", name: "נגרר ישן", plate: "", active: false },
   },
   checks: {
